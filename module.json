@@ -1,7 +1,7 @@
 {
-  "id": "module-template",
-  "title": "Module Template",
-  "description": "A module template, this should have been changed",
+  "id": "sprite-shadows",
+  "title": "Sprite Shadows",
+  "description": "A module for FoundryVTT to add some options for different types of shadows for tokens and tiles.",
   "version": "#{VERSION}#",
   "library": "false",
   "compatibility": {
