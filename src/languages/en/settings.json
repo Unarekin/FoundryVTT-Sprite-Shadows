@@ -1,0 +1,10 @@
+{
+  "SPRITESHADOWS": {
+    "SETTINGS": {
+      "ENABLE": {
+        "LABEL": "Enable Sprite Shadows",
+        "HINT": "Uncheck to turn off all sprite shadows."
+      }
+    }
+  }
+}
