@@ -18,7 +18,6 @@
   ],
   "socket": true,
   "relationships": {
-    "systems": [],
     "requires": []
   },
   "esmodules": ["module.js"],

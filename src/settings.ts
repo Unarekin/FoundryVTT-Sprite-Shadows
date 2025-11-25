@@ -1,3 +1,35 @@
+import { BlobShadowConfiguration, ShadowConfiguration, StencilShadowConfiguration } from "types";
+
+
+export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
+  enabled: false,
+  type: "blob",
+  alpha: 1,
+  color: "#000000",
+  blur: 5,
+  shape: "circle",
+  adjustForElevation: false,
+  elevationIncrement: 0,
+  alignment: "bottom",
+  liftToken: false,
+  adjustments: {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0
+  }
+}
+
+export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
+  enabled: false,
+  type: "stencil"
+}
+
+export const DefaultShadowConfiguration: ShadowConfiguration = {
+  ...DefaultBlobShadowConfiguration,
+  enabled: false,
+  type: "blob"
+}
 
 Hooks.on("ready", () => {
   game?.settings?.register(__MODULE_ID__, "enableShadows", {
