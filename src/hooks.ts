@@ -19,14 +19,20 @@ Hooks.once("init", () => {
   game.SpriteShadows = {
     TokenClass: ShadowedToken
   };
+});
 
+Hooks.once("ready", () => {
+  game?.canvas?.app?.ticker.add(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    canvas?.scene?.tokens.forEach(token => { (token.object as any).refreshShadow() });
+  })
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 Hooks.on("updateActor", (actor: Actor, delta: Actor.UpdateData, options: Actor.Database.UpdateOptions, userId: string) => {
   if (game.SpriteShadows?.TokenClass && actor.token?.object instanceof (game.SpriteShadows.TokenClass as any)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    (actor.token.object as any).refreshShadow()
+    (actor.token.object as any).refreshShadow(true)
   }
 });
 
@@ -34,6 +40,6 @@ Hooks.on("updateActor", (actor: Actor, delta: Actor.UpdateData, options: Actor.D
 Hooks.on("updateToken", (token: TokenDocument, delta: TokenDocument.UpdateData, options: TokenDocument.Database.UpdateOptions, userId: string) => {
   if (game.SpriteShadows?.TokenClass && token.object instanceof (game.SpriteShadows.TokenClass as any)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    (token.object as any).refreshShadow()
+    (token.object as any).refreshShadow(true)
   }
 })

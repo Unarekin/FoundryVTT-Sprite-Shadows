@@ -48,11 +48,16 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       }
     }
 
-    protected refreshBlobShadow() {
+    protected refreshBlobShadow(force = false) {
       const config = this.shadowConfiguration;
       if (!(config.enabled && config.type === "blob")) return;
 
       if (!this.mesh) return;
+
+      if (force && this.#blobSprite) {
+        this.destroySprite(this.#blobSprite);
+        this.#blobSprite = undefined;
+      }
 
       if (!this.#blobSprite) {
         const texture = this.generateBlobShadowTexture(config);
@@ -87,22 +92,26 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
 
     }
 
-    protected refreshStencilShadow() {
+    protected refreshStencilShadow(force = false) {
 
       const config = this.shadowConfiguration;
       if (!(config.enabled && config.type === "stencil")) return;
 
       if (!this.mesh?.texture) return;
 
-      if (this.#stencilSprite) this.destroySprite(this.#stencilSprite);
+      if (force && this.#stencilSprite) {
+        this.destroySprite(this.#stencilSprite);
+        this.#stencilSprite = undefined;
+      }
 
       // if (!this.#stencilSprite || this.#stencilSprite.texture.baseTexture.resource.src !== this.texture?.baseTexture.resource.src) {
 
-      const texture = this.mesh.texture.clone();
-      const sprite = new PIXI.Sprite(texture);
-      this.#stencilSprite = sprite;
+      if (!this.#stencilSprite) {
+        const texture = this.mesh.texture.clone();
+        const sprite = new PIXI.Sprite(texture);
+        this.#stencilSprite = sprite;
 
-      // }
+      }
 
       this.mesh.parent.addChild(this.#stencilSprite);
       this.#stencilSprite.anchor.x = this.mesh.anchor.x;
@@ -146,17 +155,18 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
 
     public clearShadow() {
       if (this.#blobSprite) this.#blobSprite.visible = false;
+      if (this.#stencilSprite) this.#stencilSprite.visible = false;
     }
 
-    public refreshShadow() {
+    public refreshShadow(force = false) {
       const shadowConfig = this.shadowConfiguration;
       if (shadowConfig.enabled) {
         switch (shadowConfig.type) {
           case "blob":
-            this.refreshBlobShadow();
+            this.refreshBlobShadow(force);
             break;
           case "stencil":
-            this.refreshStencilShadow();
+            this.refreshStencilShadow(force);
             break;
           default:
             this.clearShadow();
@@ -167,33 +177,9 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
 
     protected async _draw(options: HandleEmptyObject<Token.DrawOptions> | undefined): Promise<void> {
       await super._draw(options);
-      this.refreshShadow();
+      this.refreshShadow(true);
     }
 
-    protected _refreshPosition(): void {
-      super._refreshPosition();
-      this.refreshShadow();
-    }
-
-    protected _refreshSize(): void {
-      super._refreshSize();
-      this.refreshShadow();
-    }
-
-    protected _refreshMesh(): void {
-      super._refreshMesh();
-      this.refreshShadow();
-    }
-
-    protected _refreshElevation(): void {
-      super._refreshElevation();
-      this.refreshShadow();
-    }
-
-    protected _refreshState(): void {
-      super._refreshState();
-      this.refreshShadow();
-    }
 
     protected destroySprite(sprite: PIXI.Sprite) {
       if (Array.isArray(sprite.filters)) {
@@ -204,6 +190,8 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       sprite.destroy();
     }
 
+
+
     protected _destroy(options: PIXI.IDestroyOptions | boolean | undefined): void {
       super._destroy(options);
 
@@ -211,4 +199,5 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       if (this.#stencilSprite) this.destroySprite(this.#stencilSprite);
     }
   }
+
 }
