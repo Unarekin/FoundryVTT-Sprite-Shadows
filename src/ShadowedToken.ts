@@ -93,10 +93,13 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       if (!(config.enabled && config.type === "stencil")) return;
 
       if (!this.mesh?.texture) return;
-      if (!this.#stencilSprite) {
+      if (!this.#stencilSprite || this.#stencilSprite.texture.baseTexture.resource.src !== this.texture?.baseTexture.resource.src) {
 
         const texture = this.mesh.texture.clone();
-        this.#stencilSprite = new PIXI.Sprite(texture);
+        const sprite = new PIXI.Sprite(texture);
+        if (this.#stencilSprite) this.#stencilSprite.destroy();;
+        this.#stencilSprite = sprite;
+
       }
 
       this.mesh.parent.addChild(this.#stencilSprite);
