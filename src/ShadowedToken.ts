@@ -67,7 +67,12 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
         this.#blobSprite.name = `BlobShadow.${this.id}`;
       }
 
-      this.mesh.parent.addChild(this.#blobSprite);
+
+
+      const index = this.mesh.parent.getChildIndex(this.mesh);
+      this.mesh.parent.addChildAt(this.#blobSprite, index);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (this.#blobSprite as any).sortLayer = this.mesh.sortLayer;
 
       const width = this.document.width * this.scene.grid.size;
       const height = this.document.height * this.scene.grid.size;
@@ -90,6 +95,7 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       this.#blobSprite.width = width + config.adjustments.width;
       this.#blobSprite.height = (height * 0.25) + config.adjustments.height;
       this.#blobSprite.visible = true;
+      this.#blobSprite.zIndex = this.mesh.zIndex;
     }
 
     protected refreshStencilShadow(force = false) {
@@ -110,10 +116,15 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
         const texture = this.mesh.texture.clone();
         const sprite = new PIXI.Sprite(texture);
         this.#stencilSprite = sprite;
-
+        this.#stencilSprite.name = `StencilShadow.${this.id}`;
       }
 
-      this.mesh.parent.addChild(this.#stencilSprite);
+      const index = this.mesh.parent.getChildIndex(this.mesh);
+      this.mesh.parent.addChildAt(this.#stencilSprite, index - 1);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (this.#stencilSprite as any).sortLayer = this.mesh.sortLayer;
+
       this.#stencilSprite.anchor.x = this.mesh.anchor.x;
       this.#stencilSprite.anchor.y = this.mesh.anchor.y;
       // this.#stencilSprite.anchor.x = 0.5;
@@ -123,13 +134,6 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       this.#stencilSprite.y = this.mesh.y;
       this.#stencilSprite.scale.x = this.mesh.scale.x;
       this.#stencilSprite.scale.y = this.mesh.scale.y;
-
-      // this.#stencilSprite.x = this.mesh.x + (config.adjustments?.x ?? 0);
-      // this.#stencilSprite.y = this.mesh.y + (this.mesh.height * this.mesh.anchor.y) + (config.adjustments?.y ?? 0);
-
-      // this.#stencilSprite.scale.set(this.mesh.scale.x, this.mesh.scale.y);
-      // if (config.adjustments?.width) this.#stencilSprite.width += config.adjustments.width
-      // if (config.adjustments?.height) this.#stencilSprite.height += config.adjustments.height;
 
       this.#stencilSprite.skew.x = config.skew;
 
@@ -142,16 +146,10 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       if (!Array.isArray(this.#stencilSprite.filters)) this.#stencilSprite.filters = [filter];
       else if (!this.#stencilSprite.filters.includes(filter)) this.#stencilSprite.filters.push(filter);
 
-      // // Check for Sprite Animations
-      // if (game?.modules?.get("sprite-animations")?.active && this.actor?.getFlag("sprite-animations", "meshAdjustments")?.enable) {
-      //   const adjustments = this.actor.getFlag("sprite-animations", "meshAdjustments");
-      //   this.#stencilSprite.x += adjustments.x;
-      //   this.#stencilSprite.y += adjustments.y;
-      // }
-
       filter.color = config.color;
       this.#stencilSprite.alpha = config.alpha;
       this.#stencilSprite.visible = true;
+      this.#stencilSprite.zIndex = this.mesh.zIndex;
     }
 
     public clearShadow() {
