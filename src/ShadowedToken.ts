@@ -89,7 +89,7 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
 
       this.#blobSprite.width = width + config.adjustments.width;
       this.#blobSprite.height = (height * 0.25) + config.adjustments.height;
-
+      this.#blobSprite.visible = true;
     }
 
     protected refreshStencilShadow(force = false) {
@@ -151,6 +151,7 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
 
       filter.color = config.color;
       this.#stencilSprite.alpha = config.alpha;
+      this.#stencilSprite.visible = true;
     }
 
     public clearShadow() {
@@ -160,6 +161,10 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
 
     public refreshShadow(force = false) {
       const shadowConfig = this.shadowConfiguration;
+
+      if (this.#blobSprite) this.#blobSprite.visible = false;
+      if (this.#stencilSprite) this.#stencilSprite.visible = false;
+
       if (shadowConfig.enabled) {
         switch (shadowConfig.type) {
           case "blob":
