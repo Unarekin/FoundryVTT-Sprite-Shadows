@@ -96,6 +96,12 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
         }
       }
 
+      const filter = ((this.#blobSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter();
+      if (!Array.isArray(this.#blobSprite.filters)) this.#blobSprite.filters = [filter];
+      else if (!this.#blobSprite.filters.includes(filter)) this.#blobSprite.filters.push(filter);
+
+      filter.color = config.color;
+
       this.#blobSprite.width = width + config.adjustments.width;
       this.#blobSprite.height = (height * 0.25) + config.adjustments.height;
       this.#blobSprite.visible = true;
