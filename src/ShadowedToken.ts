@@ -165,7 +165,7 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       if (this.#blobSprite) this.#blobSprite.visible = false;
       if (this.#stencilSprite) this.#stencilSprite.visible = false;
 
-      if (shadowConfig.enabled) {
+      if (shadowConfig.enabled && game?.settings?.settings.get(`${__MODULE_ID__}.enableShadows`) && game?.settings?.get(__MODULE_ID__, "enableShadows")) {
         switch (shadowConfig.type) {
           case "blob":
             this.refreshBlobShadow(force);

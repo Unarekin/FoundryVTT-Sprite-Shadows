@@ -54,7 +54,15 @@ Hooks.on("ready", () => {
     requiresReload: false,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onChange(value: boolean) {
-      /** TODO  */
+      if (!game.SpriteShadows?.TokenClass) return;
+
+      canvas?.scene?.tokens.forEach(token => {
+        if (token.object instanceof (game.SpriteShadows.TokenClass as any)) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          (token.object as any).refreshShadow(true);
+        }
+      })
+
     }
   });
 })
