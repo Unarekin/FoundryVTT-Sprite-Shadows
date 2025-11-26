@@ -1,6 +1,7 @@
 import { BlobShadowConfiguration, DeepPartial, ShadowConfiguration, ShadowType, StencilShadowConfiguration } from "types"
 import { TokenConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultStencilShadowConfiguration, DefaultShadowConfiguration } from "settings";
+import { TintFilter } from "filters";
 
 export function TokenConfigMixin(base: typeof foundry.applications.sheets.TokenConfig) {
   class ShadowedTokenConfig extends base {
@@ -101,6 +102,12 @@ export function TokenConfigMixin(base: typeof foundry.applications.sheets.TokenC
       return super._onSubmitForm(formConfig, event);
     }
 
+    private intValue(val: unknown, defaultValue: number): number {
+      const parsed = Number(val);
+      if (isNaN(parsed)) return defaultValue;
+      return parsed;
+    }
+
     async _onRender(context: TokenConfigContext, options: foundry.applications.api.DocumentSheetV2.RenderOptions) {
       await super._onRender(context, options);
       this.toggleConfigSections(context.shadows.config.type);
@@ -108,6 +115,96 @@ export function TokenConfigMixin(base: typeof foundry.applications.sheets.TokenC
       const typeSelect = this.element.querySelector(`select[name="sprite-shadows.type"]`);
       if (typeSelect instanceof HTMLSelectElement) {
         typeSelect.addEventListener("change", () => { this.toggleConfigSections(typeSelect.value as ShadowType); });
+      }
+
+      const originalAdjustment = { ...context.shadows.config.adjustments };
+      const adjustElements = {
+        x: this.element.querySelector(`[name="sprite-shadows.adjustments.x"]`) as HTMLInputElement | undefined,
+        y: this.element.querySelector(`[name="sprite-shadows.adjustments.y"]`) as HTMLInputElement | undefined,
+        width: this.element.querySelector(`[name="sprite-shadows.adjustments.width"]`) as HTMLInputElement | undefined,
+        height: this.element.querySelector(`[name="sprite-shadows.adjustments.height"]`) as HTMLInputElement | undefined
+      };
+
+      Object.values(adjustElements).forEach(elem => {
+        if (elem instanceof HTMLElement) {
+          elem.addEventListener("change", () => {
+            if (!this.document?.object) return;
+
+            const currentValues = {
+              x: this.intValue(adjustElements.x?.value, originalAdjustment.x),
+              y: this.intValue(adjustElements.y?.value, originalAdjustment.y),
+              width: this.intValue(adjustElements.width?.value, originalAdjustment.width),
+              height: this.intValue(adjustElements.height?.value, originalAdjustment.height)
+            }
+
+            const delta = {
+              x: currentValues.x - originalAdjustment.x,
+              y: currentValues.y - originalAdjustment.y,
+              width: currentValues.width - originalAdjustment.width,
+              height: currentValues.height - originalAdjustment.height
+            }
+
+            originalAdjustment.x = currentValues.x;
+            originalAdjustment.y = currentValues.y;
+            originalAdjustment.width = currentValues.width;
+            originalAdjustment.height = currentValues.height;
+
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const stencil = ((this.document.object as any).stencilSprite) as PIXI.Sprite | undefined;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const blob = ((this.document.object as any).blobSprite) as PIXI.Sprite | undefined;
+
+            if (stencil) {
+              stencil.x += delta.x;
+              stencil.y += delta.y;
+              stencil.width += delta.width;
+              stencil.height += delta.height;
+            }
+
+            if (blob) {
+              blob.x += delta.x;
+              blob.y += delta.y;
+              blob.width += delta.width;
+              blob.height += delta.height;
+            }
+          })
+        }
+      });
+
+
+      const colorElement = this.element.querySelector(`[name="sprite-shadows.color"]`);
+      if (colorElement instanceof foundry.applications.elements.HTMLColorPickerElement) {
+        colorElement.addEventListener("change", () => {
+          if (!this.document?.object) return;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          const stencil = ((this.document.object as any).stencilSprite) as PIXI.Sprite | undefined;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          const blob = ((this.document.object as any).blobSprite) as PIXI.Sprite | undefined;
+
+          if (stencil) {
+            const filter = stencil.filters?.find(filter => filter instanceof TintFilter);
+            if (filter) filter.color = new PIXI.Color(colorElement.value);
+          }
+
+          if (blob) {
+            const filter = blob.filters?.find(filter => filter instanceof TintFilter);
+            if (filter) filter.color = new PIXI.Color(colorElement.value);
+          }
+        })
+      }
+
+      const alphaElement = this.element.querySelector(`[name="sprite-shadows.alpha"]`);
+      if (alphaElement instanceof foundry.applications.elements.HTMLRangePickerElement) {
+        alphaElement.addEventListener("change", () => {
+          if (!this.document?.object) return;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          const stencil = ((this.document.object as any).stencilSprite) as PIXI.Sprite | undefined;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          const blob = ((this.document.object as any).blobSprite) as PIXI.Sprite | undefined;
+
+          if (stencil) stencil.alpha = alphaElement.value;
+          if (blob) blob.alpha = alphaElement.value;
+        });
       }
     }
 

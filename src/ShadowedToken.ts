@@ -10,6 +10,10 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
     #blobSprite: PIXI.Sprite | undefined = undefined;
     #stencilSprite: PIXI.Sprite | undefined = undefined;
 
+
+    public get blobSprite() { return this.#blobSprite; }
+    public get stencilSprite() { return this.#stencilSprite; }
+
     public readonly isShadowedToken = true;
 
     public get shadowConfiguration(): ShadowConfiguration {
@@ -158,6 +162,7 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
     }
 
     public refreshShadow(force = false) {
+      if (!force && this.sheet?.rendered) return;
       const shadowConfig = this.shadowConfiguration;
 
       if (this.#blobSprite) this.#blobSprite.visible = false;
