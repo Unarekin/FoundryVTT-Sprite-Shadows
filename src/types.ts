@@ -4,24 +4,15 @@ export type ShadowType = typeof ShadowTypes[number];
 export const BlobShapes = ["circle"] as const;
 export type BlobShape = typeof BlobShapes[number];
 
-export const BlobAlignments = ["bottom", "center"] as const;
-export type BlobAlignment = typeof BlobAlignments[number];
+export const ShadowAlignments = ["bottom", "center"] as const;
+export type ShadowAlignment = typeof ShadowAlignments[number];
 
 interface BaseShadowConfiguration {
   type: ShadowType;
   enabled: boolean;
-}
-
-export interface BlobShadowConfiguration extends BaseShadowConfiguration {
-  type: "blob";
   alpha: number;
   color: string;
-  blur: number;
-  shape: BlobShape;
-  adjustForElevation: boolean;
-  elevationIncrement: number;
-  alignment: BlobAlignment;
-  liftToken: boolean;
+  alignment: ShadowAlignment;
   adjustments: {
     x: number;
     y: number;
@@ -30,8 +21,18 @@ export interface BlobShadowConfiguration extends BaseShadowConfiguration {
   }
 }
 
+export interface BlobShadowConfiguration extends BaseShadowConfiguration {
+  type: "blob";
+  blur: number;
+  shape: BlobShape;
+  adjustForElevation: boolean;
+  elevationIncrement: number;
+  liftToken: boolean;
+}
+
 export interface StencilShadowConfiguration extends BaseShadowConfiguration {
   type: "stencil";
+  skew: number;
 }
 
 export type ShadowConfiguration = BlobShadowConfiguration | StencilShadowConfiguration;

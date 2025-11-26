@@ -31,4 +31,14 @@ declare global {
   interface Game {
     SpriteShadows: Record<string, unknown>;
   }
+
+  declare module '*.frag' {
+    const content: string;
+    export default content;
+  }
+
+  declare module '*.vert' {
+    const content: string;
+    export default content;
+  }
 }

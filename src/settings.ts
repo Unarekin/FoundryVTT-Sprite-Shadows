@@ -22,7 +22,17 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
 
 export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
   enabled: false,
-  type: "stencil"
+  type: "stencil",
+  color: "#000000",
+  alpha: 0.5,
+  skew: -0.75,
+  alignment: "bottom",
+  adjustments: {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0
+  }
 }
 
 export const DefaultShadowConfiguration: ShadowConfiguration = {

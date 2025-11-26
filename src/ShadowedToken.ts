@@ -2,11 +2,13 @@ import { LocalizedError } from "./errors";
 import { HandleEmptyObject } from "fvtt-types/utils"
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
 import { BlobShadowConfiguration, ShadowConfiguration, StencilShadowConfiguration } from "types";
+import { TintFilter } from "./filters";
 
 export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
   return class ShadowedToken extends base {
 
     #blobSprite: PIXI.Sprite | undefined = undefined;
+    #stencilSprite: PIXI.Sprite | undefined = undefined;
 
     public readonly isShadowedToken = true;
 
@@ -86,7 +88,35 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
     }
 
     protected refreshStencilShadow() {
-      /** Empty */
+
+      const config = this.shadowConfiguration;
+      if (!(config.enabled && config.type === "stencil")) return;
+
+      if (!this.mesh?.texture) return;
+      if (!this.#stencilSprite) {
+
+        const texture = this.mesh.texture.clone();
+        this.#stencilSprite = new PIXI.Sprite(texture);
+      }
+
+      this.mesh.parent.addChild(this.#stencilSprite);
+      this.#stencilSprite.anchor.x = 0.5;
+      this.#stencilSprite.anchor.y = 1;
+      this.#stencilSprite.x = this.mesh.x + (config.adjustments?.x ?? 0);
+      this.#stencilSprite.y = this.mesh.y + (this.mesh.height * this.mesh.anchor.y) + (config.adjustments?.y ?? 0);
+      const width = this.document.width * this.scene.grid.size;
+      const height = this.document.height * this.scene.grid.size;
+      this.#stencilSprite.width = width + (config.adjustments?.width ?? 0);
+      this.#stencilSprite.height = height + (config.adjustments?.height ?? 0);
+
+      this.#stencilSprite.skew.x = config.skew;
+
+      const filter = ((this.#stencilSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter();
+      if (!Array.isArray(this.#stencilSprite.filters)) this.#stencilSprite.filters = [filter];
+      else if (!this.#stencilSprite.filters.includes(filter)) this.#stencilSprite.filters.push(filter);
+
+      filter.color = config.color;
+      this.#stencilSprite.alpha = config.alpha;
     }
 
     public clearShadow() {
@@ -135,18 +165,20 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       this.refreshShadow();
     }
 
+    protected destroySprite(sprite: PIXI.Sprite) {
+      if (Array.isArray(sprite.filters)) {
+        const filters = [...sprite.filters];
+        sprite.filters = [];
+        filters.forEach(filter => { filter.destroy(); });
+      }
+      sprite.destroy();
+    }
+
     protected _destroy(options: PIXI.IDestroyOptions | boolean | undefined): void {
       super._destroy(options);
-      if (this.#blobSprite) {
-        if (Array.isArray(this.#blobSprite.filters)) {
-          const filters = [...this.#blobSprite.filters]
-          this.#blobSprite.filters = [];
-          for (const filter of filters)
-            filter.destroy();
-        }
 
-        this.#blobSprite.destroy();
-      }
+      if (this.#blobSprite) this.destroySprite(this.#blobSprite);
+      if (this.#stencilSprite) this.destroySprite(this.#stencilSprite);
     }
   }
 }

@@ -1,6 +1,5 @@
 import { TokenMixin } from "./ShadowedToken";
 
-game.SpriteShadows = {};
 
 Hooks.once("canvasReady", () => {
   // Initialize Pixi DevTools if we are a debug build
@@ -17,8 +16,9 @@ Hooks.once("init", () => {
   const ShadowedToken = TokenMixin(CONFIG.Token.objectClass);
   CONFIG.Token.objectClass = ShadowedToken;
 
-  if (game.SpriteShadows)
-    game.SpriteShadows.TokenClass = ShadowedToken;
+  game.SpriteShadows = {
+    TokenClass: ShadowedToken
+  };
 
 });
 
