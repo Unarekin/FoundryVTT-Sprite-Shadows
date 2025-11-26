@@ -1,0 +1,77 @@
+<div class="tab{{#if tab.active}} active{{/if}} sprite-shadows-config scrollable" data-group="sheet" data-tab="shadows" data-application-part="shadows">
+  {{#with shadows}}
+    <div class="form-group">
+      <label for="{{idPrefix}}-enable">{{localize "SPRITESHADOWS.SETTINGS.ENABLE.LABEL"}}</label>
+      <input type="checkbox" name="sprite-shadows.enabled" id="{{idPrefix}}-enable" {{checked config.enabled }}>
+      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ENABLE.HINT"}}</p>
+    </div>
+
+    <div class="form-group">
+      <label for="{{idPrefix}}-color">{{localize "SPRITESHADOWS.SETTINGS.COLOR.LABEL"}}</label>
+      <color-picker id="{{idPrefix}}-color" name="sprite-shadows.color" value="{{config.color}}"></color-picker>
+      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.COLOR.HINT"}}</p>
+    </div>
+
+    <div class="form-group">
+      <label for="{{idPrefix}}-alpha">{{localize "SPRITESHADOWS.SETTINGS.ALPHA.LABEL"}}</label>
+      <range-picker id="{{idPrefix}}-alpha" name="sprite-shadows.alpha" value="{{config.alpha}}" min="0" max="1" step=".01"></range-picker>
+      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ALPHA.HINT"}}</p>
+    </div>
+
+    <div class="form-group">
+      <label for="{{idPrefix}}-alignment">{{localize "SPRITESHADOWS.SETTINGS.ALIGNMENT.LABEL"}}</label>
+      <select id="{{idPrefix}}-alignment" name="sprite-shadows.alignment">
+        {{selectOptions alignmentSelect localize=true selected=config.alignment}}
+      </select>
+      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ALIGNMENT.HINT"}}</p>
+    </div>
+
+    <div class="form-group">
+      <label for="{{idPrefix}}-type">{{localize "SPRITESHADOWS.SETTINGS.TYPE.LABEL"}}</label>
+      <select id="{{idPrefix}}-type" name="sprite-shadows.type">
+        {{selectOptions typeSelect localize=true selected=config.type}}
+      </select>
+      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.TYPE.HINT"}}</p>
+    </div>
+
+    <section data-role="blob-shadow-config" style="display:none">
+      <fieldset>
+        <legend>{{localize "SPRITESHADOWS.SETTINGS.BLOB.LABEL"}}</legend>
+        <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.BLOB.HINT"}}</p>
+        {{> "modules/sprite-shadows/templates/BlobConfig.hbs" }}
+      </fieldset>
+    </section>
+
+    <section data-role="stencil-shadow-config" style="display:none">
+      <fieldset>
+        <legend>{{localize "SPRITESHADOWS.SETTINGS.STENCIL.LABEL"}}</legend>
+        <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.STENCIL.HINT"}}</p>
+        {{> "modules/sprite-shadows/templates/StencilConfig.hbs"}}
+      </fieldset>
+    </section>
+
+    <div class="form-group slim">
+      <label>{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.LABEL"}}</label>
+      <div class="form-fields">
+        <label for="{{idPrefix}}-adjustmentsX">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.X"}}</label>
+        <input type="number" step="1" value="{{config.adjustments.x}}" name="sprite-shadows.adjustments.x" id="{{idPrefix}}-adjustmentsX">
+
+        <label for="{{idPrefix}}-adjustmentsY">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.Y"}}</label>
+        <input type="number" step="1" value="{{config.adjustments.y}}" name="sprite-shadows.adjustments.y" id="{{idPrefix}}-adjustmentsY">
+      </div>
+
+    </div>
+    <div class="form-group slim">
+      <div class="form-fields">
+        <label for="{{idPrefix}}-adjustmentsWidth">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.WIDTH"}}</label>
+        <input type="number" step="1" value="{{config.adjustments.width}}" name="sprite-shadows.adjustments.width" id="{{idPrefix}}-adjustmentsWidth">
+
+        <label for="{{idPrefix}}-adjustmentsHeight">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.HEIGHT"}}</label>
+        <input type="number" step="1" value="{{config.adjustments.height}}" name="sprite-shadows.adjustments.height" id="{{idPrefix}}-adjustmentsHeight">
+      </div>
+
+      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.HINT"}}</p>
+    </div>
+
+  {{/with}}
+</div>

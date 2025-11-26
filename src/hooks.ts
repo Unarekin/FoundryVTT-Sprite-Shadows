@@ -1,4 +1,5 @@
 import { TokenMixin } from "./ShadowedToken";
+import { TokenConfigMixin } from "./applications";
 
 
 Hooks.once("canvasReady", () => {
@@ -25,7 +26,14 @@ Hooks.once("ready", () => {
   game?.canvas?.app?.ticker.add(() => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     canvas?.scene?.tokens.forEach(token => { (token.object as any).refreshShadow() });
-  })
+  });
+
+  const entries = Object.entries(CONFIG.Token.sheetClasses.base);
+  for (const [key, { cls }] of entries) {
+    const mixed = TokenConfigMixin(cls as typeof foundry.applications.sheets.TokenConfig);
+    CONFIG.Token.sheetClasses.base[key].cls = mixed as typeof foundry.applications.sheets.TokenConfig
+  }
+  CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as typeof foundry.applications.sheets.TokenConfig);
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

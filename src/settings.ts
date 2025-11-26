@@ -13,6 +13,7 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
   alignment: "bottom",
   liftToken: false,
   adjustments: {
+    enabled: false,
     x: 0,
     y: 0,
     width: 0,
@@ -28,6 +29,7 @@ export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
   skew: -0.75,
   alignment: "bottom",
   adjustments: {
+    enabled: false,
     x: 0,
     y: 0,
     width: 0,
