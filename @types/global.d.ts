@@ -12,6 +12,20 @@ declare module "fvtt-types/configuration" {
   interface FlagConfig {
     Actor: {
       [__MODULE_ID__]: ShadowConfiguration;
+      "sprite-animations": {
+        animations: ({
+          name: string;
+          src: string;
+          loop?: boolean;
+        })[],
+        meshAdjustments: {
+          enable: boolean;
+          height: number;
+          width: number;
+          x: number;
+          y: number;
+        }
+      }
     }
   }
 }

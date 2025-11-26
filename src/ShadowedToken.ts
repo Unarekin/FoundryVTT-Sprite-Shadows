@@ -93,30 +93,52 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
       if (!(config.enabled && config.type === "stencil")) return;
 
       if (!this.mesh?.texture) return;
-      if (!this.#stencilSprite || this.#stencilSprite.texture.baseTexture.resource.src !== this.texture?.baseTexture.resource.src) {
 
-        const texture = this.mesh.texture.clone();
-        const sprite = new PIXI.Sprite(texture);
-        if (this.#stencilSprite) this.#stencilSprite.destroy();;
-        this.#stencilSprite = sprite;
+      if (this.#stencilSprite) this.destroySprite(this.#stencilSprite);
 
-      }
+      // if (!this.#stencilSprite || this.#stencilSprite.texture.baseTexture.resource.src !== this.texture?.baseTexture.resource.src) {
+
+      const texture = this.mesh.texture.clone();
+      const sprite = new PIXI.Sprite(texture);
+      this.#stencilSprite = sprite;
+
+      // }
 
       this.mesh.parent.addChild(this.#stencilSprite);
-      this.#stencilSprite.anchor.x = 0.5;
-      this.#stencilSprite.anchor.y = 1;
-      this.#stencilSprite.x = this.mesh.x + (config.adjustments?.x ?? 0);
-      this.#stencilSprite.y = this.mesh.y + (this.mesh.height * this.mesh.anchor.y) + (config.adjustments?.y ?? 0);
-      const width = this.document.width * this.scene.grid.size;
-      const height = this.document.height * this.scene.grid.size;
-      this.#stencilSprite.width = width + (config.adjustments?.width ?? 0);
-      this.#stencilSprite.height = height + (config.adjustments?.height ?? 0);
+      this.#stencilSprite.anchor.x = this.mesh.anchor.x;
+      this.#stencilSprite.anchor.y = this.mesh.anchor.y;
+      // this.#stencilSprite.anchor.x = 0.5;
+      // this.#stencilSprite.anchor.y = 1;
+
+      this.#stencilSprite.x = this.mesh.x;
+      this.#stencilSprite.y = this.mesh.y;
+      this.#stencilSprite.scale.x = this.mesh.scale.x;
+      this.#stencilSprite.scale.y = this.mesh.scale.y;
+
+      // this.#stencilSprite.x = this.mesh.x + (config.adjustments?.x ?? 0);
+      // this.#stencilSprite.y = this.mesh.y + (this.mesh.height * this.mesh.anchor.y) + (config.adjustments?.y ?? 0);
+
+      // this.#stencilSprite.scale.set(this.mesh.scale.x, this.mesh.scale.y);
+      // if (config.adjustments?.width) this.#stencilSprite.width += config.adjustments.width
+      // if (config.adjustments?.height) this.#stencilSprite.height += config.adjustments.height;
 
       this.#stencilSprite.skew.x = config.skew;
+
+      if (config.adjustments?.x) this.#stencilSprite.x += config.adjustments.x;
+      if (config.adjustments?.y) this.#stencilSprite.y += config.adjustments.y;
+      if (config.adjustments?.width) this.#stencilSprite.width += config.adjustments.width
+      if (config.adjustments?.height) this.#stencilSprite.height += config.adjustments.height;
 
       const filter = ((this.#stencilSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter();
       if (!Array.isArray(this.#stencilSprite.filters)) this.#stencilSprite.filters = [filter];
       else if (!this.#stencilSprite.filters.includes(filter)) this.#stencilSprite.filters.push(filter);
+
+      // // Check for Sprite Animations
+      // if (game?.modules?.get("sprite-animations")?.active && this.actor?.getFlag("sprite-animations", "meshAdjustments")?.enable) {
+      //   const adjustments = this.actor.getFlag("sprite-animations", "meshAdjustments");
+      //   this.#stencilSprite.x += adjustments.x;
+      //   this.#stencilSprite.y += adjustments.y;
+      // }
 
       filter.color = config.color;
       this.#stencilSprite.alpha = config.alpha;
@@ -165,6 +187,11 @@ export function TokenMixin(base: typeof foundry.canvas.placeables.Token) {
 
     protected _refreshElevation(): void {
       super._refreshElevation();
+      this.refreshShadow();
+    }
+
+    protected _refreshState(): void {
+      super._refreshState();
       this.refreshShadow();
     }
 
