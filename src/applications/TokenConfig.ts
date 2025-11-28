@@ -1,0 +1,54 @@
+import { DeepPartial, ShadowConfiguration } from "types";
+import { ConfigMixin } from "./ConfigMixin";
+
+export function TokenConfigMixin<t extends typeof foundry.applications.sheets.TokenConfig>(base: t) {
+  class ShadowedTokenConfig extends ConfigMixin(base) {
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+    protected getActor(): Actor | undefined { return (this as any).actor; }
+    protected getFlags(): DeepPartial<ShadowConfiguration> | undefined { return this.getActor()?.flags[__MODULE_ID__]; }
+    protected getShadowedObject() { return (this as foundry.applications.sheets.TokenConfig).document.object ?? undefined }
+
+    protected setShadowConfiguration(config: DeepPartial<ShadowConfiguration>) {
+      const flags = this.parseFlagData(config);
+
+      const actor: Actor = this.getActor() ?? this.document.actor;
+      if (!(actor instanceof Actor)) return;
+
+      return actor.update({
+        flags: {
+          [__MODULE_ID__]: flags
+        }
+      });
+      return flags;
+    }
+  }
+
+  ShadowedTokenConfig.TABS.sheet.tabs.push({
+    id: "shadows",
+    icon: "fa-solid fa-lightbulb",
+    cssClass: ""
+  });
+
+  // Inject our configuration part before the footer
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  const parts = (base as any).PARTS as Record<string, foundry.applications.api.HandlebarsApplicationMixin.HandlebarsTemplatePart>;
+  const footer = parts.footer;
+  delete parts.footer;
+
+  foundry.utils.mergeObject(parts, {
+    shadows: {
+      template: `modules/${__MODULE_ID__}/templates/ShadowConfig.hbs`,
+      templates: [
+        `modules/${__MODULE_ID__}/templates/BlobConfig.hbs`,
+        `modules/${__MODULE_ID__}/templates/StencilConfig.hbs`
+      ]
+    },
+    footer
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  foundry.utils.mergeObject((base as any).PARTS ?? {}, parts);
+
+  return ShadowedTokenConfig
+}

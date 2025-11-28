@@ -1,0 +1,71 @@
+{
+  "SPRITESHADOWS": {
+    "SETTINGS": {
+      "ENABLE": {
+        "LABEL": "Enable Sprite Shadows",
+        "HINT": "Uncheck to turn off all sprite shadows."
+      },
+      "TYPE": {
+        "LABEL": "Shadow Type",
+        "BLOB": "Blob",
+        "STENCIL": "Stencil",
+        "HINT": "Toggle between blob and stencil shadow"
+      },
+      "BLOB": {
+        "LABEL": "Blob Shadow",
+        "HINT": "A simple, circular shadow placed below the token."
+      },
+      "STENCIL": {
+        "LABEL": "Stencil Shadow",
+        "HINT": "A faux-3d shadow based on the token's texture."
+      },
+      "COLOR": {
+        "LABEL": "Color",
+        "HINT": "Color of the shadow."
+      },
+      "ALPHA": {
+        "LABEL": "Alpha",
+        "HINT": "Opoacity of the shadow"
+      },
+      "ALIGNMENT": {
+        "LABEL": "Alignment",
+        "HINT": "Where to align the shadow relative to its token.",
+        "BOTTOM": "Bottom",
+        "CENTER": "Center"
+      },
+      "ADJUSTMENTS": {
+        "LABEL": "Adjustments",
+        "HINT": "Fine tune the position and size of the shadow.",
+        "X": "X",
+        "Y": "Y",
+        "WIDTH": "Width",
+        "HEIGHT": "Height"
+      },
+      "BLUR": {
+        "LABEL": "Blur",
+        "HINT": "Amount of blur"
+      },
+      "BLOBSHAPE": {
+        "LABEL": "Shadow Shape",
+        "HINT": "The shape of the blob",
+        "CIRCLE": "Circle"
+      },
+      "ELEVATIONADJUST": {
+        "LABEL": "Adjust for Elevation",
+        "HINT": "If enabled, will move the shadow based on the token's elevation."
+      },
+      "ELEVATIONINCREMENT": {
+        "LABEL": "Elevation Increment",
+        "HINT": "Increment by which the shadow will be moved when adjusting for token elevation"
+      },
+      "LIFTTOKEN": {
+        "LABEL": "Lift Token",
+        "HINT": "When enabled, will move the token instead of the shadow if Adjust for Elevation is also enabled."
+      },
+      "SKEW": {
+        "LABEL": "Skew Amount",
+        "HINT": "The amount by which to skew this shadow, to simulate projection angle."
+      }
+    }
+  }
+}
