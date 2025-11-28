@@ -1,6 +1,6 @@
 import { BlobShape, ShadowAlignment, ShadowConfiguration, ShadowType } from "types";
 
-export interface TokenConfigContext extends foundry.applications.api.ApplicationV2.RenderContext {
+export type ShadowConfigContext<t extends foundry.applications.api.ApplicationV2.RenderContext> = t & {
   shadows: {
     idPrefix: string;
     config: ShadowConfiguration;

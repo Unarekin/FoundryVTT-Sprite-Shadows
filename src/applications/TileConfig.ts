@@ -1,21 +1,15 @@
 import { DeepPartial, ShadowConfiguration } from "types";
 import { ConfigMixin } from "./ConfigMixin";
 
-export function TokenConfigMixin<t extends typeof foundry.applications.sheets.TokenConfig>(base: t) {
-  class ShadowedTokenConfig extends ConfigMixin(base) {
-
+export function TileConfigMixin<t extends typeof foundry.applications.sheets.TileConfig>(base: t) {
+  class ShadowedTileConfig extends ConfigMixin(base) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-    protected getActor(): Actor | undefined { return (this as any).actor; }
-    protected getFlags(): DeepPartial<ShadowConfiguration> | undefined { return this.getActor()?.flags[__MODULE_ID__]; }
-    protected getShadowedObject() { return (this as foundry.applications.sheets.TokenConfig).document.object ?? undefined }
+    protected getFlags(): DeepPartial<ShadowConfiguration> | undefined { return (this as any).document.flags[__MODULE_ID__]; }
+    protected getShadowedObject() { return this.document.object ?? undefined }
 
     protected setShadowConfiguration(config: DeepPartial<ShadowConfiguration>) {
       const flags = this.parseFlagData(config);
-
-      const actor: Actor = this.getActor() ?? this.document.actor;
-      if (!(actor instanceof Actor)) return;
-
-      return actor.update({
+      return this.document.update({
         flags: {
           [__MODULE_ID__]: flags
         }
@@ -24,7 +18,7 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
     }
   }
 
-  ShadowedTokenConfig.TABS.sheet.tabs.push({
+  ShadowedTileConfig.TABS.sheet.tabs.push({
     id: "shadows",
     icon: "fa-solid fa-lightbulb",
     cssClass: ""
@@ -50,5 +44,13 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   foundry.utils.mergeObject((base as any).PARTS ?? {}, parts);
 
-  return ShadowedTokenConfig
+  ((canvas?.scene?.tiles.contents ?? [])).forEach(tile => {
+    if (tile.sheet && !(tile.sheet instanceof ShadowedTileConfig)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      tile._sheet = new ShadowedTileConfig(tile.sheet.options);
+    }
+
+  })
+
+  return ShadowedTileConfig;
 }

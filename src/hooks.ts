@@ -1,5 +1,5 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin } from "./applications";
+import { TokenConfigMixin, TileConfigMixin } from "./applications";
 
 
 Hooks.once("canvasReady", () => {
@@ -13,6 +13,7 @@ Hooks.once("canvasReady", () => {
   }
 });
 
+
 Hooks.once("init", () => {
   const ShadowedToken = TokenMixin(CONFIG.Token.objectClass);
   CONFIG.Token.objectClass = ShadowedToken;
@@ -24,23 +25,24 @@ Hooks.once("init", () => {
     TokenClass: ShadowedToken,
     TileClass: ShadowedTile
   };
+
 });
 
-Hooks.once("ready", () => {
-  // game?.canvas?.app?.ticker.add(() => {
-  //   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  //   canvas?.scene?.tokens.forEach(token => { (token.object as any).refreshShadow() });
-  //   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  //   canvas?.scene?.tiles.forEach(tile => { (tile.object as any).refreshShadow(); });
-  // });
-
-  const entries = Object.entries(CONFIG.Token.sheetClasses.base);
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+function applyMixin(collection: Record<string, any>, mixin: Function) {
+  const entries = Object.entries(collection);
   for (const [key, { cls }] of entries) {
-    const mixed = TokenConfigMixin(cls as typeof foundry.applications.sheets.TokenConfig);
-    CONFIG.Token.sheetClasses.base[key].cls = mixed as typeof foundry.applications.sheets.TokenConfig
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+    const mixed = mixin(cls);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    collection[key].cls = mixed;
   }
-  CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as typeof foundry.applications.sheets.TokenConfig);
-});
+}
+
+Hooks.on("ready", () => {
+  applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
+  applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
+})
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 Hooks.on("updateActor", (actor: Actor, delta: Actor.UpdateData, options: Actor.Database.UpdateOptions, userId: string) => {

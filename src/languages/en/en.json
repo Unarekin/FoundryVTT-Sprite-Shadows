@@ -1,7 +1,12 @@
 {
   "TOKEN": {
     "TABS": {
-      "shadows": "Sprite Shadows"
+      "shadows": "Shadows"
+    }
+  },
+  "TILE": {
+    "TABS": {
+      "shadows": "Shadows"
     }
   }
 }
