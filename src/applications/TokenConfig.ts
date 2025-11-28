@@ -85,7 +85,6 @@ export function TokenConfigMixin(base: typeof foundry.applications.sheets.TokenC
       const formData = data["sprite-shadows"] as ShadowConfiguration;
 
       const config = this.parseFlagData(formData);
-      console.log("Parsed flag data:", config);
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const actor: Actor = (this as any).actor instanceof Actor ? (this as any).actor : this.document.actor;

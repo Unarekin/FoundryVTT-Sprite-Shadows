@@ -1,4 +1,4 @@
-import { TokenMixin } from "./ShadowedToken";
+import { TokenMixin, TileMixin } from "./placeables";
 import { TokenConfigMixin } from "./applications";
 
 
@@ -17,16 +17,22 @@ Hooks.once("init", () => {
   const ShadowedToken = TokenMixin(CONFIG.Token.objectClass);
   CONFIG.Token.objectClass = ShadowedToken;
 
+  const ShadowedTile = TileMixin(CONFIG.Tile.objectClass);
+  CONFIG.Tile.objectClass = ShadowedTile;
+
   game.SpriteShadows = {
-    TokenClass: ShadowedToken
+    TokenClass: ShadowedToken,
+    TileClass: ShadowedTile
   };
 });
 
 Hooks.once("ready", () => {
-  game?.canvas?.app?.ticker.add(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    canvas?.scene?.tokens.forEach(token => { (token.object as any).refreshShadow() });
-  });
+  // game?.canvas?.app?.ticker.add(() => {
+  //   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  //   canvas?.scene?.tokens.forEach(token => { (token.object as any).refreshShadow() });
+  //   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  //   canvas?.scene?.tiles.forEach(tile => { (tile.object as any).refreshShadow(); });
+  // });
 
   const entries = Object.entries(CONFIG.Token.sheetClasses.base);
   for (const [key, { cls }] of entries) {
@@ -49,5 +55,13 @@ Hooks.on("updateToken", (token: TokenDocument, delta: TokenDocument.UpdateData, 
   if (game.SpriteShadows?.TokenClass && token.object instanceof (game.SpriteShadows.TokenClass as any)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     (token.object as any).refreshShadow()
+  }
+});
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+Hooks.on("updateTile", (tile: TileDocument, delta: TileDocument.UpdateData, options: TileDocument.Database.UpdateOptions, userId: string) => {
+  if (game.SpriteShadows?.TileClass && tile.object instanceof (game.SpriteShadows.TileClass as any)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    (tile.object as any).refreshShadow();
   }
 })

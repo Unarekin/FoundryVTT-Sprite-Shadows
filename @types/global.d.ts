@@ -10,6 +10,9 @@ declare module '*.scss';
 
 declare module "fvtt-types/configuration" {
   interface FlagConfig {
+    TileDocument: {
+      [__MODULE_ID__]: ShadowConfiguration;
+    },
     Actor: {
       [__MODULE_ID__]: ShadowConfiguration;
       "sprite-animations": {
