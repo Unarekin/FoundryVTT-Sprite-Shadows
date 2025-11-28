@@ -185,10 +185,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         this.stencilSprite.name = `StencilShadow.${this.id}`;
       }
 
-      if (this.stencilSprite.parent !== mesh.parent) {
-        const index = mesh.parent.getChildIndex(mesh);
-        mesh.parent.addChildAt(this.stencilSprite, index - 1);
-      }
+      if (this.stencilSprite.parent !== mesh.parent)
+        mesh.parent.addChild(this.stencilSprite);
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (this.stencilSprite as any).sortLayer = mesh.sortLayer;
@@ -211,7 +209,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       filter.color = config.color ?? "#000000";
       this.stencilSprite.alpha = config.alpha;
       this.stencilSprite.visible = true;
-      this.stencilSprite.zIndex = mesh.zIndex;
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (this.stencilSprite as any).sort = mesh.sort;
+      this.stencilSprite.zIndex = mesh.zIndex - 1;
     }
 
     /**
@@ -263,6 +264,11 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       this.refreshShadow();
     }
 
+    protected _refreshState() {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      super._refreshState();
+      this.refreshShadow();
+    }
   }
 
   return ShadowedPlaceable;
