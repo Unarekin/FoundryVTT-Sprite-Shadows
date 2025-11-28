@@ -11,8 +11,8 @@ export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base:
     protected getSize() {
       const doc = this.getDocument();
       return {
-        width: doc.width * this.scene.grid.size,
-        height: doc.height * this.scene.grid.size
+        width: doc.width,
+        height: doc.height
       }
     }
   }

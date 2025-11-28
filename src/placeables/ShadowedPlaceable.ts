@@ -101,7 +101,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       switch (config.shape) {
         case "circle": {
           shadow.beginFill(config.color ?? 0x000000, 1);
-          shadow.drawEllipse(0, 0, size.width + (config.adjustments?.width ?? 0), (size.height * .25) + (config.adjustments?.height ?? 0));
+          shadow.drawEllipse(0, 0, size.width + (config.adjustments?.width ?? 0), size.height + (config.adjustments?.height ?? 0));
           shadow.endFill();
           shadow.filters = [new PIXI.BlurFilter(config.blur)];
           return canvas?.app?.renderer.generateTexture(shadow);
@@ -134,8 +134,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         this.blobSprite.name = `BlobShadow.${this.id}`;
       }
 
-      const index = mesh.parent.getChildIndex(mesh);
-      mesh.parent.addChildAt(this.blobSprite, index);
+      if (this.blobSprite.parent !== mesh.parent) {
+        const index = mesh.parent.getChildIndex(mesh);
+        mesh.parent.addChildAt(this.blobSprite, index);
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (this.blobSprite as any).sortLayer = mesh.sortLayer;
@@ -158,7 +160,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       filter.color = config.color ?? "#000000";
 
       this.blobSprite.width = mesh.width + (config.adjustments?.width ?? 0);
-      this.blobSprite.height = mesh.height + (config.adjustments?.height ?? 0);
+      this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (config.adjustments?.height ?? 0);
       this.blobSprite.zIndex = mesh.zIndex;
     }
     /**
@@ -183,8 +185,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         this.stencilSprite.name = `StencilShadow.${this.id}`;
       }
 
-      const index = mesh.parent.getChildIndex(mesh);
-      mesh.parent.addChildAt(this.stencilSprite, index - 1);
+      if (this.stencilSprite.parent !== mesh.parent) {
+        const index = mesh.parent.getChildIndex(mesh);
+        mesh.parent.addChildAt(this.stencilSprite, index - 1);
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (this.stencilSprite as any).sortLayer = mesh.sortLayer;
