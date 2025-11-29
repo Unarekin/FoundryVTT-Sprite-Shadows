@@ -14,23 +14,24 @@ export declare const BlobShapes: readonly ["circle"];
 export type BlobShape = typeof BlobShapes[number];
 export declare const ShadowAlignments: readonly ["bottom", "center"];
 export type ShadowAlignment = typeof ShadowAlignments[number];
+export interface MeshAdjustments {
+    enabled: boolean;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
 interface BaseShadowConfiguration {
     type: ShadowType;
     enabled: boolean;
     alpha: number;
     color: string;
     alignment: ShadowAlignment;
-    adjustments: {
-        enabled: boolean;
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
+    adjustments: MeshAdjustments;
+    blur: number;
 }
 export interface BlobShadowConfiguration extends BaseShadowConfiguration {
     type: "blob";
-    blur: number;
     shape: BlobShape;
     adjustForElevation: boolean;
     elevationIncrement: number;
