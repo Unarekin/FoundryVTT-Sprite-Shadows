@@ -50,5 +50,13 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   foundry.utils.mergeObject((base as any).PARTS ?? {}, parts);
 
+  ((canvas?.scene?.tokens.contents ?? [])).forEach(token => {
+    if (token.sheet && !(token.sheet instanceof ShadowedTokenConfig)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      token._sheet = new ShadowedTokenConfig(token.sheet.options);
+    }
+
+  })
+
   return ShadowedTokenConfig
 }
