@@ -45,11 +45,11 @@ interface BaseShadowConfiguration {
   color: string;
   alignment: ShadowAlignment;
   adjustments: MeshAdjustments;
+  blur: number;
 }
 
 export interface BlobShadowConfiguration extends BaseShadowConfiguration {
   type: "blob";
-  blur: number;
   shape: BlobShape;
   adjustForElevation: boolean;
   elevationIncrement: number;

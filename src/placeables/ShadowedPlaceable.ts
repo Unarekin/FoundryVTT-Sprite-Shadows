@@ -187,12 +187,15 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         }
       }
 
+      const blur = this.addFilter<PIXI.BlurFilter>(this.blobSprite, ((this.blobSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter)) ?? new PIXI.BlurFilter());
+      if (blur) blur.blur = config.blur;
+
       const filter = this.addFilter<TintFilter>(this.blobSprite, ((this.blobSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter());
       filter.color = config.color ?? "#000000";
 
       this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
       this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
-      this.blobSprite.zIndex = mesh.zIndex;
+      this.blobSprite.zIndex = mesh.zIndex - 1;
     }
     /**
      * Refreshes thes ize, position, etc. of this placeable's stencil shadow
@@ -240,6 +243,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       const filter = this.addFilter<TintFilter>(this.stencilSprite, ((this.stencilSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter());
       filter.color = config.color ?? "#000000";
+
+      const blur = this.addFilter<PIXI.BlurFilter>(this.stencilSprite, ((this.stencilSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter)) ?? new PIXI.BlurFilter());
+      if (blur) blur.blur = config.blur;
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if ((this.getDocument() as any).hidden) this.stencilSprite.alpha = 0;
       else this.stencilSprite.alpha = config.alpha;
