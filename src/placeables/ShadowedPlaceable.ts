@@ -1,4 +1,4 @@
-import { LocalizedError } from "errors/LocalizedError";
+import { LocalizedError } from "errors";
 import { TintFilter } from "filters";
 import { HandleEmptyObject } from "fvtt-types/utils";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration } from "settings";
@@ -148,9 +148,13 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       this.blobSprite.x = mesh.x + (config.adjustments?.x ?? 0) - ((config.adjustments?.width ?? 0) / 2);
       this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (config.adjustments?.y ?? 0) + ((config.adjustments?.width ?? 0) / 2);
 
+      mesh.y = this.y + this.scene.dimensions.sceneY;
+
       if (config.adjustForElevation) {
         if (config.liftToken) {
-          mesh.y -= ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
+          const liftAmount = ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
+          mesh.y -= liftAmount;
+          this.blobSprite.y += liftAmount;
         } else {
           this.blobSprite.y += ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
         }
