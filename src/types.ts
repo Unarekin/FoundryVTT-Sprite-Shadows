@@ -30,19 +30,21 @@ export type BlobShape = typeof BlobShapes[number];
 export const ShadowAlignments = ["bottom", "center"] as const;
 export type ShadowAlignment = typeof ShadowAlignments[number];
 
+export interface MeshAdjustments {
+  enabled: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface BaseShadowConfiguration {
   type: ShadowType;
   enabled: boolean;
   alpha: number;
   color: string;
   alignment: ShadowAlignment;
-  adjustments: {
-    enabled: boolean;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }
+  adjustments: MeshAdjustments;
 }
 
 export interface BlobShadowConfiguration extends BaseShadowConfiguration {

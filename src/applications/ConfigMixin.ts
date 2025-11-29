@@ -173,11 +173,14 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
             const stencil = shadowedObject.stencilSprite
             const blob = shadowedObject.blobSprite
 
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+            const adjustmentModifiers = ((this.document as any).object).getAdjustmentMultipliers() as { x: number, y: number, width: number, height: number };
+
             if (stencil) {
-              stencil.x += delta.x;
-              stencil.y += delta.y;
-              stencil.width += delta.width;
-              stencil.height += delta.height;
+              stencil.x += delta.x * adjustmentModifiers.x;
+              stencil.y += delta.y * adjustmentModifiers.y;
+              stencil.width += delta.width * adjustmentModifiers.width;
+              stencil.height += delta.height * adjustmentModifiers.height;
 
               stencil.alpha = currentValues.alpha;
 
