@@ -6,7 +6,7 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
   type: "blob",
   alpha: 1,
   color: "#000000",
-  blur: 5,
+  blur: 2,
   shape: "circle",
   adjustForElevation: false,
   elevationIncrement: 0,
@@ -27,6 +27,7 @@ export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
   color: "#000000",
   alpha: 0.5,
   skew: -0.75,
+  blur: 2,
   alignment: "bottom",
   adjustments: {
     enabled: false,
