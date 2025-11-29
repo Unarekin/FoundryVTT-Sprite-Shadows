@@ -2,7 +2,7 @@ import { LocalizedError } from "errors";
 import { TintFilter } from "filters";
 import { HandleEmptyObject } from "fvtt-types/utils";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration } from "settings";
-import { BlobShadowConfiguration, DeepPartial, ShadowConfiguration, StencilShadowConfiguration } from "types";
+import { BlobShadowConfiguration, DeepPartial, MeshAdjustments, ShadowConfiguration, StencilShadowConfiguration } from "types";
 
 interface PlaceableSize {
   width: number;
@@ -18,6 +18,27 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected abstract getDocument(): foundry.abstract.Document.Any;
     protected abstract getMesh(): foundry.canvas.primary.PrimarySpriteMesh | undefined;
     protected abstract getSize(): PlaceableSize;
+
+    protected getAdjustmentMultipliers(): { x: number, y: number, width: number, height: number } {
+      return {
+        x: 1,
+        y: 1,
+        width: 1,
+        height: 1
+      }
+    }
+
+    protected getAdjustments(): MeshAdjustments {
+      const adjustments = this.shadowConfiguration.adjustments;
+      const multipliers = this.getAdjustmentMultipliers();
+      return {
+        enabled: adjustments.enabled,
+        x: adjustments.x * multipliers.x,
+        y: adjustments.y * multipliers.y,
+        width: adjustments.width * multipliers.width,
+        height: adjustments.height * multipliers.height
+      }
+    }
 
     /**
      * The full configuration for this object's shadow
@@ -142,16 +163,19 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (this.blobSprite as any).sortLayer = mesh.sortLayer;
 
+      const adjustments = this.getAdjustments();
+
       this.blobSprite.visible = true;
       this.blobSprite.alpha = config.alpha;
       this.blobSprite.anchor.x = this.blobSprite.anchor.y = 0.5;
-      this.blobSprite.x = mesh.x + (config.adjustments?.x ?? 0) - ((config.adjustments?.width ?? 0) / 2);
-      this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (config.adjustments?.y ?? 0) + ((config.adjustments?.width ?? 0) / 2);
+      this.blobSprite.x = mesh.x + (adjustments?.x ?? 0) - ((adjustments?.width ?? 0) / 2);
+      this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (adjustments?.y ?? 0) + ((adjustments?.width ?? 0) / 2);
 
-      mesh.y = this.y + this.scene.dimensions.sceneY;
+
 
       if (config.adjustForElevation) {
         if (config.liftToken) {
+          mesh.y = this.y + this.scene.dimensions.sceneY;
           const liftAmount = ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
           mesh.y -= liftAmount;
           this.blobSprite.y += liftAmount;
@@ -163,8 +187,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const filter = this.addFilter<TintFilter>(this.blobSprite, ((this.blobSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter());
       filter.color = config.color ?? "#000000";
 
-      this.blobSprite.width = mesh.width + (config.adjustments?.width ?? 0);
-      this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (config.adjustments?.height ?? 0);
+      this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
+      this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
       this.blobSprite.zIndex = mesh.zIndex;
     }
     /**
@@ -204,10 +228,12 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       this.stencilSprite.scale.y = mesh.scale.y;
       this.stencilSprite.skew.x = config.skew ?? 0;
 
-      if (config.adjustments?.x) this.stencilSprite.x += config.adjustments.x;
-      if (config.adjustments?.y) this.stencilSprite.y += config.adjustments.y;
-      if (config.adjustments?.width) this.stencilSprite.width += config.adjustments.width;
-      if (config.adjustments?.height) this.stencilSprite.height += config.adjustments.height;
+      const adjustments = this.getAdjustments();
+
+      if (adjustments?.x) this.stencilSprite.x += adjustments.x;
+      if (adjustments?.y) this.stencilSprite.y += adjustments.y;
+      if (adjustments?.width) this.stencilSprite.width += adjustments.width;
+      if (adjustments?.height) this.stencilSprite.height += adjustments.height;
 
       const filter = this.addFilter<TintFilter>(this.stencilSprite, ((this.stencilSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter());
       filter.color = config.color ?? "#000000";
