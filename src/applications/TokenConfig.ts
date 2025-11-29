@@ -52,8 +52,13 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
   ((canvas?.scene?.tokens.contents ?? [])).forEach(token => {
     if (token.sheet && !(token.sheet instanceof ShadowedTokenConfig)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      token._sheet = new ShadowedTokenConfig(token.sheet.options);
+
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        token._sheet = new ShadowedTokenConfig(token.sheet.options);
+      } catch (err) {
+        console.warn(err);
+      }
     }
 
   })

@@ -42,6 +42,7 @@ function applyMixin(collection: Record<string, any>, mixin: Function) {
 Hooks.on("ready", () => {
   applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
   applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
+  CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as foundry.applications.sheets.TokenConfig);
 })
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
