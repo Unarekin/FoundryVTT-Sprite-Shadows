@@ -176,6 +176,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (this.blobSprite as any).sortLayer = mesh.sortLayer;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (this.blobSprite as any).elevation = mesh.elevation;
 
       const adjustments = this.getAdjustments();
 
@@ -238,6 +240,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (this.stencilSprite as any).sortLayer = mesh.sortLayer;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (this.stencilSprite as any).elevation = mesh.elevation;
 
       this.stencilSprite.anchor.x = mesh.anchor.x;
       this.stencilSprite.anchor.y = mesh.anchor.y;
