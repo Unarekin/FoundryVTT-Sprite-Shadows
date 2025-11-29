@@ -122,10 +122,24 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       switch (config.shape) {
         case "circle": {
           shadow.beginFill(config.color ?? 0x000000, 1);
-          shadow.drawEllipse(0, 0, size.width + (config.adjustments?.width ?? 0), size.height + (config.adjustments?.height ?? 0));
+          const width = size.width + (config.adjustments?.width ?? 0);
+          const height = size.height + (config.adjustments?.height ?? 0);
+          shadow.drawEllipse(0, 0, width, height);
           shadow.endFill();
           shadow.filters = [new PIXI.BlurFilter(config.blur)];
-          return canvas?.app?.renderer.generateTexture(shadow);
+
+          const container = new PIXI.Container();
+          container.addChild(shadow);
+          shadow.x = shadow.y = config.blur;
+
+          const padding = new PIXI.Graphics();
+          padding.beginFill("transparent")
+          padding.drawRect(0, 0, width, height);
+          container.addChild(padding);
+          padding.x = padding.y = config.blur * 2;
+          padding.alpha = 0;
+
+          return canvas?.app?.renderer.generateTexture(container);
         }
       }
       throw new LocalizedError("TEXTUREGEN");
