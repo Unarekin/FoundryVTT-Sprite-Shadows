@@ -166,7 +166,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const adjustments = this.getAdjustments();
 
       this.blobSprite.visible = true;
-      this.blobSprite.alpha = config.alpha;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if ((this.getDocument() as any).hidden) this.blobSprite.alpha = 0;
+      else this.blobSprite.alpha = config.alpha;
+
       this.blobSprite.anchor.x = this.blobSprite.anchor.y = 0.5;
       this.blobSprite.x = mesh.x + (adjustments?.x ?? 0) - ((adjustments?.width ?? 0) / 2);
       this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (adjustments?.y ?? 0) + ((adjustments?.width ?? 0) / 2);
@@ -237,7 +240,9 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       const filter = this.addFilter<TintFilter>(this.stencilSprite, ((this.stencilSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter());
       filter.color = config.color ?? "#000000";
-      this.stencilSprite.alpha = config.alpha;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if ((this.getDocument() as any).hidden) this.stencilSprite.alpha = 0;
+      else this.stencilSprite.alpha = config.alpha;
       this.stencilSprite.visible = true;
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
