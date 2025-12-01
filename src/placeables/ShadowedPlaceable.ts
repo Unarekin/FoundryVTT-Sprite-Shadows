@@ -9,6 +9,11 @@ interface PlaceableSize {
   height: number;
 }
 
+interface FastFlipSettings {
+  tileMirrorVertical?: boolean;
+  tileMirrorHorizontal?: boolean;
+}
+
 export function PlaceableMixin<t extends typeof foundry.canvas.placeables.PlaceableObject>(base: t) {
   abstract class ShadowedPlaceable extends base {
     protected blobSprite: PIXI.Sprite | undefined = undefined;
@@ -18,6 +23,30 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected abstract getDocument(): foundry.abstract.Document.Any;
     protected abstract getMesh(): foundry.canvas.primary.PrimarySpriteMesh | undefined;
     protected abstract getSize(): PlaceableSize;
+
+    protected getModifiedScale(): { x: number, y: number } {
+      const scale = this.getMesh()?.scale ?? { x: 1, y: 1 };
+
+      const newScale = {
+        x: scale.x,
+        y: scale.y
+      }
+
+      // Account for the Fast Flip module, which does not use the object's scale to handle flipping
+      if (game?.modules?.get("fast-flip")?.active) {
+        const fastFlip: FastFlipSettings = {
+          tileMirrorHorizontal: false,
+          tileMirrorVertical: false,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          ...((this.document.flags as any)["fast-flip"] as FastFlipSettings ?? {})
+        }
+
+        if (fastFlip.tileMirrorHorizontal) newScale.x *= -1;
+        if (fastFlip.tileMirrorVertical) newScale.y *= -1;
+      }
+
+      return newScale;
+    }
 
     protected getAdjustmentMultipliers(): { x: number, y: number, width: number, height: number } {
       return {
@@ -248,8 +277,9 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       this.stencilSprite.x = mesh.x;
       this.stencilSprite.y = mesh.y;
-      this.stencilSprite.scale.x = mesh.scale.x;
-      this.stencilSprite.scale.y = mesh.scale.y;
+      const scale = this.getModifiedScale();
+      this.stencilSprite.scale.x = scale.x;
+      this.stencilSprite.scale.y = scale.y;
       this.stencilSprite.skew.x = config.skew ?? 0;
 
       const adjustments = this.getAdjustments();
