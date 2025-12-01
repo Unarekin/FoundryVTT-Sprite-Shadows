@@ -1,1 +1,2 @@
-export * from './TintFilter';
+export * from './CustomFilter';
+export * from './Tint';
