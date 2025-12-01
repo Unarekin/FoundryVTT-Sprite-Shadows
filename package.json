@@ -1,7 +1,7 @@
 {
-  "name": "foundryvtt-module-template",
-  "version": "1.0.1",
-  "description": "",
+  "name": "foundryvtt-sprite-shadows",
+  "version": "1.0.2",
+  "description": "A module for FoundryVTT to add some options for different types of shadows for tokens and tiles.",
   "main": "dist/module.js",
   "scripts": {
     "build": "node build.mjs",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Unarekin/FoundryVTT-Module-Template.git"
+    "url": "git+https://github.com/Unarekin/FoundryVTT-Sprite-Shadows.git"
   },
   "keywords": [],
   "author": "",
@@ -19,9 +19,9 @@
   "type": "commonjs",
   "types": "./types/module.d.ts",
   "bugs": {
-    "url": "https://github.com/Unarekin/FoundryVTT-Module-Template/issues"
+    "url": "https://github.com/Unarekin/FoundryVTT-Sprite-Shadows/issues"
   },
-  "homepage": "https://github.com/Unarekin/FoundryVTT-Module-Template#readme",
+  "homepage": "https://github.com/Unarekin/FoundryVTT-Sprite-Shadows",
   "devDependencies": {
     "@eslint/js": "^9.11.0",
     "@foundryvtt/foundryvtt-cli": "^1.1.0",

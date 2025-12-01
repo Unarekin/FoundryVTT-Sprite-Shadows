@@ -9,6 +9,11 @@ interface PlaceableSize {
   height: number;
 }
 
+interface FastFlipSettings {
+  tileMirrorVertical?: boolean;
+  tileMirrorHorizontal?: boolean;
+}
+
 export function PlaceableMixin<t extends typeof foundry.canvas.placeables.PlaceableObject>(base: t) {
   abstract class ShadowedPlaceable extends base {
     protected blobSprite: PIXI.Sprite | undefined = undefined;
@@ -18,6 +23,30 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected abstract getDocument(): foundry.abstract.Document.Any;
     protected abstract getMesh(): foundry.canvas.primary.PrimarySpriteMesh | undefined;
     protected abstract getSize(): PlaceableSize;
+
+    protected getModifiedScale(): { x: number, y: number } {
+      const scale = this.getMesh()?.scale ?? { x: 1, y: 1 };
+
+      const newScale = {
+        x: scale.x,
+        y: scale.y
+      }
+
+      // Account for the Fast Flip module, which does not use the object's scale to handle flipping
+      if (game?.modules?.get("fast-flip")?.active) {
+        const fastFlip: FastFlipSettings = {
+          tileMirrorHorizontal: false,
+          tileMirrorVertical: false,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          ...((this.document.flags as any)["fast-flip"] as FastFlipSettings ?? {})
+        }
+
+        if (fastFlip.tileMirrorHorizontal) newScale.x *= -1;
+        if (fastFlip.tileMirrorVertical) newScale.y *= -1;
+      }
+
+      return newScale;
+    }
 
     protected getAdjustmentMultipliers(): { x: number, y: number, width: number, height: number } {
       return {
@@ -203,10 +232,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         }
       }
 
-      const blur = this.addFilter<PIXI.BlurFilter>(this.blobSprite, ((this.blobSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter)) ?? new PIXI.BlurFilter());
-      if (blur) blur.blur = config.blur;
+      const blur = (this.blobSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter) ?? this.addFilter<PIXI.BlurFilter>(this.blobSprite, new PIXI.BlurFilter());
+      blur.blur = config.blur;
 
-      const filter = this.addFilter<TintFilter>(this.blobSprite, ((this.blobSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter());
+      const filter = (this.blobSprite.filters ?? []).find(filter => filter instanceof TintFilter) ?? this.addFilter<TintFilter>(this.blobSprite, new TintFilter());
       filter.color = config.color ?? "#000000";
 
       this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
@@ -248,8 +277,9 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       this.stencilSprite.x = mesh.x;
       this.stencilSprite.y = mesh.y;
-      this.stencilSprite.scale.x = mesh.scale.x;
-      this.stencilSprite.scale.y = mesh.scale.y;
+      const scale = this.getModifiedScale();
+      this.stencilSprite.scale.x = scale.x;
+      this.stencilSprite.scale.y = scale.y;
       this.stencilSprite.skew.x = config.skew ?? 0;
 
       const adjustments = this.getAdjustments();
@@ -259,11 +289,11 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       if (adjustments?.width) this.stencilSprite.width += adjustments.width;
       if (adjustments?.height) this.stencilSprite.height += adjustments.height;
 
-      const filter = this.addFilter<TintFilter>(this.stencilSprite, ((this.stencilSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter());
-      filter.color = config.color ?? "#000000";
+      const blur = (this.stencilSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter) ?? this.addFilter<PIXI.BlurFilter>(this.stencilSprite, new PIXI.BlurFilter());
+      blur.blur = config.blur;
 
-      const blur = this.addFilter<PIXI.BlurFilter>(this.stencilSprite, ((this.stencilSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter)) ?? new PIXI.BlurFilter());
-      if (blur) blur.blur = config.blur;
+      const filter = (this.stencilSprite.filters ?? []).find(filter => filter instanceof TintFilter) ?? this.addFilter<TintFilter>(this.stencilSprite, new TintFilter());
+      filter.color = config.color ?? "#000000";
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if ((this.getDocument() as any).hidden) this.stencilSprite.alpha = 0;
