@@ -1,5 +1,6 @@
 import { TokenMixin, TileMixin } from "./placeables";
 import { TokenConfigMixin, TileConfigMixin } from "./applications";
+import { TintFilter } from "./filters";
 
 
 Hooks.once("canvasReady", () => {
@@ -23,7 +24,10 @@ Hooks.once("init", () => {
 
   game.SpriteShadows = {
     TokenClass: ShadowedToken,
-    TileClass: ShadowedTile
+    TileClass: ShadowedTile,
+    filters: {
+      TintFilter
+    }
   };
 
 });

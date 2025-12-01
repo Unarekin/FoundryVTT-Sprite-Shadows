@@ -203,10 +203,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         }
       }
 
-      const blur = this.addFilter<PIXI.BlurFilter>(this.blobSprite, ((this.blobSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter)) ?? new PIXI.BlurFilter());
-      if (blur) blur.blur = config.blur;
+      const blur = (this.blobSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter) ?? this.addFilter<PIXI.BlurFilter>(this.blobSprite, new PIXI.BlurFilter());
+      blur.blur = config.blur;
 
-      const filter = this.addFilter<TintFilter>(this.blobSprite, ((this.blobSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter());
+      const filter = (this.blobSprite.filters ?? []).find(filter => filter instanceof TintFilter) ?? this.addFilter<TintFilter>(this.blobSprite, new TintFilter());
       filter.color = config.color ?? "#000000";
 
       this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
@@ -259,11 +259,11 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       if (adjustments?.width) this.stencilSprite.width += adjustments.width;
       if (adjustments?.height) this.stencilSprite.height += adjustments.height;
 
-      const filter = this.addFilter<TintFilter>(this.stencilSprite, ((this.stencilSprite.filters ?? []).find(filter => filter instanceof TintFilter)) ?? new TintFilter());
-      filter.color = config.color ?? "#000000";
+      const blur = (this.stencilSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter) ?? this.addFilter<PIXI.BlurFilter>(this.stencilSprite, new PIXI.BlurFilter());
+      blur.blur = config.blur;
 
-      const blur = this.addFilter<PIXI.BlurFilter>(this.stencilSprite, ((this.stencilSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter)) ?? new PIXI.BlurFilter());
-      if (blur) blur.blur = config.blur;
+      const filter = (this.stencilSprite.filters ?? []).find(filter => filter instanceof TintFilter) ?? this.addFilter<TintFilter>(this.stencilSprite, new TintFilter());
+      filter.color = config.color ?? "#000000";
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if ((this.getDocument() as any).hidden) this.stencilSprite.alpha = 0;
