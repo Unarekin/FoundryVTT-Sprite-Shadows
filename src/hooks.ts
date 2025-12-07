@@ -1,5 +1,5 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin, TileConfigMixin } from "./applications";
+import { TokenConfigMixin, TileConfigMixin, TokenConfigMixinV1, TileConfigMixinV1 } from "./applications";
 import { TintFilter } from "./filters";
 
 
@@ -44,9 +44,15 @@ function applyMixin(collection: Record<string, any>, mixin: Function) {
 }
 
 Hooks.on("ready", () => {
-  applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
-  applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
-  CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as foundry.applications.sheets.TokenConfig);
+  if (game.release?.isNewer("13")) {
+    applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
+    applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
+    CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as foundry.applications.sheets.TokenConfig);
+  } else {
+    applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixinV1);
+    applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixinV1);
+    CONFIG.Token.prototypeSheetClass = TokenConfigMixinV1(CONFIG.Token.prototypeSheetClass as foundry.appv1.sheets.DocumentSheet);
+  }
 })
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

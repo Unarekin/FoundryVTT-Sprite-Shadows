@@ -1,4 +1,4 @@
-<div class="tab{{#if tab.active}} active{{/if}} sprite-shadows-config scrollable" data-group="sheet" data-tab="shadows" data-application-part="shadows">
+<div class="tab{{#if tab.active}} active{{/if}} sprite-shadows-config scrollable" {{#unless omitGroup}}data-group="{{#if v1}}main{{else}}sheet{{/if}}"{{/unless}} data-tab="shadows" data-application-part="shadows">
   {{#with shadows}}
     <div class="form-group">
       <label for="{{idPrefix}}-enable">{{localize "SPRITESHADOWS.SETTINGS.ENABLE.LABEL"}}</label>
