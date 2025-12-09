@@ -1,7 +1,7 @@
 import { LocalizedError } from "errors";
 import { TintFilter } from "filters";
 import { HandleEmptyObject } from "fvtt-types/utils";
-import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration } from "settings";
+import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
 import { BlobShadowConfiguration, DeepPartial, MeshAdjustments, ShadowConfiguration, StencilShadowConfiguration } from "types";
 
 interface PlaceableSize {
@@ -80,7 +80,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       switch (flags.type) {
         case "stencil":
           return foundry.utils.mergeObject(
-            foundry.utils.deepClone(DefaultBlobShadowConfiguration),
+            foundry.utils.deepClone(DefaultStencilShadowConfiguration),
             foundry.utils.deepClone(flags as StencilShadowConfiguration)
           )
         case "blob":
@@ -259,7 +259,9 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       if (!this.stencilSprite) {
         // (Re-)create
-        const texture = mesh.texture.clone();
+
+        const texture = !(config.useImage && config.image) ? mesh.texture.clone() : PIXI.Texture.from(config.image);
+
         this.stencilSprite = new PIXI.Sprite(texture);
         this.stencilSprite.name = `StencilShadow.${this.id}`;
       }

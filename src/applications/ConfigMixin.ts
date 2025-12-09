@@ -204,6 +204,16 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       });
 
 
+      const useImage = this.element.querySelector(`[name="sprite-shadows.useImage"]`);
+      if (useImage instanceof HTMLInputElement) {
+        if (useImage.checked) this.showElements(`[data-role="stencil-image-config"]`);
+        else this.hideElements(`[data-role="stencil-image-config"]`);
+
+        useImage.addEventListener("change", () => {
+          if (useImage.checked) this.showElements(`[data-role="stencil-image-config"]`);
+          else this.hideElements(`[data-role="stencil-image-config"]`);
+        })
+      }
 
     }
   }

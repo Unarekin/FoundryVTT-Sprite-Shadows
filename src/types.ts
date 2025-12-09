@@ -59,6 +59,8 @@ export interface BlobShadowConfiguration extends BaseShadowConfiguration {
 export interface StencilShadowConfiguration extends BaseShadowConfiguration {
   type: "stencil";
   skew: number;
+  useImage: boolean;
+  image: string;
 }
 
 export type ShadowConfiguration = BlobShadowConfiguration | StencilShadowConfiguration;

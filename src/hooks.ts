@@ -59,7 +59,7 @@ Hooks.on("ready", () => {
 Hooks.on("updateActor", (actor: Actor, delta: Actor.UpdateData, options: Actor.Database.UpdateOptions, userId: string) => {
   if (game.SpriteShadows?.TokenClass && actor.token?.object instanceof (game.SpriteShadows.TokenClass as any)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    (actor.token.object as any).refreshShadow()
+    (actor.token.object as any).refreshShadow(true)
   }
 });
 
@@ -75,6 +75,6 @@ Hooks.on("updateToken", (token: TokenDocument, delta: TokenDocument.UpdateData, 
 Hooks.on("updateTile", (tile: TileDocument, delta: TileDocument.UpdateData, options: TileDocument.Database.UpdateOptions, userId: string) => {
   if (game.SpriteShadows?.TileClass && tile.object instanceof (game.SpriteShadows.TileClass as any)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    (tile.object as any).refreshShadow();
+    (tile.object as any).refreshShadow(true);
   }
 })

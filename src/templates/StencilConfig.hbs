@@ -2,7 +2,19 @@
   <div class="form-group">
     <label for="{{idPrefix}}-skew">{{localize "SPRITESHADOWS.SETTINGS.SKEW.LABEL"}}</label>
     <input type="number" id="{{idPrefix}}-skew" name="sprite-shadows.skew" step=".01" placeholder="0" value="{{config.skew}}">
-
     <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.SKEW.HINT"}}</p>
   </div>
+
+  <div class="form-group">
+    <label for="{{idPrefix}}-useImage">{{localize "SPRITESHADOWS.SETTINGS.USEIMAGE.LABEL"}}</label>
+    <input type="checkbox" id="{{idPrefix}}-useImage" name="sprite-shadows.useImage" {{checked config.useImage}}>
+    <p class="hint">{{{localize "SPRITESHADOWS.SETTINGS.USEIMAGE.HINT"}}}</p>
+  </div>
+
+  <div class="form-group" data-role="stencil-image-config" style="display:none">
+    <label for="{{idPrefix}}-image">{{localize "SPRITESHADOWS.SETTINGS.STENCILIMAGE.LABEL"}}</label>
+    <file-picker type="image/video" id="{{idPrefix}}-image" name="sprite-shadows.image" value="{{config.image}}"></file-picker>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.STENCILIMAGE.HINT"}}</p>
+  </div>
+
 </section>

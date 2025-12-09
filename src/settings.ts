@@ -28,6 +28,8 @@ export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
   alpha: 0.5,
   skew: -0.75,
   blur: 2,
+  useImage: false,
+  image: "",
   alignment: "bottom",
   adjustments: {
     enabled: false,

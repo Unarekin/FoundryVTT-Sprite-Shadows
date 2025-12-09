@@ -127,6 +127,16 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         typeSelect.addEventListener("change", () => { this.toggleConfigSection(typeSelect.value as ShadowType); });
 
 
+      const useImage = elem.querySelector(`[name="sprite-shadows.useImage"]`);
+      if (useImage instanceof HTMLInputElement) {
+        if (useImage.checked) this.showElements(`[data-role="stencil-image-config"]`);
+        else this.hideElements(`[data-role="stencil-image-config"]`);
+
+        useImage.addEventListener("change", () => {
+          if (useImage.checked) this.showElements(`[data-role="stencil-image-config"]`);
+          else this.hideElements(`[data-role="stencil-image-config"]`);
+        })
+      }
     }
 
     async _renderInner(data: ReturnType<this["getData"]>): Promise<JQuery<HTMLElement>> {

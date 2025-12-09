@@ -50,6 +50,14 @@
         "HINT": "The shape of the blob",
         "CIRCLE": "Circle"
       },
+      "USEIMAGE": {
+        "LABEL": "Use Image for Shape",
+        "HINT": "When configured, will use a separate image for the shape of the stencil shadow.\nNote: If you are using the <a href='https://foundryvtt.com/packages/sprite-animations'>Sprite Animations</a> module, this setting will disable integration with it."
+      },
+      "STENCILIMAGE": {
+        "LABEL": "Image",
+        "HINT": "The image to use for the shape of the stencil shadow."
+      },
       "ELEVATIONADJUST": {
         "LABEL": "Adjust for Elevation",
         "HINT": "If enabled, will move the shadow based on the token's elevation."
