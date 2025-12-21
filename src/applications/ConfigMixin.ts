@@ -85,7 +85,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (this.dragAdjustments.width)
         this.applyDragAdjustment(this.dragAdjustments.width, e.movementX);
       if (this.dragAdjustments.height)
-        this.applyDragAdjustment(this.dragAdjustments.height, e.movementY);
+        this.applyDragAdjustment(this.dragAdjustments.height, -e.movementY);
     }).bind(this);
 
     protected async _onSubmitForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event | SubmitEvent): Promise<void> {
