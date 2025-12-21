@@ -275,10 +275,13 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       (this.stencilSprite as any).elevation = mesh.elevation;
 
       this.stencilSprite.anchor.x = mesh.anchor.x;
-      this.stencilSprite.anchor.y = mesh.anchor.y;
+      this.stencilSprite.anchor.y = config.alignment === "bottom" ? 1 : 0.5;
 
       this.stencilSprite.x = mesh.x;
-      this.stencilSprite.y = mesh.y;
+      if (config.alignment === "bottom")
+        this.stencilSprite.y = mesh.y + (mesh.height * (1 - mesh.anchor.y));
+      else
+        this.stencilSprite.y = mesh.y;
       const scale = this.getModifiedScale();
       this.stencilSprite.scale.x = scale.x;
       this.stencilSprite.scale.y = scale.y;
