@@ -13,6 +13,13 @@ interface ShadowedObject {
 export function ConfigMixin<Document extends foundry.abstract.Document.Any = foundry.abstract.Document.Any, Context extends foundry.applications.api.ApplicationV2.RenderContext = foundry.applications.api.ApplicationV2.RenderContext, Config extends foundry.applications.api.DocumentSheetV2.Configuration<Document> = foundry.applications.api.DocumentSheetV2.Configuration<Document>, Options extends foundry.applications.api.DocumentSheetV2.RenderOptions = foundry.applications.api.DocumentSheetV2.RenderOptions>(base: typeof foundry.applications.api.DocumentSheetV2<Document, Context, Config, Options>) {
   abstract class ShadowedConfig extends base {
 
+    protected dragAdjustments = {
+      x: "",
+      y: "",
+      width: "",
+      height: ""
+    };
+
     protected abstract getFlags(): DeepPartial<ShadowConfiguration> | undefined;
     protected abstract getShadowedObject(): ShadowedObject | undefined;
 
@@ -55,6 +62,32 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       return defaultValue;
     }
 
+
+
+    protected _dragAdjustMouseUp = (() => {
+      this.dragAdjustments.x = this.dragAdjustments.y = this.dragAdjustments.width = this.dragAdjustments.height = "";
+    }).bind(this);
+
+
+    protected applyDragAdjustment(selector: string, delta: number) {
+      const elem = this.element.querySelector(selector);
+      if (elem instanceof HTMLInputElement) {
+        elem.value = (parseFloat(elem.value) + delta).toString();
+        elem.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+
+    protected _dragAdjustMouseMove = ((e: MouseEvent) => {
+      if (this.dragAdjustments.x)
+        this.applyDragAdjustment(this.dragAdjustments.x, e.movementX);
+      if (this.dragAdjustments.y)
+        this.applyDragAdjustment(this.dragAdjustments.y, e.movementY);
+      if (this.dragAdjustments.width)
+        this.applyDragAdjustment(this.dragAdjustments.width, e.movementX);
+      if (this.dragAdjustments.height)
+        this.applyDragAdjustment(this.dragAdjustments.height, e.movementY);
+    }).bind(this);
+
     protected async _onSubmitForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event | SubmitEvent): Promise<void> {
       // if (!this.form) return super._onSubmitForm(formConfig, event);
       const data = foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as Record<string, unknown>;
@@ -80,7 +113,9 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         },
         blobShapeSelect: {
           circle: "SPRITESHADOWS.SETTINGS.BLOBSHAPE.CIRCLE"
-        }
+        },
+        adjustPosTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`,
+        adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
       }
       return context as unknown as ShadowConfigContext<Context>
     }
@@ -116,6 +151,19 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       return parsed;
     }
 
+    _onClose(options: any) {
+      window.removeEventListener("mousemove", this._dragAdjustMouseMove);
+      window.removeEventListener("mouseup", this._dragAdjustMouseUp)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      super._onClose(options);
+    }
+
+    async _onFirstRender(context: DeepPartial<ShadowConfigContext<Context>>, options: Options) {
+      await super._onFirstRender(context, options);
+      window.addEventListener("mousemove", this._dragAdjustMouseMove);
+      window.addEventListener("mouseup", this._dragAdjustMouseUp);
+    }
+
     async _onRender(context: DeepPartial<ShadowConfigContext<Context>>, options: Options) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       await super._onRender(context as any, options as any);
@@ -123,6 +171,24 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       const config = this.parseFlagData(context.shadows?.config ?? {});
 
       this.toggleConfigSection(config.type);
+
+      const dragPos = this.element.querySelector(`[data-role="drag-pos"]`);
+      if (dragPos instanceof HTMLButtonElement) {
+        dragPos.addEventListener("mousedown", () => {
+          this.dragAdjustments.x = `[name="sprite-shadows.adjustments.x"]`
+          this.dragAdjustments.y = `[name="sprite-shadows.adjustments.y"]`
+          this.dragAdjustments.width = this.dragAdjustments.height = "";
+        });
+      }
+
+      const dragSize = this.element.querySelector(`[data-role="drag-size"]`);
+      if (dragSize instanceof HTMLButtonElement) {
+        dragSize.addEventListener("mousedown", () => {
+          this.dragAdjustments.x = this.dragAdjustments.y = "";
+          this.dragAdjustments.width = `[name="sprite-shadows.adjustments.width"]`;
+          this.dragAdjustments.height = `[name="sprite-shadows.adjustments.height"]`;
+        })
+      }
 
       const typeSelect = this.element.querySelector(`select[name="sprite-shadows.type"]`);
       if (typeSelect instanceof HTMLSelectElement)

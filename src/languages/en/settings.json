@@ -39,7 +39,9 @@
         "X": "X",
         "Y": "Y",
         "WIDTH": "Width",
-        "HEIGHT": "Height"
+        "HEIGHT": "Height",
+        "DRAGPOS": "Click and drag to fine-tune position",
+        "DRAGSIZE": "Click and drag to fine-tune size"
       },
       "BLUR": {
         "LABEL": "Blur",

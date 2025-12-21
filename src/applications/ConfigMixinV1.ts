@@ -16,6 +16,12 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
     protected abstract getShadowedObject(): ShadowedObject | undefined;
     protected abstract setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<ShadowConfiguration> | void;
 
+    protected dragAdjustments = {
+      x: "",
+      y: "",
+      width: "",
+      height: ""
+    };
 
 
     protected getConfiguration(): ShadowConfiguration {
@@ -71,7 +77,9 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
           },
           blobShapeSelect: {
             circle: "SPRITESHADOWS.SETTINGS.BLOBSHAPE.CIRCLE"
-          }
+          },
+          adjustPosTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`,
+          adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
         }
       }
     }
@@ -116,15 +124,94 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       return super._onSubmit(event, options);
     }
 
+    protected _dragAdjustMouseUp = (() => {
+      this.dragAdjustments.x = this.dragAdjustments.y = this.dragAdjustments.width = this.dragAdjustments.height = "";
+    }).bind(this);
+
+    protected applyDragAdjustment(selector: string, delta: number) {
+      const elem = this.element[0].querySelector(selector);
+      if (elem instanceof HTMLInputElement) {
+        elem.value = (parseFloat(elem.value) + delta).toString();
+        elem.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+
+    protected _dragAdjustMouseMove = ((e: MouseEvent) => {
+      if (this.dragAdjustments.x)
+        this.applyDragAdjustment(this.dragAdjustments.x, e.movementX);
+      if (this.dragAdjustments.y)
+        this.applyDragAdjustment(this.dragAdjustments.y, e.movementY);
+      if (this.dragAdjustments.width)
+        this.applyDragAdjustment(this.dragAdjustments.width, e.movementX);
+      if (this.dragAdjustments.height)
+        this.applyDragAdjustment(this.dragAdjustments.height, -e.movementY);
+    }).bind(this);
+
     activateListeners(html: JQuery<HTMLElement>): void {
       super.activateListeners(html);
       const config = this.parseFlagData(this.getConfiguration());
       const elem = html[0];
       this.toggleConfigSection(config.type);
 
-      const typeSelect = elem.querySelector(`select[name="sprite-shadows.type"]`);
+      const typeSelect = elem.querySelector(`select[name="${__MODULE_ID__}.type"]`);
       if (typeSelect instanceof HTMLSelectElement)
         typeSelect.addEventListener("change", () => { this.toggleConfigSection(typeSelect.value as ShadowType); });
+
+      const dragPos = elem.querySelector(`[data-role="drag-pos"]`);
+      if (dragPos instanceof HTMLButtonElement) {
+        dragPos.addEventListener("mousedown", () => {
+          this.dragAdjustments.x = `[name="${__MODULE_ID__}.adjustments.x"]`
+          this.dragAdjustments.y = `[name="${__MODULE_ID__}.adjustments.y"]`
+          this.dragAdjustments.width = this.dragAdjustments.height = "";
+        })
+      }
+
+      const dragSize = elem.querySelector(`[data-role="drag-size"]`);
+      if (dragSize instanceof HTMLButtonElement) {
+        dragSize.addEventListener("mousedown", () => {
+          this.dragAdjustments.x = this.dragAdjustments.y = "";
+          this.dragAdjustments.width = `[name="${__MODULE_ID__}.adjustments.width"]`;
+          this.dragAdjustments.height = `[name="${__MODULE_ID__}.adjustments.height"]`;
+        })
+      }
+
+      const adjustElems = elem.querySelectorAll(["x", "y", "width", "height"].map(item => `[name="${__MODULE_ID__}.adjustments.${item}"]`).join(","));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const originalAdjustments = (foundry.utils.expandObject(new FormDataExtended(this.form).object))["sprite-shadows"].adjustments as { x: number, y: number, width: number, height: number };
+      for (const element of adjustElems) {
+        element.addEventListener("change", () => {
+          const obj = this.getShadowedObject()
+          if (!obj) return;
+
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          const formData = foundry.utils.expandObject(new FormDataExtended(this.form).object)["sprite-shadows"].adjustments as { x: number, y: number, width: number, height: number };
+          const deltas = {
+            x: formData.x - originalAdjustments.x,
+            y: formData.y - originalAdjustments.y,
+            width: formData.width - originalAdjustments.width,
+            height: formData.height - originalAdjustments.height
+          };
+
+          if (obj.blobSprite) {
+            obj.blobSprite.x += deltas.x;
+            obj.blobSprite.y += deltas.y;
+            obj.blobSprite.width += deltas.width;
+            obj.blobSprite.height += deltas.height;
+          }
+
+          if (obj.stencilSprite) {
+            obj.stencilSprite.x += deltas.x;
+            obj.stencilSprite.y += deltas.y;
+            obj.stencilSprite.width += deltas.width;
+            obj.stencilSprite.height += deltas.height;
+          }
+
+          originalAdjustments.x = formData.x;
+          originalAdjustments.y = formData.y;
+          originalAdjustments.width = formData.width;
+          originalAdjustments.height = formData.height;
+        })
+      }
 
 
       const useImage = elem.querySelector(`[name="sprite-shadows.useImage"]`);
@@ -137,6 +224,17 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
           else this.hideElements(`[data-role="stencil-image-config"]`);
         })
       }
+
+      window.removeEventListener("mousemove", this._dragAdjustMouseMove);
+      window.removeEventListener("mouseup", this._dragAdjustMouseUp);
+      window.addEventListener("mousemove", this._dragAdjustMouseMove);
+      window.addEventListener("mouseup", this._dragAdjustMouseUp);
+    }
+
+    async close(options: foundry.appv1.api.FormApplication.CloseOptions) {
+      window.removeEventListener("mousemove", this._dragAdjustMouseMove);
+      window.removeEventListener("mouseup", this._dragAdjustMouseUp);
+      await super.close(options)
     }
 
     async _renderInner(data: ReturnType<this["getData"]>): Promise<JQuery<HTMLElement>> {

@@ -65,6 +65,8 @@
 
         <label for="{{idPrefix}}-adjustmentsY">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.Y"}}</label>
         <input type="number" step="1" value="{{config.adjustments.y}}" name="sprite-shadows.adjustments.y" id="{{idPrefix}}-adjustmentsY" data-role="shadow-adjustment">
+
+        <button type="button" data-role="drag-pos" data-tooltip-direction="UP" data-tooltip="{{{adjustPosTooltip}}}"><i class="fa-solid fa-up-down-left-right" ></i></button>
       </div>
 
     </div>
@@ -75,6 +77,8 @@
 
         <label for="{{idPrefix}}-adjustmentsHeight">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.HEIGHT"}}</label>
         <input type="number" step="1" value="{{config.adjustments.height}}" name="sprite-shadows.adjustments.height" id="{{idPrefix}}-adjustmentsHeight" data-role="shadow-adjustment">
+
+        <button type="button" data-role="drag-size" data-tooltip="{{{adjustSizeTooltip}}}"><i class="fa-solid fa-up-down-left-right"></i></button>
       </div>
 
       <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.HINT"}}</p>
