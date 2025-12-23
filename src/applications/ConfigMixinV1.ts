@@ -62,7 +62,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
     }
 
     protected prepareContext(): ShadowConfigContext<any> {
-      return {
+      const context = {
         v1: true,
         shadows: {
           idPrefix: foundry.utils.randomID(),
@@ -82,6 +82,11 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
           adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
         }
       }
+
+      if (context.shadows.config.type === "stencil")
+        context.shadows.config.skew *= (180 / Math.PI);
+
+      return context;
     }
 
     protected iterateElements(selector: string, fn: ((elem: HTMLElement) => void)) {
@@ -119,7 +124,12 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       const form = this.element.find("form")[0];
       if (form instanceof HTMLFormElement) {
         const data = foundry.utils.expandObject(new FormDataExtended(form).object) as Record<string, unknown>;
-        void this.setShadowConfiguration(data["sprite-shadows"] as DeepPartial<ShadowConfiguration>);
+
+        const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
+        if (formData.type === "stencil")
+          formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI/180) : 0;
+
+        void this.setShadowConfiguration(formData);
       }
       return super._onSubmit(event, options);
     }
@@ -172,6 +182,28 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
           this.dragAdjustments.x = this.dragAdjustments.y = "";
           this.dragAdjustments.width = `[name="${__MODULE_ID__}.adjustments.width"]`;
           this.dragAdjustments.height = `[name="${__MODULE_ID__}.adjustments.height"]`;
+        })
+      }
+
+      const alphaPicker = elem.querySelector(`[name="${__MODULE_ID__}.alpha"]`);
+      if (alphaPicker instanceof foundry.applications.elements.HTMLRangePickerElement) {
+        alphaPicker.addEventListener("input", (e: Event) => {
+          //console.log("Alpha change:", (e.target as foundry.applications.elements.HTMLRangePickerElement).value);
+          const alpha = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
+          const obj = this.getShadowedObject();
+          if (!obj) return;
+          if (obj.blobSprite) obj.blobSprite.alpha = alpha;
+          if (obj.stencilSprite) obj.stencilSprite.alpha = alpha;
+        });
+      }
+
+      const skewPicker = elem.querySelector(`[name="${__MODULE_ID__}.skew"]`);
+      if (skewPicker instanceof foundry.applications.elements.HTMLRangePickerElement) {
+        skewPicker.addEventListener("input", (e: Event) => {
+          const skew = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
+          const obj = this.getShadowedObject();
+          if (!obj) return;
+          if (obj.stencilSprite) obj.stencilSprite.skew.x = skew * (Math.PI / 180);
         })
       }
 

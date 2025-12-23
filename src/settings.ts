@@ -26,7 +26,7 @@ export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
   type: "stencil",
   color: "#000000",
   alpha: 0.5,
-  skew: -0.75,
+  skew: (360 - 45) * (Math.PI / 180),
   blur: 2,
   useImage: false,
   image: "",

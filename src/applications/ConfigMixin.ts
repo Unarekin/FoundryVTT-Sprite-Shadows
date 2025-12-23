@@ -92,6 +92,10 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       // if (!this.form) return super._onSubmitForm(formConfig, event);
       const data = foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as Record<string, unknown>;
       const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
+
+      if (formData.type === "stencil")
+        formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI/180) : 0;
+
       void this.setShadowConfiguration(formData);
       return super._onSubmitForm(formConfig, event);
     }
@@ -117,6 +121,10 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         adjustPosTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`,
         adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
       }
+      // Convert skew to degrees
+      if (context.shadows.config.type === "stencil")
+        context.shadows.config.skew *= (180 / Math.PI);
+
       return context as unknown as ShadowConfigContext<Context>
     }
 
@@ -158,6 +166,51 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       super._onClose(options);
     }
 
+    protected previousFormData: DeepPartial<ShadowConfiguration> = this.getFlags() ?? {};
+
+    protected applyFormChanges(changes: ShadowConfiguration, sprite: PIXI.Sprite, shadowType: ShadowType) {
+      sprite.alpha = changes.alpha;
+
+
+      const tintFilter = sprite.filters?.find(filter => filter instanceof TintFilter);
+      if (tintFilter) tintFilter.color = new PIXI.Color(changes.color ?? "black");
+
+      const blurFilter = sprite.filters?.find(filter => filter instanceof PIXI.filters.BlurFilter);
+      if (blurFilter) blurFilter.blur = changes.blur;
+
+      sprite.x += changes.adjustments.x - (this.previousFormData.adjustments?.x ?? 0);
+      sprite.y -= (this.previousFormData.adjustments?.y ?? 0) - changes.adjustments.y;
+      sprite.width += changes.adjustments.width - (this.previousFormData.adjustments?.width ?? 0);
+      sprite.height -= (this.previousFormData.adjustments?.height ?? 0) - changes.adjustments.height;
+
+      if (shadowType === "stencil") {
+        sprite.skew.x = (changes as StencilShadowConfiguration).skew * (Math.PI / 180);
+      }
+    }
+
+    _onChangeForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event) {
+      super._onChangeForm(formConfig, event);
+
+      const shadowedObj = this.getShadowedObject();
+      if (!shadowedObj) return;
+
+      if (!this.form) return;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const formData = (foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as any)[__MODULE_ID__] as ShadowConfiguration;
+
+      if (shadowedObj.blobSprite) {
+        shadowedObj.blobSprite.visible = formData.type === "blob";
+        this.applyFormChanges(formData, shadowedObj.blobSprite, "blob");
+      }
+
+      if (shadowedObj.stencilSprite) {
+        shadowedObj.stencilSprite.visible = formData.type === "stencil";
+        this.applyFormChanges(formData, shadowedObj.stencilSprite, "stencil");
+      }
+
+      this.previousFormData = foundry.utils.deepClone(formData);
+    }
+
     async _onFirstRender(context: DeepPartial<ShadowConfigContext<Context>>, options: Options) {
       await super._onFirstRender(context, options);
       window.addEventListener("mousemove", this._dragAdjustMouseMove);
@@ -175,8 +228,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       const dragPos = this.element.querySelector(`[data-role="drag-pos"]`);
       if (dragPos instanceof HTMLButtonElement) {
         dragPos.addEventListener("mousedown", () => {
-          this.dragAdjustments.x = `[name="sprite-shadows.adjustments.x"]`
-          this.dragAdjustments.y = `[name="sprite-shadows.adjustments.y"]`
+          this.dragAdjustments.x = `[name="${__MODULE_ID__}.adjustments.x"]`
+          this.dragAdjustments.y = `[name="${__MODULE_ID__}.adjustments.y"]`
           this.dragAdjustments.width = this.dragAdjustments.height = "";
         });
       }
@@ -185,92 +238,38 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (dragSize instanceof HTMLButtonElement) {
         dragSize.addEventListener("mousedown", () => {
           this.dragAdjustments.x = this.dragAdjustments.y = "";
-          this.dragAdjustments.width = `[name="sprite-shadows.adjustments.width"]`;
-          this.dragAdjustments.height = `[name="sprite-shadows.adjustments.height"]`;
+          this.dragAdjustments.width = `[name="${__MODULE_ID__}.adjustments.width"]`;
+          this.dragAdjustments.height = `[name="${__MODULE_ID__}.adjustments.height"]`;
         })
       }
 
-      const typeSelect = this.element.querySelector(`select[name="sprite-shadows.type"]`);
+      const alphaPicker = this.element.querySelector(`[name="${__MODULE_ID__}.alpha"]`);
+      if (alphaPicker instanceof foundry.applications.elements.HTMLRangePickerElement) {
+        alphaPicker.addEventListener("input", (e: Event) => {
+          //console.log("Alpha change:", (e.target as foundry.applications.elements.HTMLRangePickerElement).value);
+          const alpha = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
+          const obj = this.getShadowedObject();
+          if (!obj) return;
+          if (obj.blobSprite) obj.blobSprite.alpha = alpha;
+          if (obj.stencilSprite) obj.stencilSprite.alpha = alpha;
+        });
+      }
+
+      const skewPicker = this.element.querySelector(`[name="${__MODULE_ID__}.skew"]`);
+      if (skewPicker instanceof foundry.applications.elements.HTMLRangePickerElement) {
+        skewPicker.addEventListener("input", (e: Event) => {
+          const skew = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
+          const obj = this.getShadowedObject();
+          if (!obj) return;
+          if (obj.stencilSprite) obj.stencilSprite.skew.x = skew * (Math.PI / 180);
+        })
+      }
+
+      const typeSelect = this.element.querySelector(`select[name="${__MODULE_ID__}.type"]`);
       if (typeSelect instanceof HTMLSelectElement)
         typeSelect.addEventListener("change", () => { this.toggleConfigSection(typeSelect.value as ShadowType); });
 
-      const originalAdjustment = {
-        ...config.adjustments,
-        color: config.color,
-        alpha: config.alpha
-      };
-      const adjustElements = {
-        x: this.element.querySelector(`[name="sprite-shadows.adjustments.x"]`) as HTMLInputElement | undefined,
-        y: this.element.querySelector(`[name="sprite-shadows.adjustments.y"]`) as HTMLInputElement | undefined,
-        width: this.element.querySelector(`[name="sprite-shadows.adjustments.width"]`) as HTMLInputElement | undefined,
-        height: this.element.querySelector(`[name="sprite-shadows.adjustments.height"]`) as HTMLInputElement | undefined,
-        color: this.element.querySelector(`[name="sprite-shadows.color"]`) as foundry.applications.elements.HTMLColorPickerElement | undefined,
-        alpha: this.element.querySelector(`[name="sprite-shadows.alpha"]`) as foundry.applications.elements.HTMLRangePickerElement | undefined
-      };
-
-
-      Object.values(adjustElements).forEach(elem => {
-        if (elem instanceof HTMLElement) {
-          elem.addEventListener("change", () => {
-            const shadowedObject = this.getShadowedObject();
-            if (!shadowedObject) return;
-
-            const currentValues = {
-              x: this.intValue(adjustElements.x?.value, originalAdjustment.x),
-              y: this.intValue(adjustElements.y?.value, originalAdjustment.y),
-              width: this.intValue(adjustElements.width?.value, originalAdjustment.width),
-              height: this.intValue(adjustElements.height?.value, originalAdjustment.height),
-              color: adjustElements.color?.value ?? originalAdjustment.color,
-              alpha: this.intValue(adjustElements.alpha?.value, originalAdjustment.alpha)
-            }
-
-            const delta = {
-              x: currentValues.x - originalAdjustment.x,
-              y: currentValues.y - originalAdjustment.y,
-              width: currentValues.width - originalAdjustment.width,
-              height: currentValues.height - originalAdjustment.height,
-            }
-
-            originalAdjustment.x = currentValues.x;
-            originalAdjustment.y = currentValues.y;
-            originalAdjustment.width = currentValues.width;
-            originalAdjustment.height = currentValues.height;
-
-            const stencil = shadowedObject.stencilSprite
-            const blob = shadowedObject.blobSprite
-
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-            const adjustmentModifiers = ((this.document as any).object).getAdjustmentMultipliers() as { x: number, y: number, width: number, height: number };
-
-            if (stencil) {
-              stencil.x += delta.x * adjustmentModifiers.x;
-              stencil.y += delta.y * adjustmentModifiers.y;
-              stencil.width += delta.width * adjustmentModifiers.width;
-              stencil.height += delta.height * adjustmentModifiers.height;
-
-              stencil.alpha = currentValues.alpha;
-
-              const filter = stencil.filters?.find(filter => filter instanceof TintFilter);
-              if (filter) filter.color = new PIXI.Color(currentValues.color);
-            }
-
-            if (blob) {
-              blob.x += delta.x;
-              blob.y += delta.y;
-              blob.width += delta.width;
-              blob.height += delta.height;
-
-              blob.alpha = currentValues.alpha;
-
-              const filter = blob.filters?.find(filter => filter instanceof TintFilter);
-              if (filter) filter.color = new PIXI.Color(currentValues.color);
-            }
-          })
-        }
-      });
-
-
-      const useImage = this.element.querySelector(`[name="sprite-shadows.useImage"]`);
+      const useImage = this.element.querySelector(`[name="${__MODULE_ID__}.useImage"]`);
       if (useImage instanceof HTMLInputElement) {
         if (useImage.checked) this.showElements(`[data-role="stencil-image-config"]`);
         else this.hideElements(`[data-role="stencil-image-config"]`);
