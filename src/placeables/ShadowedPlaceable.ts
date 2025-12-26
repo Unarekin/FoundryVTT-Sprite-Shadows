@@ -19,8 +19,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected blobSprite: PIXI.Sprite | undefined = undefined;
     protected stencilSprite: PIXI.Sprite | undefined = undefined;
 
-    protected abstract getFlags(): DeepPartial<ShadowConfiguration>;
-    protected abstract getDocument(): foundry.abstract.Document.Any;
+    protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration>;
+    protected abstract getShadowDocument(): foundry.abstract.Document.Any;
     protected abstract getMesh(): foundry.canvas.primary.PrimarySpriteMesh | undefined;
     protected abstract getSize(): PlaceableSize;
 
@@ -74,7 +74,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
      * @return {ShadowConfiguration} {@link ShadowConfiguration}
      */
     public get shadowConfiguration(): ShadowConfiguration {
-      const flags = this.getFlags();
+      const flags = this.getShadowFlags();
+      console.log("shadowConfiguration:", flags);
       if (!flags?.type) return foundry.utils.deepClone(DefaultShadowConfiguration);
 
       switch (flags.type) {
@@ -212,7 +213,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       this.blobSprite.visible = true;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if ((this.getDocument() as any).hidden) this.blobSprite.alpha = 0;
+      if ((this.getShadowDocument() as any).hidden) this.blobSprite.alpha = 0;
       else this.blobSprite.alpha = config.alpha;
 
       this.blobSprite.anchor.x = this.blobSprite.anchor.y = 0.5;
@@ -301,7 +302,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       filter.color = config.color ?? "#000000";
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if ((this.getDocument() as any).hidden) this.stencilSprite.alpha = 0;
+      if ((this.getShadowDocument() as any).hidden) this.stencilSprite.alpha = 0;
       else this.stencilSprite.alpha = config.alpha;
       this.stencilSprite.visible = true;
 

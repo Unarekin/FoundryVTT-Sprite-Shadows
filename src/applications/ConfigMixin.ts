@@ -20,13 +20,13 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       height: ""
     };
 
-    protected abstract getFlags(): DeepPartial<ShadowConfiguration> | undefined;
+    protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined;
     protected abstract getShadowedObject(): ShadowedObject | undefined;
 
     protected abstract setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<ShadowConfiguration>;
 
     protected getConfiguration(): ShadowConfiguration {
-      const flags = this.getFlags();
+      const flags = this.getShadowFlags();
       switch (flags?.type) {
         case "blob":
           return foundry.utils.mergeObject(
@@ -166,7 +166,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       super._onClose(options);
     }
 
-    protected previousFormData: DeepPartial<ShadowConfiguration> = this.getFlags() ?? {};
+    protected previousFormData: DeepPartial<ShadowConfiguration> = this.getShadowFlags() ?? {};
 
     protected applyFormChanges(changes: ShadowConfiguration, sprite: PIXI.Sprite, shadowType: ShadowType) {
       sprite.alpha = changes.alpha;

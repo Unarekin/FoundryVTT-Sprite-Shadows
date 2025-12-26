@@ -12,7 +12,7 @@ interface ShadowedObject {
 export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.abstract.Document.Any>(Base: typeof foundry.appv1.api.DocumentSheet<t>) {
 
   abstract class ShadowedConfigV1 extends Base {
-    protected abstract getFlags(): DeepPartial<ShadowConfiguration> | undefined;
+    protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined;
     protected abstract getShadowedObject(): ShadowedObject | undefined;
     protected abstract setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<ShadowConfiguration> | void;
 
@@ -25,7 +25,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
 
 
     protected getConfiguration(): ShadowConfiguration {
-      const flags = this.getFlags();
+      const flags = this.getShadowFlags();
       switch (flags?.type) {
         case "blob":
           return foundry.utils.mergeObject(

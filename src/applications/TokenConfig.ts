@@ -6,7 +6,7 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
     protected getActor(): Actor | undefined { return (this as any).actor; }
-    protected getFlags(): DeepPartial<ShadowConfiguration> | undefined { return this.getActor()?.flags[__MODULE_ID__]; }
+    protected getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined { return this.getActor()?.flags[__MODULE_ID__]; }
     protected getShadowedObject() { return (this as foundry.applications.sheets.TokenConfig).document.object ?? undefined }
 
     protected setShadowConfiguration(config: DeepPartial<ShadowConfiguration>) {

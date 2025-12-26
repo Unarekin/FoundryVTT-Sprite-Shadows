@@ -6,7 +6,7 @@ export function TileConfigMixinV1<t extends typeof foundry.appv1.api.DocumentShe
   class ShadowedTileConfigV1 extends ConfigMixinV1(base) {
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-    protected getFlags(): DeepPartial<ShadowConfiguration> | undefined { return (this as any).document.flags[__MODULE_ID__]; }
+    protected getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined { return (this as any).document.flags[__MODULE_ID__]; }
     protected getShadowedObject() { return this.document.object }
 
     protected prepareContext(): ShadowConfigContext<any> {

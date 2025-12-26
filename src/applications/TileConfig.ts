@@ -4,7 +4,7 @@ import { ConfigMixin } from "./ConfigMixin";
 export function TileConfigMixin<t extends typeof foundry.applications.sheets.TileConfig>(base: t) {
   class ShadowedTileConfig extends ConfigMixin(base) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-    protected getFlags(): DeepPartial<ShadowConfiguration> | undefined { return (this as any).document.flags[__MODULE_ID__]; }
+    protected getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined { return (this as any).document.flags[__MODULE_ID__]; }
     protected getShadowedObject() { return this.document.object ?? undefined }
 
     protected setShadowConfiguration(config: DeepPartial<ShadowConfiguration>) {
