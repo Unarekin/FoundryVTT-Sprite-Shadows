@@ -239,7 +239,53 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       }
     }
 
+    protected async importFromClipboard() {
+      try {
+        if ((await navigator.permissions.query({ name: "clipboard-read" })).state === "granted") {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            const data = JSON.parse(text) as ShadowConfiguration;
+            ui.notifications?.info("SPRITESHADOWS.SETTINGS.IMPORT.PASTED", { localize: true });
+            if (data) await this.finishImport(data);
+          }
+        } else {
+          const content = await foundry.applications.handlebars.renderTemplate(`modules/${__MODULE_ID__}/templates/PasteJSON.hbs`, {});
+          const { json } = await foundry.applications.api.DialogV2.input({
+            window: { title: "SPRITESHADOWS.SETTINGS.IMPORT.LABEL" },
+            position: { width: 600 },
+            content
+          });
+          if (typeof json === "string") {
+            const data = JSON.parse(json) as ShadowConfiguration;
+            if (data) await this.finishImport(data)
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false });
+      }
+    }
 
+    protected async exportToClipboard() {
+      try {
+        if ((await navigator.permissions.query({ name: "clipboard-write" })).state === "granted") {
+          await navigator.clipboard.writeText(JSON.stringify(this.#flags));
+          ui.notifications?.info("SPRITESHADOWS.SETTINGS.EXPORT.COPIED", { localize: true });
+        } else {
+          const content = await foundry.applications.handlebars.renderTemplate(`modules/${__MODULE_ID__}/templates/CopyJSON.hbs`, {
+            config: JSON.stringify(this.#flags, null, 2)
+          });
+          await foundry.applications.api.DialogV2.input({
+            window: { title: "SPRITESHADOWS.SETTINGS.EXPORT.LABEL" },
+            position: { width: 600 },
+            content
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
+      }
+    }
 
     async _onFirstRender(context: DeepPartial<ShadowConfigContext<Context>>, options: Options) {
       await super._onFirstRender(context, options);
@@ -329,7 +375,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           {
             name: "SPRITESHADOWS.SETTINGS.IMPORT.CLIPBOARD",
             icon: `<i class="fa-solid fa-paste"></i>`,
-            callback: () => { /* TODO: Implement */ }
+            callback: () => { void this.importFromClipboard(); }
           },
           {
             name: "SPRITESHADOWS.SETTINGS.IMPORT.UPLOAD",
@@ -351,7 +397,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           {
             name: "SPRITESHADOWS.SETTINGS.EXPORT.CLIPBOARD",
             icon: `<i class="fa-solid fa-copy"></i>`,
-            callback: () => { /* TODO: Implement */ }
+            callback: () => { void this.exportToClipboard(); }
           },
           {
             name: "SPRITESHADOWS.SETTINGS.EXPORT.DOWNLOAD",

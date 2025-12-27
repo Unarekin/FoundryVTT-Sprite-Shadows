@@ -51,15 +51,19 @@
         "LABEL": "Enable Sprite Shadows"
       },
       "EXPORT": {
-        "HINT": "Export JSON configuration",
-        "LABEL": "Export Configuration",
         "CLIPBOARD": "Copy to Clipboard",
-        "DOWNLOAD": "Download JSON"
+        "COPIED": "Configuration copied to clipboard",
+        "DIALOGMESSAGE": "Copy the text below",
+        "DOWNLOAD": "Download JSON",
+        "HINT": "Export JSON configuration",
+        "LABEL": "Export Configuration"
       },
       "IMPORT": {
+        "CLIPBOARD": "Import from Clipboard",
+        "DIALOGMESSAGE": "Paste the JSON below",
         "HINT": "Import JSON configuration",
         "LABEL": "Import Configuration",
-        "CLIPBOARD": "Import from Clipboard",
+        "PASTED": "Configuration read from clipboard",
         "UPLOAD": "Upload JSON"
       },
       "LIFTTOKEN": {
