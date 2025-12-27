@@ -1,26 +1,109 @@
 import { DeepPartial, ShadowConfiguration } from "types";
 import { ConfigMixin } from "./ConfigMixin";
+import { ShadowConfigContext } from "./types";
 
 export function TokenConfigMixin<t extends typeof foundry.applications.sheets.TokenConfig>(base: t) {
   class ShadowedTokenConfig extends ConfigMixin(base) {
 
+    static DEFAULT_OPTIONS = {
+      actions: {
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        loadFromActor: ShadowedTokenConfig.LoadFromActor,
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        loadFromToken: ShadowedTokenConfig.LoadFromToken
+      }
+    }
+
+    public static async LoadFromActor(this: ShadowedTokenConfig) {
+      try {
+        const actor = this.getActor();
+        if (!actor) return;
+        this.overrideFlags = foundry.utils.deepClone(actor.flags[__MODULE_ID__] ?? {});
+        const overrideCheck = this.element.querySelector(`[name="${__MODULE_ID__}.useTokenOverride"]`);
+        if (overrideCheck instanceof HTMLInputElement)
+          this.overrideFlags.useTokenOverride = overrideCheck.checked;
+
+        await this.render();
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
+      }
+    }
+
+    public static async LoadFromToken(this: ShadowedTokenConfig) {
+      try {
+        this.overrideFlags = foundry.utils.deepClone(this.document.flags[__MODULE_ID__] as DeepPartial<ShadowConfiguration> ?? {});
+        const overrideCheck = this.element.querySelector(`[name="${__MODULE_ID__}.useTokenOverride"]`);
+        if (overrideCheck instanceof HTMLInputElement)
+          this.overrideFlags.useTokenOverride = overrideCheck.checked;
+
+        await this.render();
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
     protected getActor(): Actor | undefined { return (this as any).actor; }
-    protected getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined { return this.getActor()?.flags[__MODULE_ID__]; }
+    protected getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (this.document.flags[__MODULE_ID__]?.useTokenOverride) return this.document.flags[__MODULE_ID__] as DeepPartial<ShadowConfiguration>;
+      else return this.getActor()?.flags[__MODULE_ID__];
+    }
     protected getShadowedObject() { return (this as foundry.applications.sheets.TokenConfig).document.object ?? undefined }
 
     protected setShadowConfiguration(config: DeepPartial<ShadowConfiguration>) {
       const flags = this.parseFlagData(config);
 
-      const actor: Actor = this.getActor() ?? this.document.actor;
-      if (!(actor instanceof Actor)) return;
+      if (flags.useTokenOverride) {
+        return this.document.update({
+          flags: {
+            [__MODULE_ID__]: flags
+          }
+        });
+      } else {
+        const actor: Actor = this.getActor() ?? this.document.actor;
+        if (!(actor instanceof Actor)) return;
 
-      return actor.update({
-        flags: {
-          [__MODULE_ID__]: flags
-        }
-      });
-      return flags;
+        return this.document
+          .setFlag(__MODULE_ID__, "useTokenOverride", false)
+          .then(() => actor.update({
+            flags: {
+              [__MODULE_ID__]: flags
+            }
+          }))
+      }
+    }
+
+    async _onRender(context: DeepPartial<ShadowConfigContext<TokenConfig.RenderContext>>, options: TokenConfig.RenderOptions) {
+      await super._onRender(context, options);
+      const overrideCheck = this.element.querySelector(`[name="${__MODULE_ID__}.useTokenOverride"]`);
+      if (overrideCheck instanceof HTMLInputElement) {
+        overrideCheck.addEventListener("change", () => {
+          if (overrideCheck.checked) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            this.overrideFlags = this.document.flags[__MODULE_ID__] ?? {};
+          } else {
+            this.overrideFlags = this.document.actor?.flags[__MODULE_ID__] ?? {};
+          }
+          if (this.overrideFlags) this.overrideFlags.useTokenOverride = overrideCheck.checked;
+          void this.render();
+        });
+      }
+
+      this.hideElements(`[data-action="loadFromActor"],[data-action="loadFromToken"]`);
+      if (context.shadows?.config?.useTokenOverride && this.getActor()?.flags[__MODULE_ID__])
+        this.showElements(`[data-action="loadFromActor"]`);
+      else if (!context.shadows?.config?.useTokenOverride && !!this.document.flags[__MODULE_ID__])
+        this.showElements(`[data-action="loadFromToken"]`);
+    }
+
+
+    protected async _prepareContext(options: DeepPartial<TokenConfig.RenderOptions>): Promise<ShadowConfigContext<TokenConfig.RenderContext>> {
+      const context = await super._prepareContext(options);
+      context.shadows.allowTokenOverride = true;
+      return context;
     }
   }
 

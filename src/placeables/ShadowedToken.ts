@@ -3,7 +3,12 @@ import { PlaceableMixin } from "./ShadowedPlaceable";
 
 export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(base: t) {
   return class ShadowedToken extends PlaceableMixin<t>(base) {
-    protected getShadowFlags(): DeepPartial<ShadowConfiguration> { return (this as unknown as foundry.canvas.placeables.Token).actor?.flags[__MODULE_ID__] ?? {} }
+    protected getShadowFlags(): DeepPartial<ShadowConfiguration> {
+      const doc = this.document as foundry.documents.TokenDocument;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+      if (doc.flags[__MODULE_ID__]?.useTokenOverride) return doc.flags[__MODULE_ID__] ?? {};
+      else return (this as unknown as foundry.canvas.placeables.Token).actor?.flags[__MODULE_ID__] ?? {}
+    }
     protected getShadowDocument() { return this.document as foundry.documents.TokenDocument; }
     protected getMesh() { return (this as unknown as foundry.canvas.placeables.Token).mesh ?? undefined; }
 

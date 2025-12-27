@@ -6,6 +6,16 @@
       <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ENABLE.HINT"}}</p>
     </div>
 
+    {{#if allowTokenOverride }}
+      <div class="form-group">
+        <label for="{{idPrefix}}-useTokenOverride">{{localize "SPRITESHADOWS.SETTINGS.TOKENOVERRIDE.LABEL"}}</label>
+        <input type="checkbox" id="{{idPrefix}}-useTokenOverride" name="sprite-shadows.useTokenOverride" {{checked config.useTokenOverride}}>
+        <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.TOKENOVERRIDE.HINT"}}</p>
+      </div>
+      <button style="display:none" type="button" data-action="loadFromActor" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.LOADFROMACTOR.HINT"}}">{{localize "SPRITESHADOWS.SETTINGS.LOADFROMACTOR.LABEL"}}</button>
+      <button style="display:none" type="button" data-action="loadFromToken" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.LOADFROMTOKEN.HINT"}}">{{localize "SPRITESHADOWS.SETTINGS.LOADFROMTOKEN.LABEL"}}</button>
+    {{/if}}
+
     <div class="form-group">
       <div class="flexrow">
         <div class="flex1">

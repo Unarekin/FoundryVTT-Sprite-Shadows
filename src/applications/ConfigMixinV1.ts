@@ -23,9 +23,10 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       height: ""
     };
 
+    protected overrideFlags: DeepPartial<ShadowConfiguration> | undefined = undefined;
 
     protected getConfiguration(): ShadowConfiguration {
-      const flags = this.getShadowFlags();
+      const flags = this.overrideFlags ?? this.getShadowFlags();
       switch (flags?.type) {
         case "blob":
           return foundry.utils.mergeObject(
@@ -38,7 +39,10 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
             foundry.utils.deepClone(flags)
           ) as StencilShadowConfiguration;
         default:
-          return foundry.utils.deepClone(DefaultShadowConfiguration);
+          return foundry.utils.mergeObject(
+            foundry.utils.deepClone(DefaultShadowConfiguration),
+            flags ?? {}
+          ) as ShadowConfiguration;
       }
     }
 

@@ -4,6 +4,7 @@ import { BlobShadowConfiguration, ShadowConfiguration, StencilShadowConfiguratio
 export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
   enabled: false,
   type: "blob",
+  useTokenOverride: false,
   alpha: 1,
   rotation: 0,
   color: "#000000",
@@ -24,6 +25,7 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
 
 export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
   enabled: false,
+  useTokenOverride: false,
   type: "stencil",
   color: "#000000",
   rotation: 0,

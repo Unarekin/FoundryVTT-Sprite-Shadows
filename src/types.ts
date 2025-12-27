@@ -47,6 +47,7 @@ interface BaseShadowConfiguration {
   adjustments: MeshAdjustments;
   blur: number;
   rotation: number;
+  useTokenOverride: boolean;
 }
 
 export interface BlobShadowConfiguration extends BaseShadowConfiguration {

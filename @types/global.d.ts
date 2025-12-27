@@ -13,6 +13,9 @@ declare module "fvtt-types/configuration" {
     TileDocument: {
       [__MODULE_ID__]: ShadowConfiguration;
     },
+    TokenDoument: {
+      [__MODULE_ID__]: ShadowConfiguration;
+    },
     Actor: {
       [__MODULE_ID__]: ShadowConfiguration;
       "sprite-animations": {
