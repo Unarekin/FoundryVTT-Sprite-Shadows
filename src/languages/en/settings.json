@@ -50,6 +50,18 @@
         "HINT": "Uncheck to turn off all sprite shadows.",
         "LABEL": "Enable Sprite Shadows"
       },
+      "EXPORT": {
+        "HINT": "Export JSON configuration",
+        "LABEL": "Export Configuration",
+        "CLIPBOARD": "Copy to Clipboard",
+        "DOWNLOAD": "Download JSON"
+      },
+      "IMPORT": {
+        "HINT": "Import JSON configuration",
+        "LABEL": "Import Configuration",
+        "CLIPBOARD": "Import from Clipboard",
+        "UPLOAD": "Upload JSON"
+      },
       "LIFTTOKEN": {
         "HINT": "When enabled, will move the token instead of the shadow if Adjust for Elevation is also enabled.",
         "LABEL": "Lift Token"
@@ -69,6 +81,10 @@
       "STENCILIMAGE": {
         "HINT": "The image to use for the shape of the stencil shadow.",
         "LABEL": "Image"
+      },
+      "TOOLTIPS": {
+        "EXPORT": "Export the current configuration as JSON",
+        "IMPORT": "Import a JSON configuration"
       },
       "TYPE": {
         "BLOB": "Blob",

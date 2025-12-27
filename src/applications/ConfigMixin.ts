@@ -2,6 +2,7 @@ import { BlobShadowConfiguration, DeepPartial, ShadowConfiguration, ShadowType, 
 import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
 import { TintFilter } from "filters";
+import { downloadJSON, uploadJSON } from "functions";
 
 
 interface ShadowedObject {
@@ -20,13 +21,15 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       height: ""
     };
 
+    #flags: ShadowConfiguration | undefined = undefined;
+
     protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined;
     protected abstract getShadowedObject(): ShadowedObject | undefined;
 
     protected abstract setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<ShadowConfiguration>;
 
     protected getConfiguration(): ShadowConfiguration {
-      const flags = this.getShadowFlags();
+      const flags = this.#flags ?? this.getShadowFlags();
       switch (flags?.type) {
         case "blob":
           return foundry.utils.mergeObject(
@@ -94,7 +97,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
 
       if (formData.type === "stencil")
-        formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI/180) : 0;
+        formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
 
       void this.setShadowConfiguration(formData);
       return super._onSubmitForm(formConfig, event);
@@ -104,9 +107,12 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const context = (await super._prepareContext(options as any)) as unknown as ShadowConfigContext<Context>;
 
+      const flags = this.getConfiguration();
+      if (!this.#flags) this.#flags = flags;
+
       context.shadows = {
         idPrefix: foundry.utils.randomID(),
-        config: this.getConfiguration(),
+        config: flags,
         typeSelect: {
           blob: "SPRITESHADOWS.SETTINGS.TYPE.BLOB",
           stencil: "SPRITESHADOWS.SETTINGS.TYPE.STENCIL"
@@ -162,6 +168,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     _onClose(options: any) {
       window.removeEventListener("mousemove", this._dragAdjustMouseMove);
       window.removeEventListener("mouseup", this._dragAdjustMouseUp)
+      this.#flags = undefined;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       super._onClose(options);
     }
@@ -211,7 +218,28 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       }
 
       this.previousFormData = foundry.utils.deepClone(formData);
+      this.#flags = foundry.utils.deepClone(formData);
     }
+
+    protected async finishImport(data: ShadowConfiguration) {
+      this.#flags = foundry.utils.deepClone(data);
+      await this.render();
+    }
+
+    protected async uploadFile() {
+      try {
+        const data = await uploadJSON<ShadowConfiguration>();
+        console.log(data);
+        if (!data) return;
+
+        await this.finishImport(data);
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
+      }
+    }
+
+
 
     async _onFirstRender(context: DeepPartial<ShadowConfigContext<Context>>, options: Options) {
       await super._onFirstRender(context, options);
@@ -292,6 +320,51 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           else this.hideElements(`[data-role="stencil-image-config"]`);
         })
       }
+
+      // Set up context menus
+      new foundry.applications.ux.ContextMenu(
+        this.element,
+        `[data-role="import-shadows"]`,
+        [
+          {
+            name: "SPRITESHADOWS.SETTINGS.IMPORT.CLIPBOARD",
+            icon: `<i class="fa-solid fa-paste"></i>`,
+            callback: () => { /* TODO: Implement */ }
+          },
+          {
+            name: "SPRITESHADOWS.SETTINGS.IMPORT.UPLOAD",
+            icon: `<i class="fa-solid fa-upload"></i>`,
+            callback: () => { void this.uploadFile() }
+          }
+        ],
+        {
+          jQuery: false,
+          eventName: "click",
+          fixed: true
+        }
+      );
+
+      new foundry.applications.ux.ContextMenu(
+        this.element,
+        `[data-role="export-shadows"]`,
+        [
+          {
+            name: "SPRITESHADOWS.SETTINGS.EXPORT.CLIPBOARD",
+            icon: `<i class="fa-solid fa-copy"></i>`,
+            callback: () => { /* TODO: Implement */ }
+          },
+          {
+            name: "SPRITESHADOWS.SETTINGS.EXPORT.DOWNLOAD",
+            icon: `<i class="fa-solid fa-download"></i>`,
+            callback: () => { downloadJSON(this.#flags as object, "shadows.json"); }
+          }
+        ],
+        {
+          jQuery: false,
+          eventName: "click",
+          fixed: true
+        }
+      )
 
     }
   }

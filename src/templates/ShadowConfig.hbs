@@ -7,6 +7,34 @@
     </div>
 
     <div class="form-group">
+      <div class="flexrow">
+        <div class="flex1">
+          <label for="{{idPrefix}}-shadows-export">{{localize "SPRITESHADOWS.SETTINGS.EXPORT.LABEL"}}</label>
+        </div>
+        <div class="flex0">
+          <a data-action="" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.EXPORT"}}" data-role="export-shadows">
+            <i class="fa-solid fa-download"></i>
+          </a>
+        </div>
+      </div>
+      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.EXPORT.HINT"}}</p>
+    </div>
+
+    <div class="form-group">
+      <div class="flexrow">
+        <div class="flex1">
+          <label for="{{idPrefix}}-shadows-import">{{localize "SPRITESHADOWS.SETTINGS.IMPORT.LABEL"}}</label>
+        </div>
+        <div class="flex0">
+          <a data-action="" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.IMPORT"}}" data-role="import-shadows">
+            <i class="fa-solid fa-upload"></i>
+          </a>
+        </div>
+      </div>
+      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.IMPORT.HINT"}}</p>
+    </div>
+
+    <div class="form-group">
       <label for="{{idPrefix}}-color">{{localize "SPRITESHADOWS.SETTINGS.COLOR.LABEL"}}</label>
       <color-picker id="{{idPrefix}}-color" name="sprite-shadows.color" value="{{config.color}}"></color-picker>
       <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.COLOR.HINT"}}</p>

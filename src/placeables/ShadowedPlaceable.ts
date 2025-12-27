@@ -75,7 +75,6 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
      */
     public get shadowConfiguration(): ShadowConfiguration {
       const flags = this.getShadowFlags();
-      console.log("shadowConfiguration:", flags);
       if (!flags?.type) return foundry.utils.deepClone(DefaultShadowConfiguration);
 
       switch (flags.type) {
