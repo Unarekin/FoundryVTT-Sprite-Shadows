@@ -16,6 +16,13 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
       });
       return flags;
     }
+
+    async _processSubmitData(event: SubmitEvent, form: HTMLFormElement, submitData: foundry.applications.ux.FormDataExtended, options?: any): Promise<void> {
+      const flagData = this.parseShadowFormData();
+      foundry.utils.setProperty(submitData, `flags.${__MODULE_ID__}`, flagData);
+
+      await super._processSubmitData(event, form, submitData, options);
+    }
   }
 
   ShadowedTileConfig.TABS.sheet.tabs.push({
