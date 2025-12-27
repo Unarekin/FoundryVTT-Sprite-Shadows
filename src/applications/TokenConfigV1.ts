@@ -38,7 +38,6 @@ export function TokenConfigMixinV1<t extends typeof foundry.appv1.api.DocumentSh
           }
           this.overrideFlags ??= {};
           this.overrideFlags.useTokenOverride = overrideCheck.checked;
-          console.log("Flags:", this.overrideFlags)
           void this.render();
         });
       }

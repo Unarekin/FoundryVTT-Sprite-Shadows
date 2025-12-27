@@ -1,6 +1,7 @@
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
 import { BlobShadowConfiguration, DeepPartial, ShadowConfiguration, ShadowType, StencilShadowConfiguration } from "types";
 import { ShadowConfigContext } from "./types";
+import { uploadJSON, downloadJSON } from "functions";
 
 interface ShadowedObject {
   refreshShadow: () => void;
@@ -43,6 +44,74 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
             foundry.utils.deepClone(DefaultShadowConfiguration),
             flags ?? {}
           ) as ShadowConfiguration;
+      }
+    }
+
+    protected async importFromClipboard() {
+      try {
+        if ((await navigator.permissions.query({ name: "clipboard-read" })).state === "granted") {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            const data = JSON.parse(text) as ShadowConfiguration;
+            ui.notifications?.info("SPRITESHADOWS.SETTINGS.IMPORT.PASTED", { localize: true });
+            if (data) this.finishImport(data);
+          }
+        } else {
+          const content = await foundry.applications.handlebars.renderTemplate(`modules/${__MODULE_ID__}/templates/PasteJSON.hbs`, {});
+          const { json } = await foundry.applications.api.DialogV2.input({
+            window: { title: "SPRITESHADOWS.SETTINGS.IMPORT.LABEL" },
+            position: { width: 600 },
+            content
+          });
+          if (typeof json === "string") {
+            const data = JSON.parse(json) as ShadowConfiguration;
+            if (data) this.finishImport(data)
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false });
+      }
+    }
+
+
+    protected finishImport(data: ShadowConfiguration) {
+      this.overrideFlags = foundry.utils.deepClone(data);
+      this.render();
+    }
+
+    protected async uploadFile() {
+      try {
+        const data = await uploadJSON<ShadowConfiguration>();
+        if (!data) return;
+
+        this.finishImport(data);
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
+      }
+    }
+
+    protected async exportToClipboard() {
+      try {
+        const data = this.parseFormData();
+        if ((await navigator.permissions.query({ name: "clipboard-write" })).state === "granted") {          
+          console.log("Exporting:", data);
+          await navigator.clipboard.writeText(JSON.stringify(data));
+          ui.notifications?.info("SPRITESHADOWS.SETTINGS.EXPORT.COPIED", { localize: true });
+        } else {
+          const content = await foundry.applications.handlebars.renderTemplate(`modules/${__MODULE_ID__}/templates/CopyJSON.hbs`, {
+            config: JSON.stringify(data, null, 2)
+          });
+          await foundry.applications.api.DialogV2.input({
+            window: { title: "SPRITESHADOWS.SETTINGS.EXPORT.LABEL" },
+            position: { width: 600 },
+            content
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
       }
     }
 
@@ -124,17 +193,23 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       return parsed;
     }
 
-    async _onSubmit(event: Event, options?: foundry.appv1.api.FormApplication.OnSubmitOptions): Promise<any> {
+    protected parseFormData(): DeepPartial<ShadowConfiguration> | undefined {
       const form = this.element.find("form")[0];
       if (form instanceof HTMLFormElement) {
         const data = foundry.utils.expandObject(new FormDataExtended(form).object) as Record<string, unknown>;
 
         const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
         if (formData.type === "stencil")
-          formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI/180) : 0;
+          formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
 
-        void this.setShadowConfiguration(formData);
+        return formData;
       }
+    }
+
+    async _onSubmit(event: Event, options?: foundry.appv1.api.FormApplication.OnSubmitOptions): Promise<any> {
+      const data = this.parseFormData();
+      if (data) void this.setShadowConfiguration(data);
+
       return super._onSubmit(event, options);
     }
 
@@ -271,6 +346,47 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
           else this.hideElements(`[data-role="stencil-image-config"]`);
         })
       }
+
+      new ContextMenu(
+        elem,
+        `[data-role="import-shadows"]`,
+        [
+          {
+            name: "SPRITESHADOWS.SETTINGS.IMPORT.CLIPBOARD",
+            icon: `<i class="fa-solid fa-paste"></i>`,
+            callback: () => { void this.importFromClipboard(); }
+          },
+          {
+            name: "SPRITESHADOWS.SETTINGS.IMPORT.UPLOAD",
+            icon: `<i class="fa-solid fa-upload"></i>`,
+            callback: () => { void this.uploadFile() }
+          }
+        ],
+        {
+          eventName: "click"
+        }
+      );
+
+      new ContextMenu(elem,
+        `[data-role="export-shadows"]`,
+        [
+          {
+            name: "SPRITESHADOWS.SETTINGS.EXPORT.CLIPBOARD",
+            icon: `<i class="fa-solid fa-copy"></i>`,
+            callback: () => { void this.exportToClipboard(); }
+          },
+          {
+            name: "SPRITESHADOWS.SETTINGS.EXPORT.DOWNLOAD",
+            icon: `<i class="fa-solid fa-download"></i>`,
+            callback: () => {
+              const data = this.parseFormData();
+              if (data) downloadJSON(data, `${this.document.name}-shadows.json`);
+            }
+          }
+        ], {
+        eventName: "click"
+      })
+
 
       window.removeEventListener("mousemove", this._dragAdjustMouseMove);
       window.removeEventListener("mouseup", this._dragAdjustMouseUp);

@@ -1,0 +1,8 @@
+// TODO: Safe to remove when dropping v12 support
+[data-role="import-shadows"],[data-role="export-shadows"] {
+  [id="context-menu"] {
+    left: auto !important;
+    right: 0;
+    white-space: preserve;
+  }
+}

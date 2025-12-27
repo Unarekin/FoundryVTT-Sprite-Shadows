@@ -233,7 +233,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     protected async uploadFile() {
       try {
         const data = await uploadJSON<ShadowConfiguration>();
-        console.log(data);
         if (!data) return;
 
         await this.finishImport(data);
@@ -326,7 +325,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       const alphaPicker = this.element.querySelector(`[name="${__MODULE_ID__}.alpha"]`);
       if (alphaPicker instanceof foundry.applications.elements.HTMLRangePickerElement) {
         alphaPicker.addEventListener("input", (e: Event) => {
-          //console.log("Alpha change:", (e.target as foundry.applications.elements.HTMLRangePickerElement).value);
           const alpha = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
           const obj = this.getShadowedObject();
           if (!obj) return;
