@@ -12,6 +12,8 @@ export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(bas
     protected getShadowDocument() { return this.document as foundry.documents.TokenDocument; }
     protected getMesh() { return (this as unknown as foundry.canvas.placeables.Token).mesh ?? undefined; }
 
+    protected getAnimationDocument(): Actor | undefined { return (this as unknown as foundry.canvas.placeables.Token).document.actor ?? undefined; }
+
     protected getAdjustmentMultipliers(): { x: number, y: number, width: number, height: number } {
       const token = (this as unknown as foundry.canvas.placeables.Token);
       return {

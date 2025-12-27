@@ -112,6 +112,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         idPrefix: foundry.utils.randomID(),
         config: flags,
         allowTokenOverride: false,
+        spriteAnimations: game.modules?.get("sprite-animations")?.active ?? false,
         typeSelect: {
           blob: "SPRITESHADOWS.SETTINGS.TYPE.BLOB",
           stencil: "SPRITESHADOWS.SETTINGS.TYPE.STENCIL"

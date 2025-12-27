@@ -6,6 +6,16 @@
       <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ENABLE.HINT"}}</p>
     </div>
 
+    {{#if spriteAnimations}}
+      <div class="form-group">
+        <label for="{{idPrefix}}-ignoreSpriteAnimationsMeshAdjustments">{{localize "SPRITESHADOWS.SETTINGS.IGNORESAADJUSTMENTS.LABEL"}}</label>
+        <input type="checkbox" id="{{idPrefix}}-ignoreSpriteAnimationsMeshAdjustments" name="sprite-shadows.ignoreSpriteAnimationsMeshAdjustments" {{checked config.ignoreSpriteAnimationsMeshAdjustments}}>
+        <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.IGNORESAADJUSTMENTS.HINT"}}</p>
+      </div>
+    {{else}}
+      <input type="hidden" id="{{idPrefix}}-ignoreSpriteAnimationsMeshAdjustments" name="sprite-shadows.ignoreSpriteAnimationsMeshAdjustments" value="true">
+    {{/if}}
+
     {{#if allowTokenOverride }}
       <div class="form-group">
         <label for="{{idPrefix}}-useTokenOverride">{{localize "SPRITESHADOWS.SETTINGS.TOKENOVERRIDE.LABEL"}}</label>

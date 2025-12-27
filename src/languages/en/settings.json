@@ -58,6 +58,10 @@
         "HINT": "Export JSON configuration",
         "LABEL": "Export Configuration"
       },
+      "IGNORESAADJUSTMENTS": {
+        "HINT": "If enabled, will ignore mesh adjustments configured by Sprite Animations.",
+        "LABEL": "Ignore Sprite Animations Adjustments"
+      },
       "IMPORT": {
         "CLIPBOARD": "Import from Clipboard",
         "DIALOGMESSAGE": "Paste the JSON below",

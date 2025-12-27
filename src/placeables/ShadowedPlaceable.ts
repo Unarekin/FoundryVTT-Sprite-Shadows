@@ -24,6 +24,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected abstract getMesh(): foundry.canvas.primary.PrimarySpriteMesh | undefined;
     protected abstract getSize(): PlaceableSize;
 
+    protected getAnimationDocument(): foundry.abstract.Document.Any { return this.getShadowDocument(); }
+
     protected getModifiedScale(): { x: number, y: number } {
       const scale = this.getMesh()?.scale ?? { x: 1, y: 1 };
 
@@ -216,8 +218,19 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       else this.blobSprite.alpha = config.alpha;
 
       this.blobSprite.anchor.x = this.blobSprite.anchor.y = 0.5;
-      this.blobSprite.x = mesh.x + (adjustments?.x ?? 0) - ((adjustments?.width ?? 0) / 2);
-      this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (adjustments?.y ?? 0) + ((adjustments?.width ?? 0) / 2);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (config.ignoreSpriteAnimationsMeshAdjustments && this.getAnimationDocument().flags?.["sprite-animations"]?.meshAdjustments?.enable) {
+        const doc = this.document as TokenDocument | TileDocument;
+        this.blobSprite.x = doc.x + ((doc.width * this.scene.dimensions.size) / 2);
+        if (config.alignment === "bottom")
+          this.blobSprite.y = doc.y + (doc.height * this.scene.dimensions.size);
+        else
+          this.blobSprite.y = doc.y + ((doc.height * this.scene.dimensions.size) / 2);
+      } else {
+        this.blobSprite.x = mesh.x + (adjustments?.x ?? 0) - ((adjustments?.width ?? 0) / 2);
+        this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (adjustments?.y ?? 0) + ((adjustments?.width ?? 0) / 2);
+      }
 
 
 
@@ -238,8 +251,14 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const filter = (this.blobSprite.filters ?? []).find(filter => filter instanceof TintFilter) ?? this.addFilter<TintFilter>(this.blobSprite, new TintFilter());
       filter.color = config.color ?? "#000000";
 
-      this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
-      this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (config.ignoreSpriteAnimationsMeshAdjustments && this.getAnimationDocument().flags?.["sprite-animations"]?.meshAdjustments?.enable) {
+        this.blobSprite.width = (((this.document as TileDocument | TokenDocument).width ?? 1) * this.scene.dimensions.size) + (adjustments?.width ?? 0);
+        this.blobSprite.height = ((((this.document as TileDocument | TokenDocument).height ?? 1) * this.scene.dimensions.size) * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
+      } else {
+        this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
+        this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
+      }
       this.blobSprite.zIndex = mesh.zIndex - 1;
 
       this.blobSprite.angle = config.rotation;

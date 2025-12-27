@@ -10,5 +10,6 @@ export type ShadowConfigContext<t extends foundry.applications.api.ApplicationV2
     blobShapeSelect: Record<BlobShape, string>;
     adjustPosTooltip: string;
     adjustSizeTooltip: string;
+    spriteAnimations: boolean;
   }
 }
