@@ -26,8 +26,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined;
     protected abstract getShadowedObject(): ShadowedObject | undefined;
 
-    protected abstract setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<ShadowConfiguration>;
-
     protected getConfiguration(): ShadowConfiguration {
       const flags = this.overrideFlags ?? this.getShadowFlags();
       switch (flags?.type) {
@@ -94,16 +92,13 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         this.applyDragAdjustment(this.dragAdjustments.height, -e.movementY);
     }).bind(this);
 
-    protected async _onSubmitForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event | SubmitEvent): Promise<void> {
-      // if (!this.form) return super._onSubmitForm(formConfig, event);
+    protected parseShadowFormData(): DeepPartial<ShadowConfiguration> {
       const data = foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as Record<string, unknown>;
       const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
 
       if (formData.type === "stencil")
         formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
-
-      void this.setShadowConfiguration(formData);
-      return super._onSubmitForm(formConfig, event);
+      return formData;      
     }
 
     protected async _prepareContext(options: DeepPartial<Options>): Promise<ShadowConfigContext<Context>> {

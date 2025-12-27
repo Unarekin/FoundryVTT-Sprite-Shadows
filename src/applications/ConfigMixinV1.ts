@@ -96,7 +96,6 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       try {
         const data = this.parseFormData();
         if ((await navigator.permissions.query({ name: "clipboard-write" })).state === "granted") {          
-          console.log("Exporting:", data);
           await navigator.clipboard.writeText(JSON.stringify(data));
           ui.notifications?.info("SPRITESHADOWS.SETTINGS.EXPORT.COPIED", { localize: true });
         } else {
