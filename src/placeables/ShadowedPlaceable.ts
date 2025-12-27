@@ -242,6 +242,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
       this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
       this.blobSprite.zIndex = mesh.zIndex - 1;
+
+      this.blobSprite.angle = config.rotation;
     }
     /**
      * Refreshes thes ize, position, etc. of this placeable's stencil shadow
@@ -309,6 +311,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (this.stencilSprite as any).sort = mesh.sort;
       this.stencilSprite.zIndex = mesh.zIndex - 1;
+
+      this.stencilSprite.angle = config.rotation;
     }
 
     /**

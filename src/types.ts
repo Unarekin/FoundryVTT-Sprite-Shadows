@@ -46,6 +46,7 @@ interface BaseShadowConfiguration {
   alignment: ShadowAlignment;
   adjustments: MeshAdjustments;
   blur: number;
+  rotation: number;
 }
 
 export interface BlobShadowConfiguration extends BaseShadowConfiguration {

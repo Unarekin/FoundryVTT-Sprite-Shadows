@@ -1,80 +1,84 @@
 {
   "SPRITESHADOWS": {
     "SETTINGS": {
-      "ENABLE": {
-        "LABEL": "Enable Sprite Shadows",
-        "HINT": "Uncheck to turn off all sprite shadows."
-      },
-      "TYPE": {
-        "LABEL": "Shadow Type",
-        "BLOB": "Blob",
-        "STENCIL": "Stencil",
-        "HINT": "Toggle between blob and stencil shadow"
-      },
-      "BLOB": {
-        "LABEL": "Blob Shadow",
-        "HINT": "A simple, circular shadow placed below the token."
-      },
-      "STENCIL": {
-        "LABEL": "Stencil Shadow",
-        "HINT": "A faux-3d shadow based on the token's texture."
-      },
-      "COLOR": {
-        "LABEL": "Color",
-        "HINT": "Color of the shadow."
-      },
-      "ALPHA": {
-        "LABEL": "Alpha",
-        "HINT": "Opoacity of the shadow"
+      "ADJUSTMENTS": {
+        "DRAGPOS": "Click and drag to fine-tune position",
+        "DRAGSIZE": "Click and drag to fine-tune size",
+        "HEIGHT": "Height",
+        "HINT": "Fine tune the position and size of the shadow.",
+        "LABEL": "Adjustments",
+        "WIDTH": "Width",
+        "X": "X",
+        "Y": "Y"
       },
       "ALIGNMENT": {
-        "LABEL": "Alignment",
-        "HINT": "Where to align the shadow relative to its token.",
         "BOTTOM": "Bottom",
-        "CENTER": "Center"
+        "CENTER": "Center",
+        "HINT": "Where to align the shadow relative to its token.",
+        "LABEL": "Alignment"
       },
-      "ADJUSTMENTS": {
-        "LABEL": "Adjustments",
-        "HINT": "Fine tune the position and size of the shadow.",
-        "X": "X",
-        "Y": "Y",
-        "WIDTH": "Width",
-        "HEIGHT": "Height",
-        "DRAGPOS": "Click and drag to fine-tune position",
-        "DRAGSIZE": "Click and drag to fine-tune size"
+      "ALPHA": {
+        "HINT": "Opoacity of the shadow",
+        "LABEL": "Alpha"
       },
-      "BLUR": {
-        "LABEL": "Blur",
-        "HINT": "Amount of blur"
+      "BLOB": {
+        "HINT": "A simple, circular shadow placed below the token.",
+        "LABEL": "Blob Shadow"
       },
       "BLOBSHAPE": {
-        "LABEL": "Shadow Shape",
+        "CIRCLE": "Circle",
         "HINT": "The shape of the blob",
-        "CIRCLE": "Circle"
+        "LABEL": "Shadow Shape"
       },
-      "USEIMAGE": {
-        "LABEL": "Use Image for Shape",
-        "HINT": "When configured, will use a separate image for the shape of the stencil shadow.\nNote: If you are using the <a href='https://foundryvtt.com/packages/sprite-animations'>Sprite Animations</a> module, this setting will disable integration with it."
+      "BLUR": {
+        "HINT": "Amount of blur",
+        "LABEL": "Blur"
       },
-      "STENCILIMAGE": {
-        "LABEL": "Image",
-        "HINT": "The image to use for the shape of the stencil shadow."
+      "COLOR": {
+        "HINT": "Color of the shadow.",
+        "LABEL": "Color"
       },
       "ELEVATIONADJUST": {
-        "LABEL": "Adjust for Elevation",
-        "HINT": "If enabled, will move the shadow based on the token's elevation."
+        "HINT": "If enabled, will move the shadow based on the token's elevation.",
+        "LABEL": "Adjust for Elevation"
       },
       "ELEVATIONINCREMENT": {
-        "LABEL": "Elevation Increment",
-        "HINT": "Increment by which the shadow will be moved when adjusting for token elevation"
+        "HINT": "Increment by which the shadow will be moved when adjusting for token elevation",
+        "LABEL": "Elevation Increment"
+      },
+      "ENABLE": {
+        "HINT": "Uncheck to turn off all sprite shadows.",
+        "LABEL": "Enable Sprite Shadows"
       },
       "LIFTTOKEN": {
-        "LABEL": "Lift Token",
-        "HINT": "When enabled, will move the token instead of the shadow if Adjust for Elevation is also enabled."
+        "HINT": "When enabled, will move the token instead of the shadow if Adjust for Elevation is also enabled.",
+        "LABEL": "Lift Token"
+      },
+      "ROTATION": {
+        "HINT": "Angle by which to rotate the shadow",
+        "LABEL": "Rotation"
       },
       "SKEW": {
-        "LABEL": "Skew Amount",
-        "HINT": "The amount by which to skew this shadow, to simulate projection angle."
+        "HINT": "The amount by which to skew this shadow, to simulate projection angle.",
+        "LABEL": "Skew Amount"
+      },
+      "STENCIL": {
+        "HINT": "A faux-3d shadow based on the token's texture.",
+        "LABEL": "Stencil Shadow"
+      },
+      "STENCILIMAGE": {
+        "HINT": "The image to use for the shape of the stencil shadow.",
+        "LABEL": "Image"
+      },
+      "TYPE": {
+        "BLOB": "Blob",
+        "HINT": "Toggle between blob and stencil shadow",
+        "LABEL": "Shadow Type",
+        "STENCIL": "Stencil"
+      },
+      "USEIMAGE": {
+        "HINT": "When configured, will use a separate image for the shape of the stencil shadow.\nNote: If you are using the <a href='https://foundryvtt.com/packages/sprite-animations'>Sprite Animations</a> module, this setting will disable integration with it.",
+        "LABEL": "Use Image for Shape"
       }
     }
   }

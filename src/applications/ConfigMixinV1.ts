@@ -197,6 +197,17 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         });
       }
 
+      const rotationPicker = elem.querySelector(`[name="${__MODULE_ID__}.rotation"]`);
+      if (rotationPicker instanceof foundry.applications.elements.HTMLRangePickerElement) {
+        rotationPicker.addEventListener("input", (e: Event) => {
+          const angle = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
+          const obj = this.getShadowedObject();
+          if (!obj) return;
+          if (obj.blobSprite) obj.blobSprite.angle = angle;
+          if (obj.stencilSprite) obj.stencilSprite.angle = angle;
+        })
+      }
+
       const skewPicker = elem.querySelector(`[name="${__MODULE_ID__}.skew"]`);
       if (skewPicker instanceof foundry.applications.elements.HTMLRangePickerElement) {
         skewPicker.addEventListener("input", (e: Event) => {

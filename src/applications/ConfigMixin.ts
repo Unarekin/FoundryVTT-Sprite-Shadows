@@ -186,6 +186,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (shadowType === "stencil") {
         sprite.skew.x = (changes as StencilShadowConfiguration).skew * (Math.PI / 180);
       }
+
+      sprite.angle = changes.rotation;
     }
 
     _onChangeForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event) {
@@ -253,6 +255,17 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           if (obj.blobSprite) obj.blobSprite.alpha = alpha;
           if (obj.stencilSprite) obj.stencilSprite.alpha = alpha;
         });
+      }
+
+      const rotationPicker = this.element.querySelector(`[name="${__MODULE_ID__}.rotation"]`);
+      if (rotationPicker instanceof foundry.applications.elements.HTMLRangePickerElement) {
+        rotationPicker.addEventListener("input", (e: Event) => {
+          const angle = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
+          const obj = this.getShadowedObject();
+          if (!obj) return;
+          if (obj.blobSprite) obj.blobSprite.angle = angle;
+          if (obj.stencilSprite) obj.stencilSprite.angle = angle;
+        })
       }
 
       const skewPicker = this.element.querySelector(`[name="${__MODULE_ID__}.skew"]`);
