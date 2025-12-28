@@ -46,6 +46,9 @@ interface BaseShadowConfiguration {
   alignment: ShadowAlignment;
   adjustments: MeshAdjustments;
   blur: number;
+  rotation: number;
+  useTokenOverride: boolean;
+  ignoreSpriteAnimationsMeshAdjustments: boolean;
 }
 
 export interface BlobShadowConfiguration extends BaseShadowConfiguration {
@@ -59,6 +62,18 @@ export interface BlobShadowConfiguration extends BaseShadowConfiguration {
 export interface StencilShadowConfiguration extends BaseShadowConfiguration {
   type: "stencil";
   skew: number;
+  useImage: boolean;
+  image: string;
 }
 
 export type ShadowConfiguration = BlobShadowConfiguration | StencilShadowConfiguration;
+
+
+export interface IsometricFlags {
+  isoAnchorX: number;
+  isoAnchorY: number;
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+  isoTokenDisabled: boolean;
+}

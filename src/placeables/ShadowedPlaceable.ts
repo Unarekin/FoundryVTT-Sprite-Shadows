@@ -1,8 +1,9 @@
 import { LocalizedError } from "errors";
 import { TintFilter } from "filters";
+import { cartesianToIso } from "functions";
 import { HandleEmptyObject } from "fvtt-types/utils";
-import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration } from "settings";
-import { BlobShadowConfiguration, DeepPartial, MeshAdjustments, ShadowConfiguration, StencilShadowConfiguration } from "types";
+import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
+import { BlobShadowConfiguration, DeepPartial, IsometricFlags, MeshAdjustments, ShadowConfiguration, StencilShadowConfiguration } from "types";
 
 interface PlaceableSize {
   width: number;
@@ -19,10 +20,12 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected blobSprite: PIXI.Sprite | undefined = undefined;
     protected stencilSprite: PIXI.Sprite | undefined = undefined;
 
-    protected abstract getFlags(): DeepPartial<ShadowConfiguration>;
-    protected abstract getDocument(): foundry.abstract.Document.Any;
+    protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration>;
+    protected abstract getShadowDocument(): foundry.abstract.Document.Any;
     protected abstract getMesh(): foundry.canvas.primary.PrimarySpriteMesh | undefined;
     protected abstract getSize(): PlaceableSize;
+
+    protected getAnimationDocument(): foundry.abstract.Document.Any { return this.getShadowDocument(); }
 
     protected getModifiedScale(): { x: number, y: number } {
       const scale = this.getMesh()?.scale ?? { x: 1, y: 1 };
@@ -74,13 +77,13 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
      * @return {ShadowConfiguration} {@link ShadowConfiguration}
      */
     public get shadowConfiguration(): ShadowConfiguration {
-      const flags = this.getFlags();
+      const flags = this.getShadowFlags();
       if (!flags?.type) return foundry.utils.deepClone(DefaultShadowConfiguration);
 
       switch (flags.type) {
         case "stencil":
           return foundry.utils.mergeObject(
-            foundry.utils.deepClone(DefaultBlobShadowConfiguration),
+            foundry.utils.deepClone(DefaultStencilShadowConfiguration),
             foundry.utils.deepClone(flags as StencilShadowConfiguration)
           )
         case "blob":
@@ -174,6 +177,75 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       throw new LocalizedError("TEXTUREGEN");
     }
 
+    protected abstract getIsometricFlags(): IsometricFlags | undefined;
+
+    protected positionBlobShadowOrthographic() {
+      const config = this.shadowConfiguration;
+      if (!(config.enabled && config.type === "blob")) return;
+      if (!this.blobSprite) return;
+
+      const mesh = this.getMesh();
+      if (!mesh) return;
+
+      const adjustments = this.getAdjustments();
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (config.ignoreSpriteAnimationsMeshAdjustments && this.getAnimationDocument().flags?.["sprite-animations"]?.meshAdjustments?.enable) {
+        const doc = this.document as TokenDocument | TileDocument;
+        this.blobSprite.x = doc.x + ((doc.width * this.scene.dimensions.size) / 2);
+        if (config.alignment === "bottom")
+          this.blobSprite.y = doc.y + (doc.height * this.scene.dimensions.size);
+        else
+          this.blobSprite.y = doc.y + ((doc.height * this.scene.dimensions.size) / 2);
+      } else {
+        this.blobSprite.x = mesh.x + (adjustments?.x ?? 0) - ((adjustments?.width ?? 0) / 2);
+        this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (adjustments?.y ?? 0) + ((adjustments?.width ?? 0) / 2);
+      }
+
+      if (config.adjustForElevation) {
+        if (config.liftToken) {
+          mesh.y = this.y + this.scene.dimensions.sceneY;
+          const liftAmount = ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
+          mesh.y -= liftAmount;
+          // this.blobSprite.y += liftAmount;
+        } else {
+          this.blobSprite.y += ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
+        }
+      }
+    }
+
+    protected positionBlobShadowIsometric() {
+      if (!this.blobSprite) return;
+
+      const config = this.shadowConfiguration;
+      if (!(config.enabled && config.type === "blob")) return;
+
+      const doc = this.document as TokenDocument | TileDocument;
+      if (!doc) return;
+
+      const mesh = this.getMesh();
+      if (!mesh) return;
+
+      const adjustments = this.getAdjustments();
+
+      this.blobSprite.x = doc.x + ((doc.width * this.scene.dimensions.size) / 2);
+      this.blobSprite.y = doc.y + ((doc.height * this.scene.dimensions.size) / 2);
+
+      this.blobSprite.width = (doc.width * this.scene.dimensions.size) + (adjustments.width ?? 0);
+      this.blobSprite.height = (doc.height * this.scene.dimensions.size) + (adjustments.height ?? 0);
+      if (config.adjustForElevation) {
+        const pixelHeight = doc.elevation * this.scene.dimensions.distancePixels * config.elevationIncrement;
+        const elevationOffsets = cartesianToIso(0, pixelHeight);
+        if (config.liftToken) {
+          mesh.y -= elevationOffsets.y;
+          mesh.x += elevationOffsets.x;
+        } else {
+          this.blobSprite.x -= elevationOffsets.x;
+          this.blobSprite.y += elevationOffsets.y;
+        }
+      }
+    }
+
     /**
      * Refreshes the size, position, etc. of this placeable's blob shadow
      * @param {boolean} force - If true, will forcefully recreate the blob shadow sprite
@@ -212,24 +284,25 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       this.blobSprite.visible = true;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if ((this.getDocument() as any).hidden) this.blobSprite.alpha = 0;
+      if ((this.getShadowDocument() as any).hidden) this.blobSprite.alpha = 0;
       else this.blobSprite.alpha = config.alpha;
 
       this.blobSprite.anchor.x = this.blobSprite.anchor.y = 0.5;
-      this.blobSprite.x = mesh.x + (adjustments?.x ?? 0) - ((adjustments?.width ?? 0) / 2);
-      this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (adjustments?.y ?? 0) + ((adjustments?.width ?? 0) / 2);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (config.ignoreSpriteAnimationsMeshAdjustments && this.getAnimationDocument().flags?.["sprite-animations"]?.meshAdjustments?.enable) {
+        this.blobSprite.width = (((this.document as TileDocument | TokenDocument).width ?? 1) * this.scene.dimensions.size) + (adjustments?.width ?? 0);
+        this.blobSprite.height = ((((this.document as TileDocument | TokenDocument).height ?? 1) * this.scene.dimensions.size) * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
+      } else {
+        this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
+        this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
+      }
 
-
-      if (config.adjustForElevation) {
-        if (config.liftToken) {
-          mesh.y = this.y + this.scene.dimensions.sceneY;
-          const liftAmount = ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
-          mesh.y -= liftAmount;
-          this.blobSprite.y += liftAmount;
-        } else {
-          this.blobSprite.y += ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
-        }
+      const isometricFlags = this.getIsometricFlags();
+      if (typeof isometricFlags?.isoTokenDisabled === "boolean" && !isometricFlags?.isoTokenDisabled) {
+        this.positionBlobShadowIsometric();
+      } else {
+        this.positionBlobShadowOrthographic();
       }
 
       const blur = (this.blobSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter) ?? this.addFilter<PIXI.BlurFilter>(this.blobSprite, new PIXI.BlurFilter());
@@ -238,9 +311,9 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const filter = (this.blobSprite.filters ?? []).find(filter => filter instanceof TintFilter) ?? this.addFilter<TintFilter>(this.blobSprite, new TintFilter());
       filter.color = config.color ?? "#000000";
 
-      this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
-      this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
       this.blobSprite.zIndex = mesh.zIndex - 1;
+
+      this.blobSprite.angle = config.rotation;
     }
     /**
      * Refreshes thes ize, position, etc. of this placeable's stencil shadow
@@ -259,7 +332,9 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       if (!this.stencilSprite) {
         // (Re-)create
-        const texture = mesh.texture.clone();
+
+        const texture = !(config.useImage && config.image) ? mesh.texture.clone() : PIXI.Texture.from(config.image);
+
         this.stencilSprite = new PIXI.Sprite(texture);
         this.stencilSprite.name = `StencilShadow.${this.id}`;
       }
@@ -273,10 +348,13 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       (this.stencilSprite as any).elevation = mesh.elevation;
 
       this.stencilSprite.anchor.x = mesh.anchor.x;
-      this.stencilSprite.anchor.y = mesh.anchor.y;
+      this.stencilSprite.anchor.y = config.alignment === "bottom" ? 1 : 0.5;
 
       this.stencilSprite.x = mesh.x;
-      this.stencilSprite.y = mesh.y;
+      if (config.alignment === "bottom")
+        this.stencilSprite.y = mesh.y + (mesh.height * (1 - mesh.anchor.y));
+      else
+        this.stencilSprite.y = mesh.y;
       const scale = this.getModifiedScale();
       this.stencilSprite.scale.x = scale.x;
       this.stencilSprite.scale.y = scale.y;
@@ -296,13 +374,15 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       filter.color = config.color ?? "#000000";
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if ((this.getDocument() as any).hidden) this.stencilSprite.alpha = 0;
+      if ((this.getShadowDocument() as any).hidden) this.stencilSprite.alpha = 0;
       else this.stencilSprite.alpha = config.alpha;
       this.stencilSprite.visible = true;
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (this.stencilSprite as any).sort = mesh.sort;
       this.stencilSprite.zIndex = mesh.zIndex - 1;
+
+      this.stencilSprite.angle = config.rotation;
     }
 
     /**

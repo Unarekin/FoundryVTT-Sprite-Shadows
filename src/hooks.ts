@@ -1,6 +1,7 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin, TileConfigMixin } from "./applications";
+import { TokenConfigMixin, TileConfigMixin, TokenConfigMixinV1, TileConfigMixinV1 } from "./applications";
 import { TintFilter } from "./filters";
+import { IsometricFlags, ShadowConfiguration } from "types";
 
 
 Hooks.once("canvasReady", () => {
@@ -44,16 +45,22 @@ function applyMixin(collection: Record<string, any>, mixin: Function) {
 }
 
 Hooks.on("ready", () => {
-  applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
-  applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
-  CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as foundry.applications.sheets.TokenConfig);
+  if (game.release?.isNewer("13")) {
+    applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
+    applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
+    CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as foundry.applications.sheets.TokenConfig);
+  } else {
+    applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixinV1);
+    applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixinV1);
+    CONFIG.Token.prototypeSheetClass = TokenConfigMixinV1(CONFIG.Token.prototypeSheetClass as foundry.appv1.sheets.DocumentSheet);
+  }
 })
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 Hooks.on("updateActor", (actor: Actor, delta: Actor.UpdateData, options: Actor.Database.UpdateOptions, userId: string) => {
   if (game.SpriteShadows?.TokenClass && actor.token?.object instanceof (game.SpriteShadows.TokenClass as any)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    (actor.token.object as any).refreshShadow()
+    (actor.token.object as any).refreshShadow(true)
   }
 });
 
@@ -69,6 +76,29 @@ Hooks.on("updateToken", (token: TokenDocument, delta: TokenDocument.UpdateData, 
 Hooks.on("updateTile", (tile: TileDocument, delta: TileDocument.UpdateData, options: TileDocument.Database.UpdateOptions, userId: string) => {
   if (game.SpriteShadows?.TileClass && tile.object instanceof (game.SpriteShadows.TileClass as any)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    (tile.object as any).refreshShadow();
+    (tile.object as any).refreshShadow(true);
+  }
+})
+
+Hooks.on("refreshToken", (token: Token) => {
+  // Check if it needs to be positioned according to isometric projection
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  const isometricFlags = (token as any).getIsometricFlags() as IsometricFlags | undefined;
+  if (typeof isometricFlags?.isoTokenDisabled === "boolean" && !isometricFlags?.isoTokenDisabled) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const config = (token as any).shadowConfiguration as ShadowConfiguration | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    if (config?.type === "blob") (token as any).positionBlobShadowIsometric();
+  }
+});
+
+Hooks.on("refreshTile", (tile: Tile) => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  const isometricFlags = (tile as any).getIsometricFlags() as IsometricFlags | undefined;
+  if (typeof isometricFlags?.isoTokenDisabled === "boolean" && !isometricFlags.isoTokenDisabled) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const config = (tile as any).shadowConfiguration as ShadowConfiguration | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    if (config?.type === "blob") (tile as any).positionBlobShadowIsometric();
   }
 })

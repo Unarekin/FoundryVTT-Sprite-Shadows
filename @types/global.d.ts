@@ -1,4 +1,4 @@
-import { ShadowConfiguration } from "../src/types"
+import { IsometricFlags, ShadowConfiguration } from "../src/types"
 import { libWrapper as wrapperClass } from "./libwrapper"
 
 
@@ -12,6 +12,11 @@ declare module "fvtt-types/configuration" {
   interface FlagConfig {
     TileDocument: {
       [__MODULE_ID__]: ShadowConfiguration;
+      "isometric-perspective": IsometricFlags;
+    },
+    TokenDoument: {
+      [__MODULE_ID__]: ShadowConfiguration;
+      "isometric-perspective": IsometricFlags;
     },
     Actor: {
       [__MODULE_ID__]: ShadowConfiguration;
