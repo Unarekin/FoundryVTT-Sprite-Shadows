@@ -1,4 +1,4 @@
-import { DeepPartial, ShadowConfiguration } from "types";
+import { DeepPartial, IsometricFlags, ShadowConfiguration } from "types";
 import { PlaceableMixin } from "./ShadowedPlaceable";
 
 export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base: t) {
@@ -7,6 +7,12 @@ export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base:
     protected getShadowFlags(): DeepPartial<ShadowConfiguration> { return this.getShadowDocument().flags[__MODULE_ID__] as DeepPartial<ShadowConfiguration>; }
     protected getShadowDocument() { return this.document as foundry.documents.TileDocument; }
     protected getMesh() { return (this as unknown as foundry.canvas.placeables.Tile).mesh ?? undefined; }
+
+    protected  getIsometricFlags(): IsometricFlags | undefined {
+      if (!(game?.modules?.get("isometric-perspective")?.active)) return undefined;
+
+      return this.getShadowDocument().flags["isometric-perspective"] as DeepPartial<IsometricFlags>;
+    }
 
     protected getSize() {
       const doc = this.getShadowDocument();

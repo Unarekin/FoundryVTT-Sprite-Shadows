@@ -1,4 +1,4 @@
-import { DeepPartial, ShadowConfiguration } from "types";
+import { DeepPartial, IsometricFlags, ShadowConfiguration } from "types";
 import { PlaceableMixin } from "./ShadowedPlaceable";
 
 export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(base: t) {
@@ -11,6 +11,11 @@ export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(bas
     }
     protected getShadowDocument() { return this.document as foundry.documents.TokenDocument; }
     protected getMesh() { return (this as unknown as foundry.canvas.placeables.Token).mesh ?? undefined; }
+
+    protected getIsometricFlags(): IsometricFlags | undefined {
+      if (!(game?.modules?.get("isometric-perspective")?.active)) return undefined;
+      return this.document.flags["isometric-perspective"] as DeepPartial<IsometricFlags>;
+    }
 
     protected getAnimationDocument(): Actor | undefined { return (this as unknown as foundry.canvas.placeables.Token).document.actor ?? undefined; }
 

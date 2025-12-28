@@ -67,3 +67,13 @@ export interface StencilShadowConfiguration extends BaseShadowConfiguration {
 }
 
 export type ShadowConfiguration = BlobShadowConfiguration | StencilShadowConfiguration;
+
+
+export interface IsometricFlags {
+  isoAnchorX: number;
+  isoAnchorY: number;
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+  isoTokenDisabled: boolean;
+}

@@ -37,3 +37,19 @@ export function uploadJSON<t = any>(): Promise<t> {
     file.click();
   })
 }
+
+export function isoToCartesian(isoX: number, isoY: number) {
+  const angle = Math.PI / 4;
+  return {
+    x: (isoX * Math.cos(angle) - isoY * Math.sin(angle)),
+    y: (isoX * Math.sin(angle) + isoY * Math.cos(angle))
+  };
+}
+
+export function cartesianToIso(isoX: number, isoY: number) {
+  const angle = Math.PI / 4;
+  return {
+    x: (isoX * Math.cos(-angle) - isoY * Math.sin(-angle)),
+    y: (isoX * Math.sin(-angle) + isoY * Math.cos(-angle))
+  };
+}

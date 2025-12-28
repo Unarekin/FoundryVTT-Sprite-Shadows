@@ -1,8 +1,9 @@
 import { LocalizedError } from "errors";
 import { TintFilter } from "filters";
+import { cartesianToIso } from "functions";
 import { HandleEmptyObject } from "fvtt-types/utils";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
-import { BlobShadowConfiguration, DeepPartial, MeshAdjustments, ShadowConfiguration, StencilShadowConfiguration } from "types";
+import { BlobShadowConfiguration, DeepPartial, IsometricFlags, MeshAdjustments, ShadowConfiguration, StencilShadowConfiguration } from "types";
 
 interface PlaceableSize {
   width: number;
@@ -176,6 +177,75 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       throw new LocalizedError("TEXTUREGEN");
     }
 
+    protected abstract getIsometricFlags(): IsometricFlags | undefined;
+
+    protected positionBlobShadowOrthographic() {
+      const config = this.shadowConfiguration;
+      if (!(config.enabled && config.type === "blob")) return;
+      if (!this.blobSprite) return;
+
+      const mesh = this.getMesh();
+      if (!mesh) return;
+
+      const adjustments = this.getAdjustments();
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (config.ignoreSpriteAnimationsMeshAdjustments && this.getAnimationDocument().flags?.["sprite-animations"]?.meshAdjustments?.enable) {
+        const doc = this.document as TokenDocument | TileDocument;
+        this.blobSprite.x = doc.x + ((doc.width * this.scene.dimensions.size) / 2);
+        if (config.alignment === "bottom")
+          this.blobSprite.y = doc.y + (doc.height * this.scene.dimensions.size);
+        else
+          this.blobSprite.y = doc.y + ((doc.height * this.scene.dimensions.size) / 2);
+      } else {
+        this.blobSprite.x = mesh.x + (adjustments?.x ?? 0) - ((adjustments?.width ?? 0) / 2);
+        this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (adjustments?.y ?? 0) + ((adjustments?.width ?? 0) / 2);
+      }
+
+      if (config.adjustForElevation) {
+        if (config.liftToken) {
+          mesh.y = this.y + this.scene.dimensions.sceneY;
+          const liftAmount = ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
+          mesh.y -= liftAmount;
+          // this.blobSprite.y += liftAmount;
+        } else {
+          this.blobSprite.y += ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
+        }
+      }
+    }
+
+    protected positionBlobShadowIsometric() {
+      if (!this.blobSprite) return;
+
+      const config = this.shadowConfiguration;
+      if (!(config.enabled && config.type === "blob")) return;
+
+      const doc = this.document as TokenDocument | TileDocument;
+      if (!doc) return;
+
+      const mesh = this.getMesh();
+      if (!mesh) return;
+
+      const adjustments = this.getAdjustments();
+
+      this.blobSprite.x = doc.x + ((doc.width * this.scene.dimensions.size) / 2);
+      this.blobSprite.y = doc.y + ((doc.height * this.scene.dimensions.size) / 2);
+
+      this.blobSprite.width = (doc.width * this.scene.dimensions.size) + (adjustments.width ?? 0);
+      this.blobSprite.height = (doc.height * this.scene.dimensions.size) + (adjustments.height ?? 0);
+      if (config.adjustForElevation) {
+        const pixelHeight = doc.elevation * this.scene.dimensions.distancePixels * config.elevationIncrement;
+        const elevationOffsets = cartesianToIso(0, pixelHeight);
+        if (config.liftToken) {
+          mesh.y -= elevationOffsets.y;
+          mesh.x += elevationOffsets.x;
+        } else {
+          this.blobSprite.x -= elevationOffsets.x;
+          this.blobSprite.y += elevationOffsets.y;
+        }
+      }
+    }
+
     /**
      * Refreshes the size, position, etc. of this placeable's blob shadow
      * @param {boolean} force - If true, will forcefully recreate the blob shadow sprite
@@ -221,28 +291,18 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (config.ignoreSpriteAnimationsMeshAdjustments && this.getAnimationDocument().flags?.["sprite-animations"]?.meshAdjustments?.enable) {
-        const doc = this.document as TokenDocument | TileDocument;
-        this.blobSprite.x = doc.x + ((doc.width * this.scene.dimensions.size) / 2);
-        if (config.alignment === "bottom")
-          this.blobSprite.y = doc.y + (doc.height * this.scene.dimensions.size);
-        else
-          this.blobSprite.y = doc.y + ((doc.height * this.scene.dimensions.size) / 2);
+        this.blobSprite.width = (((this.document as TileDocument | TokenDocument).width ?? 1) * this.scene.dimensions.size) + (adjustments?.width ?? 0);
+        this.blobSprite.height = ((((this.document as TileDocument | TokenDocument).height ?? 1) * this.scene.dimensions.size) * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
       } else {
-        this.blobSprite.x = mesh.x + (adjustments?.x ?? 0) - ((adjustments?.width ?? 0) / 2);
-        this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (adjustments?.y ?? 0) + ((adjustments?.width ?? 0) / 2);
+        this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
+        this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
       }
 
-
-
-      if (config.adjustForElevation) {
-        if (config.liftToken) {
-          mesh.y = this.y + this.scene.dimensions.sceneY;
-          const liftAmount = ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
-          mesh.y -= liftAmount;
-          this.blobSprite.y += liftAmount;
-        } else {
-          this.blobSprite.y += ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
-        }
+      const isometricFlags = this.getIsometricFlags();
+      if (typeof isometricFlags?.isoTokenDisabled === "boolean" && !isometricFlags?.isoTokenDisabled) {
+        this.positionBlobShadowIsometric();
+      } else {
+        this.positionBlobShadowOrthographic();
       }
 
       const blur = (this.blobSprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter) ?? this.addFilter<PIXI.BlurFilter>(this.blobSprite, new PIXI.BlurFilter());
@@ -251,14 +311,6 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const filter = (this.blobSprite.filters ?? []).find(filter => filter instanceof TintFilter) ?? this.addFilter<TintFilter>(this.blobSprite, new TintFilter());
       filter.color = config.color ?? "#000000";
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (config.ignoreSpriteAnimationsMeshAdjustments && this.getAnimationDocument().flags?.["sprite-animations"]?.meshAdjustments?.enable) {
-        this.blobSprite.width = (((this.document as TileDocument | TokenDocument).width ?? 1) * this.scene.dimensions.size) + (adjustments?.width ?? 0);
-        this.blobSprite.height = ((((this.document as TileDocument | TokenDocument).height ?? 1) * this.scene.dimensions.size) * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
-      } else {
-        this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
-        this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
-      }
       this.blobSprite.zIndex = mesh.zIndex - 1;
 
       this.blobSprite.angle = config.rotation;
