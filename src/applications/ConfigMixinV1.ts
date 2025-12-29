@@ -95,7 +95,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
     protected async exportToClipboard() {
       try {
         const data = this.parseFormData();
-        if ((await navigator.permissions.query({ name: "clipboard-write" })).state === "granted") {          
+        if ((await navigator.permissions.query({ name: "clipboard-write" })).state === "granted") {
           await navigator.clipboard.writeText(JSON.stringify(data));
           ui.notifications?.info("SPRITESHADOWS.SETTINGS.EXPORT.COPIED", { localize: true });
         } else {
@@ -159,6 +159,12 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       if (context.shadows.config.type === "stencil")
         context.shadows.config.skew *= (180 / Math.PI);
 
+      const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
+      context.shadows.config.adjustments.x *= 1 / adjustmentMultiplier.x;
+      context.shadows.config.adjustments.y *= 1 / adjustmentMultiplier.y;
+      context.shadows.config.adjustments.width *= 1 / adjustmentMultiplier.width;
+      context.shadows.config.adjustments.height *= 1 / adjustmentMultiplier.height;
+
       return context;
     }
 
@@ -202,6 +208,13 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         if (formData.type === "stencil")
           formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
 
+        const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
+
+        if (typeof formData.adjustments?.x === "number") formData.adjustments.x *= adjustmentMultiplier.x;
+        if (typeof formData.adjustments?.y === "number") formData.adjustments.y *= adjustmentMultiplier.y;
+        if (typeof formData.adjustments?.width === "number") formData.adjustments.width *= adjustmentMultiplier.width;
+        if (typeof formData.adjustments?.height === "number") formData.adjustments.height *= adjustmentMultiplier.height;
+
         return formData;
       }
     }
@@ -217,23 +230,26 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       this.dragAdjustments.x = this.dragAdjustments.y = this.dragAdjustments.width = this.dragAdjustments.height = "";
     }).bind(this);
 
+    protected getDragAdjustmentMultiplier() { return { x: 1, y: 1, width: 1, height: 1 }; }
+
     protected applyDragAdjustment(selector: string, delta: number) {
       const elem = this.element[0].querySelector(selector);
       if (elem instanceof HTMLInputElement) {
-        elem.value = (parseFloat(elem.value) + delta).toString();
+        elem.value = Math.floor((parseFloat(elem.value) + delta)).toString();
         elem.dispatchEvent(new Event("change", { bubbles: true }));
       }
     }
 
     protected _dragAdjustMouseMove = ((e: MouseEvent) => {
+      const multiplier = this.getDragAdjustmentMultiplier();
       if (this.dragAdjustments.x)
-        this.applyDragAdjustment(this.dragAdjustments.x, e.movementX);
+        this.applyDragAdjustment(this.dragAdjustments.x, e.movementX * multiplier.x);
       if (this.dragAdjustments.y)
-        this.applyDragAdjustment(this.dragAdjustments.y, e.movementY);
+        this.applyDragAdjustment(this.dragAdjustments.y, e.movementY * multiplier.y);
       if (this.dragAdjustments.width)
-        this.applyDragAdjustment(this.dragAdjustments.width, e.movementX);
+        this.applyDragAdjustment(this.dragAdjustments.width, e.movementX * multiplier.width);
       if (this.dragAdjustments.height)
-        this.applyDragAdjustment(this.dragAdjustments.height, -e.movementY);
+        this.applyDragAdjustment(this.dragAdjustments.height, -e.movementY * multiplier.height);
     }).bind(this);
 
     activateListeners(html: JQuery<HTMLElement>): void {

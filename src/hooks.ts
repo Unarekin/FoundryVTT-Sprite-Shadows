@@ -1,7 +1,6 @@
 import { TokenMixin, TileMixin } from "./placeables";
 import { TokenConfigMixin, TileConfigMixin, TokenConfigMixinV1, TileConfigMixinV1 } from "./applications";
 import { TintFilter } from "./filters";
-import { IsometricFlags, ShadowConfiguration } from "types";
 
 
 Hooks.once("canvasReady", () => {
@@ -54,6 +53,21 @@ Hooks.on("ready", () => {
     applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixinV1);
     CONFIG.Token.prototypeSheetClass = TokenConfigMixinV1(CONFIG.Token.prototypeSheetClass as foundry.appv1.sheets.DocumentSheet);
   }
+
+
+
+  if (game?.modules?.get("isometric-perspective")?.active) {
+    // Check if it needs to be positioned according to isometric projection
+    Hooks.on("refreshToken", (token: Token) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      if ((token as any).shouldUseIsometric) (token as any).positionBlobShadowIsometric();
+    });
+
+    Hooks.on("refreshTile", (tile: Tile) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      if ((tile as any).shouldUseIsometric) (tile as any).positionBlobShadowIsometric();
+    })
+  }
 })
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -77,28 +91,5 @@ Hooks.on("updateTile", (tile: TileDocument, delta: TileDocument.UpdateData, opti
   if (game.SpriteShadows?.TileClass && tile.object instanceof (game.SpriteShadows.TileClass as any)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     (tile.object as any).refreshShadow(true);
-  }
-})
-
-Hooks.on("refreshToken", (token: Token) => {
-  // Check if it needs to be positioned according to isometric projection
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  const isometricFlags = (token as any).getIsometricFlags() as IsometricFlags | undefined;
-  if (typeof isometricFlags?.isoTokenDisabled === "boolean" && !isometricFlags?.isoTokenDisabled) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const config = (token as any).shadowConfiguration as ShadowConfiguration | undefined;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    if (config?.type === "blob") (token as any).positionBlobShadowIsometric();
-  }
-});
-
-Hooks.on("refreshTile", (tile: Tile) => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  const isometricFlags = (tile as any).getIsometricFlags() as IsometricFlags | undefined;
-  if (typeof isometricFlags?.isoTokenDisabled === "boolean" && !isometricFlags.isoTokenDisabled) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const config = (tile as any).shadowConfiguration as ShadowConfiguration | undefined;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    if (config?.type === "blob") (tile as any).positionBlobShadowIsometric();
   }
 })

@@ -51,6 +51,16 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       return newScale;
     }
 
+    public get shouldUseIsometric(): boolean {
+      if (!game?.modules?.get("isometric-perspective")?.active) return false;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (!this.scene?.flags["isometric-perspective"].isometricEnabled) return false;
+      if (this.shadowConfiguration.type !== "blob") return false;
+      const flags = this.getIsometricFlags();
+      if (flags?.isoTokenDisabled) return false;
+      return true;
+    }
+
     protected getAdjustmentMultipliers(): { x: number, y: number, width: number, height: number } {
       return {
         x: 1,
@@ -58,6 +68,19 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         width: 1,
         height: 1
       }
+    }
+
+    protected getElevationAdjustment(): number {
+      const config = this.shadowConfiguration;
+      if (config.type !== "blob") return 0;
+      if (!config.adjustForElevation) return 0;
+      if (config.elevationIncrement === 0) return 0;
+      const doc = this.getShadowDocument() as TokenDocument | TileDocument;
+      if (!doc) return 0;
+
+      const gridSquares = doc.elevation / this.scene.grid.distance;
+
+      return gridSquares * this.scene.dimensions.size * config.elevationIncrement;
     }
 
     protected getAdjustments(): MeshAdjustments {
@@ -187,34 +210,70 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const mesh = this.getMesh();
       if (!mesh) return;
 
-      const adjustments = this.getAdjustments();
+      const doc = this.document as TokenDocument | TileDocument | undefined;
+      // If no document, we're not in a scene, so no need to position.
+      if (!doc) return;
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (config.ignoreSpriteAnimationsMeshAdjustments && this.getAnimationDocument().flags?.["sprite-animations"]?.meshAdjustments?.enable) {
-        const doc = this.document as TokenDocument | TileDocument;
-        this.blobSprite.x = doc.x + ((doc.width * this.scene.dimensions.size) / 2);
-        if (config.alignment === "bottom")
-          this.blobSprite.y = doc.y + (doc.height * this.scene.dimensions.size);
-        else
-          this.blobSprite.y = doc.y + ((doc.height * this.scene.dimensions.size) / 2);
-      } else {
-        this.blobSprite.x = mesh.x + (adjustments?.x ?? 0) - ((adjustments?.width ?? 0) / 2);
-        this.blobSprite.y = mesh.y + (mesh.height * mesh.anchor.y) + (adjustments?.y ?? 0) + ((adjustments?.width ?? 0) / 2);
+      // const adjustments = this.getAdjustments();
+
+      const bounds = this.getBlobSpriteBounds();
+
+      this.blobSprite.x = bounds.x; //doc.x + ((doc.width * this.scene.dimensions.size) * this.blobSprite.anchor.x);
+      this.blobSprite.y = bounds.y;
+      // if (config.alignment === "bottom")
+      //   this.blobSprite.y = bounds.y //doc.y + ((doc.height * this.scene.dimensions.size));
+      // else
+      //   this.blobSprite.y = bounds.y //doc.y + ((doc.height * this.scene.dimensions.size) * this.blobSprite.anchor.y);
+
+      // Apply adjustments
+      const adjustments = this.getAdjustments();
+      if (adjustments) {
+        if (typeof adjustments.x === "number") this.blobSprite.x += adjustments.x;
+        if (typeof adjustments.y === "number") this.blobSprite.y += adjustments.y;
+        if (typeof adjustments.width === "number") this.blobSprite.width += adjustments.width;
+        if (typeof adjustments.height === "number") this.blobSprite.height += adjustments.height;
       }
 
-      if (config.adjustForElevation) {
-        if (config.liftToken) {
-          mesh.y = this.y + this.scene.dimensions.sceneY;
-          const liftAmount = ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
-          mesh.y -= liftAmount;
-          // this.blobSprite.y += liftAmount;
-        } else {
-          this.blobSprite.y += ((config.elevationIncrement ?? 0) * this.scene.grid.distance * Math.max(mesh.elevation, 0));
-        }
+      const meshPos = this.getMeshPosition();
+      // Handle elevation adjustment
+      if (config.adjustForElevation && doc.elevation) {
+        const elevationAdjustment = this.getElevationAdjustment();
+        if (config.liftToken)
+          mesh.y = meshPos.y - elevationAdjustment;
+          // mesh.y = this.y + (doc.height * this.scene.dimensions.size * mesh.anchor.y) + this.scene.dimensions.sceneY - elevationAdjustment;
+        else
+          this.blobSprite.y += elevationAdjustment;
+      } else {
+        mesh.y = meshPos.y;
+        // mesh.y = this.y;
+        // mesh.y = this.y + (doc.height * this.scene.dimensions.size * mesh.anchor.y) + this.scene.dimensions.sceneY;
+      }
+    }
+
+    protected getMeshPosition(): { x: number, y: number } {
+      const doc = this.document as TileDocument | TokenDocument;
+      const mesh = this.getMesh();
+
+      return {
+        x: doc.x,
+        y: doc.y + (doc.height * (mesh?.anchor?.y ?? .5))
+      }
+    }
+
+    protected getBlobSpriteBounds(): { x: number, y: number, width: number, height: number } {
+      const doc = this.document as TokenDocument | TileDocument;
+      const mesh = this.getMesh();
+      const config = this.shadowConfiguration;
+      return {
+        x: doc.x + (doc.width * (mesh?.anchor?.x ?? .5)),
+        y: doc.y + (doc.height * ((config.alignment === "bottom" && !this.shouldUseIsometric) ? 1 : (mesh?.anchor?.y ?? .5))),
+        width: doc.width,
+        height: doc.height
       }
     }
 
     protected positionBlobShadowIsometric() {
+      console.log("Calling positionBlobShadowIsometric")
       if (!this.blobSprite) return;
 
       const config = this.shadowConfiguration;
@@ -228,17 +287,24 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       const adjustments = this.getAdjustments();
 
-      this.blobSprite.x = doc.x + ((doc.width * this.scene.dimensions.size) / 2);
-      this.blobSprite.y = doc.y + ((doc.height * this.scene.dimensions.size) / 2);
+      const { x, y, width, height } = this.getBlobSpriteBounds();
 
-      this.blobSprite.width = (doc.width * this.scene.dimensions.size) + (adjustments.width ?? 0);
-      this.blobSprite.height = (doc.height * this.scene.dimensions.size) + (adjustments.height ?? 0);
+      this.blobSprite.x = x;
+      this.blobSprite.y = y;
+      this.blobSprite.width = width;
+      this.blobSprite.height = height;
+
+      this.blobSprite.x += adjustments.x;
+      this.blobSprite.y += adjustments.y;
+
       if (config.adjustForElevation) {
-        const pixelHeight = doc.elevation * this.scene.dimensions.distancePixels * config.elevationIncrement;
+        const pixelHeight = this.getElevationAdjustment();
         const elevationOffsets = cartesianToIso(0, pixelHeight);
         if (config.liftToken) {
+          console.log(mesh.x, mesh.y);
           mesh.y -= elevationOffsets.y;
           mesh.x += elevationOffsets.x;
+          console.log(mesh.x, mesh.y);
         } else {
           this.blobSprite.x -= elevationOffsets.x;
           this.blobSprite.y += elevationOffsets.y;
@@ -292,14 +358,13 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (config.ignoreSpriteAnimationsMeshAdjustments && this.getAnimationDocument().flags?.["sprite-animations"]?.meshAdjustments?.enable) {
         this.blobSprite.width = (((this.document as TileDocument | TokenDocument).width ?? 1) * this.scene.dimensions.size) + (adjustments?.width ?? 0);
-        this.blobSprite.height = ((((this.document as TileDocument | TokenDocument).height ?? 1) * this.scene.dimensions.size) * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
+        this.blobSprite.height = ((((this.document as TileDocument | TokenDocument).height ?? 1) * this.scene.dimensions.size) * ((config.alignment === "bottom" && !this.shouldUseIsometric) ? .25 : 1)) + (adjustments?.height ?? 0);
       } else {
         this.blobSprite.width = mesh.width + (adjustments?.width ?? 0);
-        this.blobSprite.height = (mesh.height * (config.alignment === "bottom" ? .25 : 1)) + (adjustments?.height ?? 0);
+        this.blobSprite.height = (mesh.height * ((config.alignment === "bottom" && !this.shouldUseIsometric) ? .25 : 1)) + (adjustments?.height ?? 0);
       }
 
-      const isometricFlags = this.getIsometricFlags();
-      if (typeof isometricFlags?.isoTokenDisabled === "boolean" && !isometricFlags?.isoTokenDisabled) {
+      if (this.shouldUseIsometric) {
         this.positionBlobShadowIsometric();
       } else {
         this.positionBlobShadowOrthographic();

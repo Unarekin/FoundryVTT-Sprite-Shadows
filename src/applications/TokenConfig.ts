@@ -44,6 +44,15 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       }
     }
 
+    protected getDragAdjustmentMultiplier() {
+      return {
+        x: 1 / this.document.width,
+        y: 1 / this.document.height,
+        width: 1 / this.document.width,
+        height: 1 / this.document.height
+      }
+    }
+
     async _processSubmitData(event: SubmitEvent, form: HTMLFormElement, submitData: foundry.applications.ux.FormDataExtended, options: any): Promise<void> {
       const flagData = this.parseShadowFormData();
       foundry.utils.setProperty(submitData, `flags.${__MODULE_ID__}.useTokenOverride`, !!flagData.useTokenOverride);

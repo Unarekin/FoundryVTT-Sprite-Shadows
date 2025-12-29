@@ -16,6 +16,15 @@ export function TokenConfigMixinV1<t extends typeof foundry.appv1.api.DocumentSh
       return context;
     }
 
+    // protected getDragAdjustmentMultiplier() {
+    //   return {
+    //     x: 1 / this.document.width,
+    //     y: 1 / this.document.height,
+    //     width: 1 / this.document.width,
+    //     height: 1 / this.document.height
+    //   }
+    // }
+
     activateListeners(html: JQuery<HTMLElement>): void {
       super.activateListeners(html);
 
