@@ -203,7 +203,6 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected abstract getIsometricFlags(): IsometricFlags | undefined;
 
     protected positionBlobShadowOrthographic() {
-      console.log("Calling positionBlobShadowOrthographic");
       const config = this.shadowConfiguration;
       if (!(config.enabled && config.type === "blob")) return;
       if (!this.blobSprite) return;
