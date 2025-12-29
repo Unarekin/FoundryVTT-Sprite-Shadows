@@ -12,7 +12,7 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
   blur: 2,
   shape: "circle",
   adjustForElevation: false,
-  elevationIncrement: 0,
+  elevationIncrement: 1,
   alignment: "bottom",
   liftToken: false,
   adjustments: {

@@ -29,6 +29,29 @@ export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(bas
       };
     }
 
+    protected getMeshPosition(): { x: number, y: number } { 
+      const doc = this.document as TokenDocument;
+      const mesh = this.getMesh();
+      return {
+        x: doc.x,
+        y: doc.y + (doc.height * this.scene.dimensions.size * (mesh ? mesh.anchor.y : 0.5)) //+ (doc.height * this.scene.dimensions.size * (mesh?.anchor?.y ?? .5)) + this.scene.dimensions.sceneY
+      }
+    }
+
+    protected getBlobSpriteBounds(): { x: number, y: number, width: number, height: number } {
+      const doc = this.document as TokenDocument;
+      const mesh = this.getMesh();
+      const config = this.shadowConfiguration;
+      return {
+        x: doc.x + ((doc.width * this.scene.dimensions.size) * (mesh?.anchor.x ?? 1)),
+        y: doc.y + ((doc.height * this.scene.dimensions.size) * ((config.alignment === "bottom" && !this.shouldUseIsometric) ? 1 : mesh?.anchor.y ?? .5)),
+        width: doc.width * this.scene.dimensions.size,
+        height: doc.height * this.scene.dimensions.size
+      };
+    }
+
+
+
     protected getSize() {
       const doc = this.getShadowDocument();
       return {
