@@ -1,6 +1,6 @@
 {
   "name": "foundryvtt-sprite-shadows",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A module for FoundryVTT to add some options for different types of shadows for tokens and tiles.",
   "main": "dist/module.js",
   "scripts": {
