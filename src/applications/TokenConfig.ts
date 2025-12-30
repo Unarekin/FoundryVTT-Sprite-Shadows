@@ -45,11 +45,17 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
     }
 
     protected getDragAdjustmentMultiplier() {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const isPrototype = (this as any).isPrototype as boolean;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const docWidth = isPrototype ? ((this as any).token as foundry.data.PrototypeToken).width : this.document.width;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const docHeight = isPrototype ? ((this as any).token as foundry.data.PrototypeToken).height : this.document.height;
       return {
-        x: 1 / this.document.width,
-        y: 1 / this.document.height,
-        width: 1 / this.document.width,
-        height: 1 / this.document.height
+        x: 1 / docWidth,
+        y: 1 / docHeight,
+        width: 1 / docWidth,
+        height: 1 / docHeight
       }
     }
 
