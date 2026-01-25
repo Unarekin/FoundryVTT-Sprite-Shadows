@@ -87,7 +87,7 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       await super._onSubmitForm(formConfig, event);
       if (this.isPrototype) {
         const actor = this.getActor();
-        if (actor) await actor.update({flags: { [__MODULE_ID__]: flagData }});
+        if (actor) await actor.update({ flags: { [__MODULE_ID__]: flagData } });
       }
     }
 

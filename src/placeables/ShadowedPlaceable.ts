@@ -240,7 +240,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         const elevationAdjustment = this.getElevationAdjustment();
         if (config.liftToken)
           mesh.y = meshPos.y - elevationAdjustment;
-          // mesh.y = this.y + (doc.height * this.scene.dimensions.size * mesh.anchor.y) + this.scene.dimensions.sceneY - elevationAdjustment;
+        // mesh.y = this.y + (doc.height * this.scene.dimensions.size * mesh.anchor.y) + this.scene.dimensions.sceneY - elevationAdjustment;
         else
           this.blobSprite.y += elevationAdjustment;
       } else {
@@ -273,7 +273,6 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     }
 
     protected positionBlobShadowIsometric() {
-      console.log("Calling positionBlobShadowIsometric")
       if (!this.blobSprite) return;
 
       const config = this.shadowConfiguration;
@@ -301,10 +300,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         const pixelHeight = this.getElevationAdjustment();
         const elevationOffsets = cartesianToIso(0, pixelHeight);
         if (config.liftToken) {
-          console.log(mesh.x, mesh.y);
           mesh.y -= elevationOffsets.y;
           mesh.x += elevationOffsets.x;
-          console.log(mesh.x, mesh.y);
         } else {
           this.blobSprite.x -= elevationOffsets.x;
           this.blobSprite.y += elevationOffsets.y;

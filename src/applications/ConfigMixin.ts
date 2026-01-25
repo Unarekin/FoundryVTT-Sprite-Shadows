@@ -95,6 +95,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     protected getDragAdjustmentMultiplier() { return { x: 1, y: 1, width: 1, height: 1 }; }
 
     protected parseShadowFormData(): DeepPartial<ShadowConfiguration> {
+      if (!this.form) return {};
       const data = foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as Record<string, unknown>;
       const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
 
@@ -120,7 +121,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       context.shadows = {
         idPrefix: foundry.utils.randomID(),
-        config: flags,
+        config: foundry.utils.deepClone(flags),
         allowTokenOverride: false,
         spriteAnimations: game.modules?.get("sprite-animations")?.active ?? false,
         typeSelect: {
@@ -138,8 +139,9 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
       }
       // Convert skew to degrees
-      if (context.shadows.config.type === "stencil")
+      if (context.shadows.config.type === "stencil") {
         context.shadows.config.skew *= (180 / Math.PI);
+      }
 
       const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
       context.shadows.config.adjustments.x *= 1 / adjustmentMultiplier.x;
@@ -339,9 +341,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         alphaPicker.addEventListener("input", (e: Event) => {
           const alpha = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
           const obj = this.getShadowedObject();
-          if (!obj) return;
-          if (obj.blobSprite) obj.blobSprite.alpha = alpha;
-          if (obj.stencilSprite) obj.stencilSprite.alpha = alpha;
+          if (obj?.blobSprite) obj.blobSprite.alpha = alpha;
+          if (obj?.stencilSprite) obj.stencilSprite.alpha = alpha;
         });
       }
 
@@ -350,9 +351,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         rotationPicker.addEventListener("input", (e: Event) => {
           const angle = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
           const obj = this.getShadowedObject();
-          if (!obj) return;
-          if (obj.blobSprite) obj.blobSprite.angle = angle;
-          if (obj.stencilSprite) obj.stencilSprite.angle = angle;
+          if (obj?.blobSprite) obj.blobSprite.angle = angle;
+          if (obj?.stencilSprite) obj.stencilSprite.angle = angle;
         })
       }
 
@@ -361,8 +361,9 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         skewPicker.addEventListener("input", (e: Event) => {
           const skew = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
           const obj = this.getShadowedObject();
-          if (!obj) return;
-          if (obj.stencilSprite) obj.stencilSprite.skew.x = skew * (Math.PI / 180);
+          if (obj?.stencilSprite) {
+            obj.stencilSprite.skew.x = skew * (Math.PI / 180);
+          }
         })
       }
 
