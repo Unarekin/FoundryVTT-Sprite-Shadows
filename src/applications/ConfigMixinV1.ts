@@ -138,7 +138,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         v1: true,
         shadows: {
           idPrefix: foundry.utils.randomID(),
-          config: this.getConfiguration(),
+          config: foundry.utils.deepClone(this.getConfiguration()),
           spriteAnimations: game.modules?.get("sprite-animations")?.active ?? false,
           typeSelect: {
             blob: "SPRITESHADOWS.SETTINGS.TYPE.BLOB",
