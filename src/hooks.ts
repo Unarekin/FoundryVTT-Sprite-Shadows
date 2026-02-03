@@ -15,7 +15,7 @@ Hooks.once("canvasReady", () => {
 });
 
 
-Hooks.once("init", () => {
+Hooks.once("canvasConfig", () => {
   const ShadowedToken = TokenMixin(CONFIG.Token.objectClass);
   CONFIG.Token.objectClass = ShadowedToken;
 
