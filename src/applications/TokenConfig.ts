@@ -137,6 +137,7 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
   foundry.utils.mergeObject(parts, {
     shadows: {
       template: `modules/${__MODULE_ID__}/templates/ShadowConfig.hbs`,
+      scrollable: ['.scrollable'],
       templates: [
         `modules/${__MODULE_ID__}/templates/BlobConfig.hbs`,
         `modules/${__MODULE_ID__}/templates/StencilConfig.hbs`

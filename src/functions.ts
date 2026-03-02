@@ -1,3 +1,39 @@
+export function logImage(url: string, width = 256, height = 256) {
+  const image = new Image();
+
+  image.onload = function () {
+    const style = [
+      `font-size: 1px`,
+      `padding-left: ${width}px`,
+      `padding-bottom: ${height}px`,
+      // `padding: ${this.height / 100 * size}px ${this.width / 100 * size}px`,
+      `background: url(${url}) no-repeat`,
+      `background-size:contain`,
+      `border:1px solid black`,
+      `max-width: 512px`
+    ].join(";")
+    console.log('%c ', style);
+  }
+
+  image.src = url;
+}
+
+export function logTexture(texture: PIXI.Texture) {
+  const renderTexture = PIXI.RenderTexture.create({ width: texture.width, height: texture.height });
+  const sprite = PIXI.Sprite.from(texture);
+  canvas?.app?.renderer.render(sprite, { renderTexture });
+
+  const ratio = 512 / Math.max(texture.width, texture.height);
+  const width = texture.width > texture.height ? 512 : texture.width * ratio;
+  const height = texture.height > texture.width ? 512 : texture.height * ratio;
+
+  canvas?.app?.renderer.extract.base64(renderTexture)
+    .then(base64 => {
+      logImage(base64, width, height);
+    }).catch(console.error);
+}
+
+
 export function downloadJSON(json: object, name: string) {
   const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
   const objUrl = URL.createObjectURL(blob);
@@ -52,4 +88,39 @@ export function cartesianToIso(isoX: number, isoY: number) {
     x: (isoX * Math.cos(-angle) - isoY * Math.sin(-angle)),
     y: (isoX * Math.sin(-angle) + isoY * Math.cos(-angle))
   };
+}
+
+export function findAnchorPoint(texture: PIXI.Texture): { x: number, y: number } | undefined {
+  if (!canvas?.app?.renderer) return;
+  const rt = PIXI.RenderTexture.create({ width: texture.baseTexture.width, height: texture.baseTexture.height });
+  const sprite = new PIXI.Sprite(texture);
+  sprite.width = rt.width;
+  sprite.height = rt.height;
+  canvas.app.renderer.render(sprite, { renderTexture: rt, clear: false });
+
+  const anchor = {
+    x: 0.5,
+    y: 1
+  }
+
+  const pixels = Uint8ClampedArray.from(canvas.app.renderer.extract.pixels(rt));
+  const imageData = new ImageData(pixels, rt.width, rt.height);
+
+  let bottom = rt.height;
+
+  // Find bottommost pixel
+  outer: for (let y = rt.height; y > 0; y--) {
+    for (let x = 0; x < rt.width; x++) {
+      const index = (y * rt.width + x) * 4;
+      const alpha = imageData.data[index + 3];
+      if (alpha > 0) {
+        bottom = y;
+        break outer;
+      }
+    }
+  }
+
+  anchor.y = bottom / rt.height;
+
+  return anchor;
 }

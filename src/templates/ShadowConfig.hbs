@@ -134,9 +134,21 @@
 
         <button type="button" data-role="drag-size" data-tooltip="{{{adjustSizeTooltip}}}"><i class="fa-solid fa-up-down-left-right"></i></button>
       </div>
-
-      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.HINT"}}</p>
     </div>
 
+    <div class="form-group slim">
+      <label>{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.ANCHOR"}}</label>
+      <div class="form-fields">
+        <label for="{{idPrefix}}-adjustmentsAnchorX">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.X"}}</label>
+        <input type="number" step="1" value="{{config.adjustments.anchor.x}}" name="sprite-shadows.adjustments.anchor.x" id="{{idPrefix}}-adjustmentsAnchorX" data-role="shadow-adjustment">
+
+        <label for="{{idPrefix}}-adjustmentsAnchorY">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.Y"}}</label>
+        <input type="number" step="1" value="{{config.adjustments.anchor.y}}" name="sprite-shadows.adjustments.anchor.y" id="{{idPrefix}}-adjustmentsAnchorY" data-role="shadow-adjustment">
+
+        <button type="button" data-role="auto-anchor" data-action="autoSetAnchor" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.ANCHORTOOLTIP"}}"><i class="fa-solid fa-crosshairs"></i></button>
+      </div>
+    </div>
+    
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.HINT"}}</p>
   {{/with}}
 </div>
