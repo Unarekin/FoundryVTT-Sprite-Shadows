@@ -61,7 +61,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       return true;
     }
 
-    protected getAdjustmentMultipliers(): { x: number, y: number, width: number, height: number } {
+    protected getShadowAdjustmentMultipliers(): { x: number, y: number, width: number, height: number } {
       return {
         x: 1,
         y: 1,
@@ -83,9 +83,9 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       return gridSquares * this.scene.dimensions.size * config.elevationIncrement;
     }
 
-    protected getAdjustments(): MeshAdjustments {
+    protected getShadowAdjustments(): MeshAdjustments {
       const adjustments = this.shadowConfiguration.adjustments;
-      const multipliers = this.getAdjustmentMultipliers();
+      const multipliers = this.getShadowAdjustmentMultipliers();
       return {
         enabled: adjustments.enabled,
         x: adjustments.x * multipliers.x,
@@ -214,7 +214,6 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       // If no document, we're not in a scene, so no need to position.
       if (!doc) return;
 
-      // const adjustments = this.getAdjustments();
 
       const bounds = this.getBlobSpriteBounds();
 
@@ -226,7 +225,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       //   this.blobSprite.y = bounds.y //doc.y + ((doc.height * this.scene.dimensions.size) * this.blobSprite.anchor.y);
 
       // Apply adjustments
-      const adjustments = this.getAdjustments();
+      const adjustments = this.getShadowAdjustments();
       if (adjustments) {
         if (typeof adjustments.x === "number") this.blobSprite.x += adjustments.x;
         if (typeof adjustments.y === "number") this.blobSprite.y += adjustments.y;
@@ -284,7 +283,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const mesh = this.getMesh();
       if (!mesh) return;
 
-      const adjustments = this.getAdjustments();
+      const adjustments = this.getShadowAdjustments();
 
       const { x, y, width, height } = this.getBlobSpriteBounds();
 
@@ -343,7 +342,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (this.blobSprite as any).elevation = mesh.elevation;
 
-      const adjustments = this.getAdjustments();
+      const adjustments = this.getShadowAdjustments();
 
       this.blobSprite.visible = true;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -422,7 +421,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       this.stencilSprite.scale.y = scale.y;
       this.stencilSprite.skew.x = config.skew ?? 0;
 
-      const adjustments = this.getAdjustments();
+      const adjustments = this.getShadowAdjustments();
 
       if (adjustments?.x) this.stencilSprite.x += adjustments.x;
       if (adjustments?.y) this.stencilSprite.y += adjustments.y;

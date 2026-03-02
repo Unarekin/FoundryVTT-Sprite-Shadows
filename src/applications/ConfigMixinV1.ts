@@ -17,7 +17,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
     protected abstract getShadowedObject(): ShadowedObject | undefined;
     protected abstract setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<ShadowConfiguration> | void;
 
-    protected dragAdjustments = {
+    protected shadowDragAdjustments = {
       x: "",
       y: "",
       width: "",
@@ -159,7 +159,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       if (context.shadows.config.type === "stencil")
         context.shadows.config.skew *= (180 / Math.PI);
 
-      const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
+      const adjustmentMultiplier = this.getShadowDragAdjustmentMultiplier();
       context.shadows.config.adjustments.x *= 1 / adjustmentMultiplier.x;
       context.shadows.config.adjustments.y *= 1 / adjustmentMultiplier.y;
       context.shadows.config.adjustments.width *= 1 / adjustmentMultiplier.width;
@@ -208,7 +208,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         if (formData.type === "stencil")
           formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
 
-        const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
+        const adjustmentMultiplier = this.getShadowDragAdjustmentMultiplier();
 
         if (typeof formData.adjustments?.x === "number") formData.adjustments.x *= adjustmentMultiplier.x;
         if (typeof formData.adjustments?.y === "number") formData.adjustments.y *= adjustmentMultiplier.y;
@@ -226,13 +226,13 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       return super._onSubmit(event, options);
     }
 
-    protected _dragAdjustMouseUp = (() => {
-      this.dragAdjustments.x = this.dragAdjustments.y = this.dragAdjustments.width = this.dragAdjustments.height = "";
+    protected _shadowDragAdjustMouseUp = (() => {
+      this.shadowDragAdjustments.x = this.shadowDragAdjustments.y = this.shadowDragAdjustments.width = this.shadowDragAdjustments.height = "";
     }).bind(this);
 
-    protected getDragAdjustmentMultiplier() { return { x: 1, y: 1, width: 1, height: 1 }; }
+    protected getShadowDragAdjustmentMultiplier() { return { x: 1, y: 1, width: 1, height: 1 }; }
 
-    protected applyDragAdjustment(selector: string, delta: number) {
+    protected applyShadowDragAdjustment(selector: string, delta: number) {
       const elem = this.element[0].querySelector(selector);
       if (elem instanceof HTMLInputElement) {
         elem.value = Math.floor((parseFloat(elem.value) + delta)).toString();
@@ -240,16 +240,16 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       }
     }
 
-    protected _dragAdjustMouseMove = ((e: MouseEvent) => {
-      const multiplier = this.getDragAdjustmentMultiplier();
-      if (this.dragAdjustments.x)
-        this.applyDragAdjustment(this.dragAdjustments.x, e.movementX * multiplier.x);
-      if (this.dragAdjustments.y)
-        this.applyDragAdjustment(this.dragAdjustments.y, e.movementY * multiplier.y);
-      if (this.dragAdjustments.width)
-        this.applyDragAdjustment(this.dragAdjustments.width, e.movementX * multiplier.width);
-      if (this.dragAdjustments.height)
-        this.applyDragAdjustment(this.dragAdjustments.height, -e.movementY * multiplier.height);
+    protected _shadowDragAdjustMouseMove = ((e: MouseEvent) => {
+      const multiplier = this.getShadowDragAdjustmentMultiplier();
+      if (this.shadowDragAdjustments.x)
+        this.applyShadowDragAdjustment(this.shadowDragAdjustments.x, e.movementX * multiplier.x);
+      if (this.shadowDragAdjustments.y)
+        this.applyShadowDragAdjustment(this.shadowDragAdjustments.y, e.movementY * multiplier.y);
+      if (this.shadowDragAdjustments.width)
+        this.applyShadowDragAdjustment(this.shadowDragAdjustments.width, e.movementX * multiplier.width);
+      if (this.shadowDragAdjustments.height)
+        this.applyShadowDragAdjustment(this.shadowDragAdjustments.height, -e.movementY * multiplier.height);
     }).bind(this);
 
     activateListeners(html: JQuery<HTMLElement>): void {
@@ -262,21 +262,21 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       if (typeSelect instanceof HTMLSelectElement)
         typeSelect.addEventListener("change", () => { this.toggleConfigSection(typeSelect.value as ShadowType); });
 
-      const dragPos = elem.querySelector(`[data-role="drag-pos"]`);
+      const dragPos = elem.querySelector(`[data-role="shadow-drag-pos"]`);
       if (dragPos instanceof HTMLButtonElement) {
         dragPos.addEventListener("mousedown", () => {
-          this.dragAdjustments.x = `[name="${__MODULE_ID__}.adjustments.x"]`
-          this.dragAdjustments.y = `[name="${__MODULE_ID__}.adjustments.y"]`
-          this.dragAdjustments.width = this.dragAdjustments.height = "";
+          this.shadowDragAdjustments.x = `[name="${__MODULE_ID__}.adjustments.x"]`
+          this.shadowDragAdjustments.y = `[name="${__MODULE_ID__}.adjustments.y"]`
+          this.shadowDragAdjustments.width = this.shadowDragAdjustments.height = "";
         })
       }
 
-      const dragSize = elem.querySelector(`[data-role="drag-size"]`);
+      const dragSize = elem.querySelector(`[data-role="shadow-drag-size"]`);
       if (dragSize instanceof HTMLButtonElement) {
         dragSize.addEventListener("mousedown", () => {
-          this.dragAdjustments.x = this.dragAdjustments.y = "";
-          this.dragAdjustments.width = `[name="${__MODULE_ID__}.adjustments.width"]`;
-          this.dragAdjustments.height = `[name="${__MODULE_ID__}.adjustments.height"]`;
+          this.shadowDragAdjustments.x = this.shadowDragAdjustments.y = "";
+          this.shadowDragAdjustments.width = `[name="${__MODULE_ID__}.adjustments.width"]`;
+          this.shadowDragAdjustments.height = `[name="${__MODULE_ID__}.adjustments.height"]`;
         })
       }
 
@@ -404,15 +404,15 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       })
 
 
-      window.removeEventListener("mousemove", this._dragAdjustMouseMove);
-      window.removeEventListener("mouseup", this._dragAdjustMouseUp);
-      window.addEventListener("mousemove", this._dragAdjustMouseMove);
-      window.addEventListener("mouseup", this._dragAdjustMouseUp);
+      window.removeEventListener("mousemove", this._shadowDragAdjustMouseMove);
+      window.removeEventListener("mouseup", this._shadowDragAdjustMouseUp);
+      window.addEventListener("mousemove", this._shadowDragAdjustMouseMove);
+      window.addEventListener("mouseup", this._shadowDragAdjustMouseUp);
     }
 
     async close(options: foundry.appv1.api.FormApplication.CloseOptions) {
-      window.removeEventListener("mousemove", this._dragAdjustMouseMove);
-      window.removeEventListener("mouseup", this._dragAdjustMouseUp);
+      window.removeEventListener("mousemove", this._shadowDragAdjustMouseMove);
+      window.removeEventListener("mouseup", this._shadowDragAdjustMouseUp);
       await super.close(options)
     }
 
