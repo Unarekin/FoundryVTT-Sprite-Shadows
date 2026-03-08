@@ -19,7 +19,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       actions: {
         ...(base.DEFAULT_OPTIONS.actions ?? {}),
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        autoSetAnchor: ShadowedConfig.AutoSetAnchor
+        autoSetShadowAnchor: ShadowedConfig.AutoSetAnchor
       }
     }
 
@@ -35,7 +35,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined;
     protected abstract getShadowedObject(): ShadowedObject | undefined;
 
-    static async AutoSetAnchor(this: ShadowedConfig) {
+    static AutoSetAnchor(this: ShadowedConfig) {
       try {
         if (!this.overrideFlags?.adjustments?.anchor) return;
         const shadowedObj = this.getShadowedObject();
@@ -49,16 +49,25 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         const anchor = flags.type === "blob" ? findAnchorPoint(shadowedObj.blobSprite.texture) : findAnchorPoint(shadowedObj.stencilSprite.texture);
 
         if (!anchor) return;
-        console.log("Calculated anchor:", anchor);
 
         this.overrideFlags.adjustments.anchor.x = anchor.x;
         this.overrideFlags.adjustments.anchor.y = anchor.y;
 
-        await this.render();
+        this.setFormElementValue(`[name="sprite-shadows.adjustments.anchor.x"]`, anchor.x.toString(), false);
+        this.setFormElementValue(`[name="sprite-shadows.adjustments.anchor.y"]`, anchor.y.toString());
+
       } catch (err) {
         console.error(err);
         if (err instanceof Error) ui.notifications?.error(err.message, { console: false });
       }
+    }
+
+    protected setFormElementValue(selector: string, value: string, dispatchEvent = true) {
+      const elem = this.element.querySelector(selector);
+      if (!(elem instanceof HTMLInputElement)) return;
+      elem.value = value;
+      if (dispatchEvent)
+        elem.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
     protected getConfiguration(): ShadowConfiguration {
@@ -111,8 +120,9 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     protected applyShadowDragAdjustment(selector: string, delta: number) {
       const elem = this.element.querySelector(selector);
       if (elem instanceof HTMLInputElement) {
-        elem.value = Math.floor((parseFloat(elem.value) + delta)).toString();
-        elem.dispatchEvent(new Event("change", { bubbles: true }));
+        this.setFormElementValue(selector, Math.floor((parseFloat(elem.value) + delta)).toString());
+        // elem.value = Math.floor((parseFloat(elem.value) + delta)).toString();
+        // elem.dispatchEvent(new Event("change", { bubbles: true }));
       }
     }
 
@@ -248,6 +258,10 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       }
 
       sprite.angle = changes.rotation;
+
+      if (changes.adjustments.anchor) {
+        sprite.anchor.set(changes.adjustments.anchor.x ?? 0.5, changes.adjustments.anchor.y ?? 1);
+      }
     }
 
     _onChangeForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event) {
@@ -353,7 +367,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       this.toggleConfigSection(config.type);
 
-      const dragPos = this.element.querySelector(`[data-role="drag-pos"]`);
+      const dragPos = this.element.querySelector(`[data-role="drag-shadow-pos"]`);
       if (dragPos instanceof HTMLButtonElement) {
         dragPos.addEventListener("mousedown", () => {
           this.shadowDragAdjustments.x = `[name="${__MODULE_ID__}.adjustments.x"]`
@@ -362,7 +376,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         });
       }
 
-      const dragSize = this.element.querySelector(`[data-role="drag-size"]`);
+      const dragSize = this.element.querySelector(`[data-role="drag-shadow-size"]`);
       if (dragSize instanceof HTMLButtonElement) {
         dragSize.addEventListener("mousedown", () => {
           this.shadowDragAdjustments.x = this.shadowDragAdjustments.y = "";
@@ -399,7 +413,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           if (obj?.stencilSprite) {
             obj.stencilSprite.skew.x = skew * (Math.PI / 180);
           }
-        })
+        });
       }
 
       const typeSelect = this.element.querySelector(`select[name="${__MODULE_ID__}.type"]`);

@@ -120,7 +120,7 @@
         <label for="{{idPrefix}}-adjustmentsY">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.Y"}}</label>
         <input type="number" step="1" value="{{config.adjustments.y}}" name="sprite-shadows.adjustments.y" id="{{idPrefix}}-adjustmentsY" data-role="shadow-adjustment">
 
-        <button type="button" data-role="drag-pos" data-tooltip-direction="UP" data-tooltip="{{{adjustPosTooltip}}}"><i class="fa-solid fa-up-down-left-right" ></i></button>
+        <button type="button" data-role="drag-shadow-pos" data-tooltip-direction="UP" data-tooltip="{{{adjustPosTooltip}}}"><i class="fa-solid fa-up-down-left-right" ></i></button>
       </div>
 
     </div>
@@ -132,7 +132,7 @@
         <label for="{{idPrefix}}-adjustmentsHeight">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.HEIGHT"}}</label>
         <input type="number" step="1" value="{{config.adjustments.height}}" name="sprite-shadows.adjustments.height" id="{{idPrefix}}-adjustmentsHeight" data-role="shadow-adjustment">
 
-        <button type="button" data-role="drag-size" data-tooltip="{{{adjustSizeTooltip}}}"><i class="fa-solid fa-up-down-left-right"></i></button>
+        <button type="button" data-role="drag-shadow-size" data-tooltip="{{{adjustSizeTooltip}}}"><i class="fa-solid fa-up-down-left-right"></i></button>
       </div>
     </div>
 
@@ -140,12 +140,12 @@
       <label>{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.ANCHOR"}}</label>
       <div class="form-fields">
         <label for="{{idPrefix}}-adjustmentsAnchorX">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.X"}}</label>
-        <input type="number" step="1" value="{{config.adjustments.anchor.x}}" name="sprite-shadows.adjustments.anchor.x" id="{{idPrefix}}-adjustmentsAnchorX" data-role="shadow-adjustment">
+        <input type="number" step="any" value="{{config.adjustments.anchor.x}}" name="sprite-shadows.adjustments.anchor.x" id="{{idPrefix}}-adjustmentsAnchorX" data-role="shadow-adjustment">
 
         <label for="{{idPrefix}}-adjustmentsAnchorY">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.Y"}}</label>
-        <input type="number" step="1" value="{{config.adjustments.anchor.y}}" name="sprite-shadows.adjustments.anchor.y" id="{{idPrefix}}-adjustmentsAnchorY" data-role="shadow-adjustment">
+        <input type="number" step="any" value="{{config.adjustments.anchor.y}}" name="sprite-shadows.adjustments.anchor.y" id="{{idPrefix}}-adjustmentsAnchorY" data-role="shadow-adjustment">
 
-        <button type="button" data-role="auto-anchor" data-action="autoSetAnchor" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.ANCHORTOOLTIP"}}"><i class="fa-solid fa-crosshairs"></i></button>
+        <button type="button" data-role="auto-shadow-anchor" data-action="autoSetShadowAnchor" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.ANCHORTOOLTIP"}}"><i class="fa-solid fa-crosshairs"></i></button>
       </div>
     </div>
     
