@@ -36,6 +36,10 @@ export interface MeshAdjustments {
   y: number;
   width: number;
   height: number;
+  anchor: {
+    x: number;
+    y: number;
+  }
 }
 
 interface BaseShadowConfiguration {

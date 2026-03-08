@@ -2,6 +2,8 @@
   "SPRITESHADOWS": {
     "SETTINGS": {
       "ADJUSTMENTS": {
+        "ANCHOR": "Anchor",
+        "ANCHORTOOLTIP": "Auto-set anchor",
         "DRAGPOS": "Click and drag to fine-tune position",
         "DRAGSIZE": "Click and drag to fine-tune size",
         "HEIGHT": "Height",

@@ -20,7 +20,11 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
     x: 0,
     y: 0,
     width: 0,
-    height: 0
+    height: 0,
+    anchor: {
+      x: 0.5,
+      y: 0.5
+    }
   }
 }
 
@@ -42,7 +46,11 @@ export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
     x: 0,
     y: 0,
     width: 0,
-    height: 0
+    height: 0,
+    anchor: {
+      x: 0.5,
+      y: 0.5
+    }
   }
 }
 
