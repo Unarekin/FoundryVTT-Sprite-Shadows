@@ -90,28 +90,64 @@ export function cartesianToIso(isoX: number, isoY: number) {
   };
 }
 
-export function findAnchorPoint(texture: PIXI.Texture): { x: number, y: number } | undefined {
+function getImageDataFromTexture(texture: PIXI.Texture): ImageData | undefined {
   if (!canvas?.app?.renderer) return;
   const rt = PIXI.RenderTexture.create({ width: texture.baseTexture.width, height: texture.baseTexture.height });
   const sprite = new PIXI.Sprite(texture);
   sprite.width = rt.width;
   sprite.height = rt.height;
   canvas.app.renderer.render(sprite, { renderTexture: rt, clear: false });
+  const pixels = Uint8ClampedArray.from(canvas.app.renderer.extract.pixels(rt));
+  return new ImageData(pixels, rt.width, rt.height);
+}
+
+export function findCentralAnchorPoint(texture: PIXI.Texture): { x: number, y: number } | undefined {
+  const imageData = getImageDataFromTexture(texture);
+  if (!imageData) return;
+
+  // Determine visual bounds
+  const { width, height } = texture.baseTexture;
+  let left = width;
+  let right = 0;
+  let top = height;
+  let bottom = 0;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const index = (y * width + x) * 4;
+      const alpha = imageData.data[index + 3]
+      if (alpha > 0) {
+        if (x < left) left = x;
+        if (x > right) right = x;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      }
+    }
+  }
+
+  return {
+    x: (left + ((right - left) / 2)) / width,
+    y: (top + ((bottom - top) / 2)) / height
+  }
+}
+
+export function findBottomAnchorPoint(texture: PIXI.Texture): { x: number, y: number } | undefined {
+
+  const imageData = getImageDataFromTexture(texture);
+  if (!imageData) return;
 
   const anchor = {
     x: 0.5,
     y: 1
   }
 
-  const pixels = Uint8ClampedArray.from(canvas.app.renderer.extract.pixels(rt));
-  const imageData = new ImageData(pixels, rt.width, rt.height);
-
-  let bottom = rt.height;
+  const { width, height } = texture.baseTexture;
+  let bottom = height;
 
   // Find bottommost pixel
-  outer: for (let y = rt.height; y > 0; y--) {
-    for (let x = 0; x < rt.width; x++) {
-      const index = (y * rt.width + x) * 4;
+  outer: for (let y = height; y > 0; y--) {
+    for (let x = 0; x < width; x++) {
+      const index = (y * width + x) * 4;
       const alpha = imageData.data[index + 3];
       if (alpha > 0) {
         bottom = y;
@@ -120,7 +156,7 @@ export function findAnchorPoint(texture: PIXI.Texture): { x: number, y: number }
     }
   }
 
-  anchor.y = bottom / rt.height;
+  anchor.y = bottom / height;
 
   return anchor;
 }

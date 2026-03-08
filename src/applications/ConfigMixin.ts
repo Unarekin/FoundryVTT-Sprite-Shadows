@@ -2,7 +2,7 @@ import { BlobShadowConfiguration, DeepPartial, ShadowConfiguration, ShadowType, 
 import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
 import { TintFilter } from "filters";
-import { downloadJSON, findAnchorPoint, uploadJSON } from "functions";
+import { downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
 
 
 interface ShadowedObject {
@@ -46,7 +46,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         if (flags.type === "blob" && !shadowedObj.blobSprite) return;
         if (flags.type === "stencil" && !shadowedObj.stencilSprite) return;
 
-        const anchor = flags.type === "blob" ? findAnchorPoint(shadowedObj.blobSprite.texture) : findAnchorPoint(shadowedObj.stencilSprite.texture);
+        const shadowTexture = flags.type === "blob" ? shadowedObj.blobSprite.texture : shadowedObj.stencilSprite.texture;
+        const anchor = flags.alignment === "bottom" ? findBottomAnchorPoint(shadowTexture) : findCentralAnchorPoint(shadowTexture);
 
         if (!anchor) return;
 
