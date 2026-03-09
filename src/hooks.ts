@@ -119,3 +119,18 @@ Hooks.on("getHeaderControlsActorSheetV2", (app: foundry.applications.sheets.Acto
     }
   });
 });
+
+let lastVisibilityRefreshWarn = 0;
+Hooks.on("visibilityRefresh", () => {
+  if (!canvas?.scene) return;
+  const start = performance.now();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  canvas.scene.tokens.forEach(doc => { (doc.object as any).refreshShadow(); });
+  const duration = performance.now() - start;
+  console.log(`Visibility refreshed in ${duration}ms`);
+  // Warn if refresh took over 16 ms and we haven't warn them in the last 5 mins
+  if (duration > 16 && (Date.now() - lastVisibilityRefreshWarn) > 300000) {
+    lastVisibilityRefreshWarn = Date.now();
+    if (game.i18n) console.warn(game.i18n.format("SPRITESHADOWS.ERRORS.VISIONREFRESHPERFORMANCE", { duration: duration.toString() }));
+  }
+})

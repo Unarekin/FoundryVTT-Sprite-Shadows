@@ -2,7 +2,8 @@
   "SPRITESHADOWS": {
     "ERRORS": {
       "TEXTUREGEN": "Unaable to generate shadow texture",
-      "UNKNOWNACTORAPP": "Unknown ActorSheet application version"
+      "UNKNOWNACTORAPP": "Unknown ActorSheet application version",
+      "VISIONREFRESHPERFORMANCE": "Refreshing visibility took {duration}ms"
     }
   }
 }
