@@ -92,4 +92,30 @@ Hooks.on("updateTile", (tile: TileDocument, delta: TileDocument.UpdateData, opti
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     (tile.object as any).refreshShadow(true);
   }
-})
+});
+
+Hooks.on("getHeaderControlsActorSheetV2", (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
+  controls.unshift({
+    icon: "fa-solid fa-lightbulb",
+    label: "SPRITESHADOWS.TITLE",
+    class: "sprite-shadows",
+    onClick: async () => {
+      console.log(app.actor.token?.sheet);
+      console.log(app.actor.token?.sheet instanceof foundry.applications.api.ApplicationV2)
+
+      if (app.actor.token) {
+
+        if (app.actor.token.sheet instanceof foundry.applications.api.ApplicationV2) {
+          await app.actor.token.sheet.render({ force: true, tab: "shadows" });
+        } else {
+          ui.notifications?.warn("SPRITESHADOWS.ERRORS.UNKNOWNACTORAPP", { localize: true });
+        }
+      } else if (app.actor.prototypeToken) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const sheet = new CONFIG.Token.prototypeSheetClass({ prototype: app.actor.prototypeToken });
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        await sheet.render({ force: true, tab: "shadows" });
+      }
+    }
+  });
+});

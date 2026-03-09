@@ -1,4 +1,7 @@
 {
+  "SPRITESHADOWS": {
+    "TITLE": "Sprite Shadows"
+  },
   "TOKEN": {
     "TABS": {
       "shadows": "Shadows"

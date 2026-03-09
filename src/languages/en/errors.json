@@ -1,7 +1,8 @@
 {
   "SPRITESHADOWS": {
     "ERRORS": {
-      "TEXTUREGEN": "Unaable to generate shadow texture"
+      "TEXTUREGEN": "Unaable to generate shadow texture",
+      "UNKNOWNACTORAPP": "Unknown ActorSheet application version"
     }
   }
 }
