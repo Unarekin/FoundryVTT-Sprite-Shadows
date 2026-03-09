@@ -49,7 +49,7 @@ export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
     height: 0,
     anchor: {
       x: 0.5,
-      y: 0.5
+      y: 1
     }
   }
 }
