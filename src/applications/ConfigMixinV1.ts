@@ -15,7 +15,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
   abstract class ShadowedConfigV1 extends Base {
     protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined;
     protected abstract getShadowedObject(): ShadowedObject | undefined;
-    protected abstract setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<ShadowConfiguration> | void;
+    protected abstract setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<void>;
 
     protected shadowDragAdjustments = {
       x: "",
@@ -150,6 +150,11 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
           },
           blobShapeSelect: {
             circle: "SPRITESHADOWS.SETTINGS.BLOBSHAPE.CIRCLE"
+          },
+          configSourceSelect: {
+            "actor": "DOCUMENT.Actor",
+            "token": "DOCUMENT.Token",
+            "scene": "DOCUMENT.Scene"
           },
           adjustPosTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`,
           adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,

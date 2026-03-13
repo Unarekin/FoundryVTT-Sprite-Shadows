@@ -1,4 +1,4 @@
-import { BlobShape, ShadowAlignment, ShadowConfiguration, ShadowType } from "types";
+import { BlobShape, ShadowAlignment, ShadowConfigSource, ShadowConfiguration, ShadowType } from "types";
 
 export type ShadowConfigContext<t extends foundry.applications.api.ApplicationV2.RenderContext> = t & {
   shadows: {
@@ -11,5 +11,7 @@ export type ShadowConfigContext<t extends foundry.applications.api.ApplicationV2
     adjustPosTooltip: string;
     adjustSizeTooltip: string;
     spriteAnimations: boolean;
+    configSourceSelect: Record<ShadowConfigSource, string>;
+    configSource?: ShadowConfigSource;
   }
 }

@@ -42,6 +42,9 @@ export interface MeshAdjustments {
   }
 }
 
+export const ShadowConfigSources = ["actor", "token", "scene"] as const;
+export type ShadowConfigSource = typeof ShadowConfigSources[number];
+
 interface BaseShadowConfiguration {
   type: ShadowType;
   enabled: boolean;
@@ -51,7 +54,6 @@ interface BaseShadowConfiguration {
   adjustments: MeshAdjustments;
   blur: number;
   rotation: number;
-  useTokenOverride: boolean;
   ignoreSpriteAnimationsMeshAdjustments: boolean;
 }
 

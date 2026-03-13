@@ -1,6 +1,10 @@
 {
   "SPRITESHADOWS": {
     "SETTINGS": {
+      "CONFIGSOURCE": {
+        "LABEL": "Configuration Source",
+        "HINT": "Where to store the shadow configuration for this token"
+      },
       "ADJUSTMENTS": {
         "ANCHOR": "Anchor",
         "ANCHORTOOLTIP": "Auto-set anchor",

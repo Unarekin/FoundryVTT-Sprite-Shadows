@@ -1,26 +1,57 @@
-import { IsometricFlags, ShadowConfiguration } from "../src/types"
 import { libWrapper as wrapperClass } from "./libwrapper"
-
-
-
-
-
+import { ShadowConfiguration, ShadowConfigSource, IsometricFlags } from "../src/types"
 
 declare module '*.scss';
 
+
+declare global {
+
+  const libWrapper: typeof wrapperClass;
+
+  const __MODULE_ID__ = "sprite-shadows";
+  declare const __DEV__: boolean;
+  declare const __MODULE_TITLE__: string;
+  declare const __MODULE_VERSION__: string;
+
+  interface Game {
+    SpriteShadows: Record<string, unknown>;
+  }
+
+  declare module '*.frag' {
+    const content: string;
+    export default content;
+  }
+
+  declare module '*.vert' {
+    const content: string;
+    export default content;
+  }
+}
+
 declare module "fvtt-types/configuration" {
+
+  interface SettingConfig {
+    "sprite-shadows.enableShadows": boolean;
+  }
+
   interface FlagConfig {
-    TileDocument: {
-      [__MODULE_ID__]: ShadowConfiguration;
-      "isometric-perspective": IsometricFlags;
+    Tile: {
+      [__MODULE_ID__]: {
+        config: ShadowConfiguration;
+        configSource: ShadowConfigSource;
+      };
+      "isometric-perspective"?: IsometricFlags;
     },
-    TokenDoument: {
-      [__MODULE_ID__]: ShadowConfiguration;
-      "isometric-perspective": IsometricFlags;
+    Token: {
+      [__MODULE_ID__]: {
+        config: ShadowConfiguration;
+        configSource: ShadowConfigSource;
+      };
+      "isometric-perspective"?: IsometricFlags;
     },
     Actor: {
-      [__MODULE_ID__]: ShadowConfiguration;
-      "sprite-animations": {
+      [__MODULE_ID__]: ShadowConfiguration,
+      "sprite-animations"?: {
         animations: ({
           name: string;
           src: string;
@@ -35,32 +66,5 @@ declare module "fvtt-types/configuration" {
         }
       }
     }
-  }
-}
-
-declare global {
-
-  const libWrapper: typeof wrapperClass;
-  const __MODULE_ID__ = "sprite-shadows";
-  declare const __DEV__: boolean;
-  declare const __MODULE_TITLE__: string;
-  declare const __MODULE_VERSION__: string;
-
-  interface SettingConfig {
-    "sprite-shadows.enableShadows": boolean;
-  }
-
-  interface Game {
-    SpriteShadows: Record<string, unknown>;
-  }
-
-  declare module '*.frag' {
-    const content: string;
-    export default content;
-  }
-
-  declare module '*.vert' {
-    const content: string;
-    export default content;
   }
 }

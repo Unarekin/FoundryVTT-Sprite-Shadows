@@ -1,4 +1,4 @@
-import { DeepPartial, ShadowConfiguration } from "types";
+import { DeepPartial, ShadowConfigSource, ShadowConfiguration } from "types";
 import { ConfigMixinV1 } from "./ConfigMixinV1";
 import { ShadowConfigContext } from "./types";
 
@@ -27,51 +27,38 @@ export function TokenConfigMixinV1<t extends typeof foundry.appv1.api.DocumentSh
 
     activateListeners(html: JQuery<HTMLElement>): void {
       super.activateListeners(html);
-
-      const config = this.parseFlagData(this.getConfiguration());
-      this.hideElements(`[data-action="loadFromActor"],[data-action="loadFromToken"]`);
-      if (config.useTokenOverride && this.getActor()?.flags[__MODULE_ID__])
-        this.showElements(`[data-action="loadFromActor"]`);
-      else if (!config.useTokenOverride && !!this.document.flags[__MODULE_ID__])
-        this.showElements(`[data-action="loadFromToken"]`);
-
       const elem = html[0];
       const overrideCheck = elem.querySelector(`[name="${__MODULE_ID__}.useTokenOverride"]`);
       if (overrideCheck instanceof HTMLInputElement) {
         overrideCheck.addEventListener("change", () => {
           if (overrideCheck.checked) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            this.overrideFlags = this.document.flags[__MODULE_ID__] ?? {};
+            this.overrideFlags = this.document.getFlag(__MODULE_ID__, "config") ?? {}
           } else {
             this.overrideFlags = this.document.actor?.flags[__MODULE_ID__] ?? {};
           }
           this.overrideFlags ??= {};
-          this.overrideFlags.useTokenOverride = overrideCheck.checked;
           void this.render();
         });
       }
     }
 
-    protected setShadowConfiguration(config: DeepPartial<ShadowConfiguration>) {
-      const flags = this.parseFlagData(config);
+    protected async setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<void> {
+      const flags = this.parseFlagData(config) as ShadowConfiguration & { configSource?: ShadowConfigSource };
 
-      if (flags.useTokenOverride) {
-        return this.document.update({
-          flags: {
-            [__MODULE_ID__]: flags
-          }
-        });
-      } else {
-        const actor = this.getActor() ?? this.document.actor;
-        if (!(actor instanceof Actor)) return;
+      const configSource = flags.configSource ?? "actor";
+      delete flags.configSource;
 
-        return this.document
-          .setFlag(__MODULE_ID__, "useTokenOverride", false)
-          .then(() => actor.update({
-            flags: {
-              [__MODULE_ID__]: flags
-            }
-          }));
+      await this.document.setFlag(__MODULE_ID__, "configSource", configSource);
+      switch (configSource) {
+        case "token":
+          await this.document.setFlag(__MODULE_ID__, "config", flags);
+          break;
+        default: {
+          const actor = this.getActor() ?? this.document.actor;
+          if (!(actor instanceof Actor)) return;
+          await actor.update({ flags: { [__MODULE_ID__]: flags } });
+        }
+
       }
     }
   }

@@ -53,6 +53,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
     public get shouldUseIsometric(): boolean {
       if (!game?.modules?.get("isometric-perspective")?.active) return false;
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (!this.scene?.flags["isometric-perspective"].isometricEnabled) return false;
       if (this.shadowConfiguration.type !== "blob") return false;
