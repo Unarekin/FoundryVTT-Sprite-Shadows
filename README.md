@@ -24,7 +24,7 @@ Sprite Shadows adds the option to automatically add shadows to your tokens and t
 # Installation
 You can install this module by copying and pasting the following manifest URL in the text field at the bottom of the Foundry module installer:
 ```
-https://github.com/Unarekin/FoundryVTT-Battle-Transitions/releases/latest/download/module.json
+https://github.com/Unarekin/FoundryVTT-Sprite-Shadows/releases/latest/download/module.json
 ```
 
 # Usage
