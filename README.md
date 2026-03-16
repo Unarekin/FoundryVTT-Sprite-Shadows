@@ -17,6 +17,9 @@
   - [Stencil Shadows](#stencil-shadows)
   - [Size and Position Adjustments](#size-and-position-adjustments)
 - [Sprite Animations](#sprite-animations)
+- [Support](#support)
+- [Socials](#socials)
+- [100% Human Made](100-human-made)
 
 # Sprite Shadows
 Sprite Shadows adds the option to automatically add shadows to your tokens and tiles, making it easier to have dynamic, immersive shadows for your scene elements.
@@ -54,3 +57,13 @@ Both blob and stencil shadows support some simple size and position adjustments,
 
 # Sprite Animations
 - [Sprite Animations](https://foundryvtt.com/packages/sprite-animations) 1.4.0+ has built-in support for updating a stencil shadow when animating a token or tile.
+
+# Support
+Do please consider throwing me a few bucks over on [Ko-Fi](https://ko-fi.com/unarekin) or [Patreon](https://www.patreon.com/BattleTransitions) if you like what you see and are feeling generous.  Every little bit helps.
+
+# Socials
+- [Linktree](https://linktr.ee/EricasCodebin)
+- [Discord](https://discord.gg/RaFYSW9Vcp)
+
+# 100% Human-made
+This module contains exactly 0% AI-generated content, whether that be code generation, code *completion*, documentation, art assets, etc.  None, never.  I don't need a torment nexus to write bad code, I can do that well enough on my own.
