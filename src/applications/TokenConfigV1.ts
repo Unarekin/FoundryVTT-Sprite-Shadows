@@ -32,11 +32,11 @@ export function TokenConfigMixinV1<t extends typeof foundry.appv1.api.DocumentSh
       if (overrideCheck instanceof HTMLInputElement) {
         overrideCheck.addEventListener("change", () => {
           if (overrideCheck.checked) {
-            this.overrideFlags = this.document.getFlag(__MODULE_ID__, "config") ?? {}
+            this.overrideShadowFlags = this.document.getFlag(__MODULE_ID__, "config") ?? {}
           } else {
-            this.overrideFlags = this.document.actor?.flags[__MODULE_ID__] ?? {};
+            this.overrideShadowFlags = this.document.actor?.flags[__MODULE_ID__] ?? {};
           }
-          this.overrideFlags ??= {};
+          this.overrideShadowFlags ??= {};
           void this.render();
         });
       }

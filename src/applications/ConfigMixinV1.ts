@@ -24,10 +24,10 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       height: ""
     };
 
-    protected overrideFlags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+    protected overrideShadowFlags: DeepPartial<ShadowConfiguration> | undefined = undefined;
 
     protected getConfiguration(): ShadowConfiguration {
-      const flags = this.overrideFlags ?? this.getShadowFlags();
+      const flags = this.overrideShadowFlags ?? this.getShadowFlags();
       switch (flags?.type) {
         case "blob":
           return foundry.utils.mergeObject(
@@ -76,7 +76,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
 
 
     protected finishImport(data: ShadowConfiguration) {
-      this.overrideFlags = foundry.utils.deepClone(data);
+      this.overrideShadowFlags = foundry.utils.deepClone(data);
       this.render();
     }
 

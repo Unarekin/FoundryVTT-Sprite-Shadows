@@ -1,5 +1,5 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin, TileConfigMixin, TokenConfigMixinV1, TileConfigMixinV1 } from "./applications";
+import { TokenConfigMixin, TileConfigMixin, TokenConfigMixinV1, TileConfigMixinV1, SceneConfigMixin } from "./applications";
 import { TintFilter } from "./filters";
 
 
@@ -48,6 +48,8 @@ Hooks.on("ready", () => {
     applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
     applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
     CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as foundry.applications.sheets.TokenConfig);
+
+    applyMixin(CONFIG.Scene.sheetClasses.base, SceneConfigMixin);
   } else {
     applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixinV1);
     applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixinV1);

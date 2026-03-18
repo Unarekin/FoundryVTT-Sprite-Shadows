@@ -16,7 +16,7 @@
       <input type="hidden" id="{{idPrefix}}-ignoreSpriteAnimationsMeshAdjustments" name="sprite-shadows.ignoreSpriteAnimationsMeshAdjustments" value="true">
     {{/if}}
 
-    {{#if allowTokenOverride }}
+    {{#if allowConfigSource }}
       <div class="form-group">
         <label for="{{idPrefix}}-configSource">{{localize "SPRITESHADOWS.SETTINGS.CONFIGSOURCE.LABEL"}}</label>
         <select id="{{idPrefix}}-configSource" name="sprite-shadows.configSource" >
@@ -24,13 +24,6 @@
         </select>
         <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.CONFIGSOURCE.HINT"}}</p>
       </div>
-      {{!-- <div class="form-group">
-        <label for="{{idPrefix}}-useTokenOverride">{{localize "SPRITESHADOWS.SETTINGS.TOKENOVERRIDE.LABEL"}}</label>
-        <input type="checkbox" id="{{idPrefix}}-useTokenOverride" name="sprite-shadows.useTokenOverride" {{checked config.useTokenOverride}}>
-        <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.TOKENOVERRIDE.HINT"}}</p>
-      </div>
-      <button style="display:none" type="button" data-action="loadFromActor" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.LOADFROMACTOR.HINT"}}">{{localize "SPRITESHADOWS.SETTINGS.LOADFROMACTOR.LABEL"}}</button>
-      <button style="display:none" type="button" data-action="loadFromToken" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.LOADFROMTOKEN.HINT"}}">{{localize "SPRITESHADOWS.SETTINGS.LOADFROMTOKEN.LABEL"}}</button> --}}
     {{/if}}
 
     <div class="form-group" data-role="export-shadows-container">
