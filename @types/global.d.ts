@@ -35,6 +35,9 @@ declare module "fvtt-types/configuration" {
   }
 
   interface FlagConfig {
+    Scene: {
+      [__MODULE_ID__]: ShadowConfiguration;
+    },
     Tile: {
       [__MODULE_ID__]: {
         config: ShadowConfiguration;

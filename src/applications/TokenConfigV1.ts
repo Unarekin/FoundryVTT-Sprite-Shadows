@@ -1,6 +1,7 @@
 import { DeepPartial, ShadowConfigSource, ShadowConfiguration } from "types";
 import { ConfigMixinV1 } from "./ConfigMixinV1";
 import { ShadowConfigContext } from "./types";
+import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
 
 export function TokenConfigMixinV1<t extends typeof foundry.appv1.api.DocumentSheet<TokenDocument>>(base: t) {
   class ShadowedTokenConfigV1 extends ConfigMixinV1(base) {
@@ -13,7 +14,36 @@ export function TokenConfigMixinV1<t extends typeof foundry.appv1.api.DocumentSh
     protected prepareContext(): ShadowConfigContext<any> {
       const context = super.prepareContext() as ShadowConfigContext<Record<string, unknown>>;
       context.shadows.allowTokenOverride = true;
+      context.shadows.allowConfigSource = !this.isPrototype;
       return context;
+    }
+
+    protected loadShadowConfigSettings(source: ShadowConfigSource): void {
+      let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+      switch (source) {
+        case "token": {
+          flags = foundry.utils.deepClone(this.document.getFlag(__MODULE_ID__, "config") ?? DefaultShadowConfiguration);
+          break;
+        }
+        case "actor": {
+          const actor = this.getActor();
+          if (actor instanceof Actor) flags = foundry.utils.deepClone(actor.flags[__MODULE_ID__] ?? DefaultShadowConfiguration);
+          break;
+        }
+        case "scene": {
+          if (this.document?.parent) flags = foundry.utils.deepClone(this.document.parent.flags[__MODULE_ID__] ?? DefaultShadowConfiguration);
+          break;
+        }
+      }
+
+      if (!flags) return;
+      const actualFlags = flags.type === "blob" ? foundry.utils.deepClone(DefaultBlobShadowConfiguration) : flags.type === "stencil" ? foundry.utils.deepClone(DefaultStencilShadowConfiguration) : undefined;
+      if (!actualFlags) return;
+      foundry.utils.mergeObject(actualFlags, flags);
+
+      this.overrideShadowFlags = foundry.utils.deepClone(actualFlags);
+      this.overrideShadowConfigSource = source;
+      this.render();
     }
 
     // protected getDragAdjustmentMultiplier() {
@@ -32,11 +62,11 @@ export function TokenConfigMixinV1<t extends typeof foundry.appv1.api.DocumentSh
       if (overrideCheck instanceof HTMLInputElement) {
         overrideCheck.addEventListener("change", () => {
           if (overrideCheck.checked) {
-            this.overrideFlags = this.document.getFlag(__MODULE_ID__, "config") ?? {}
+            this.overrideShadowFlags = this.document.getFlag(__MODULE_ID__, "config") ?? {}
           } else {
-            this.overrideFlags = this.document.actor?.flags[__MODULE_ID__] ?? {};
+            this.overrideShadowFlags = this.document.actor?.flags[__MODULE_ID__] ?? {};
           }
-          this.overrideFlags ??= {};
+          this.overrideShadowFlags ??= {};
           void this.render();
         });
       }

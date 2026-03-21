@@ -1,5 +1,5 @@
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
-import { BlobShadowConfiguration, DeepPartial, ShadowConfiguration, ShadowType, StencilShadowConfiguration } from "types";
+import { BlobShadowConfiguration, DeepPartial, ShadowConfigSource, ShadowConfiguration, ShadowType, StencilShadowConfiguration } from "types";
 import { ShadowConfigContext } from "./types";
 import { uploadJSON, downloadJSON } from "functions";
 
@@ -16,6 +16,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
     protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined;
     protected abstract getShadowedObject(): ShadowedObject | undefined;
     protected abstract setShadowConfiguration(config: DeepPartial<ShadowConfiguration>): Promise<void>;
+    protected abstract loadShadowConfigSettings(source: ShadowConfigSource): void;
 
     protected shadowDragAdjustments = {
       x: "",
@@ -24,10 +25,11 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
       height: ""
     };
 
-    protected overrideFlags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+    protected overrideShadowFlags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+    protected overrideShadowConfigSource: ShadowConfigSource | undefined = undefined;
 
     protected getConfiguration(): ShadowConfiguration {
-      const flags = this.overrideFlags ?? this.getShadowFlags();
+      const flags = this.overrideShadowFlags ?? this.getShadowFlags();
       switch (flags?.type) {
         case "blob":
           return foundry.utils.mergeObject(
@@ -75,8 +77,22 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
     }
 
 
+    protected toggleSceneSource(enabled: boolean) {
+      const tab = this.element[0].querySelector(`div.tab.sprite-shadows-config`);
+      if (!(tab instanceof HTMLElement)) return;
+      const elements = Array.from<HTMLElement>(tab.querySelectorAll(`input, select:not([name="sprite-shadows.configSource"]), range-picker, color-picker, button`));
+      for (const elem of elements) {
+        if (elem instanceof HTMLButtonElement) {
+          elem.disabled = !enabled;
+        } else {
+          if (enabled) elem.removeAttribute("disabled")
+          else elem.setAttribute("disabled", "disabled");
+        }
+      }
+    }
+
     protected finishImport(data: ShadowConfiguration) {
-      this.overrideFlags = foundry.utils.deepClone(data);
+      this.overrideShadowFlags = foundry.utils.deepClone(data);
       this.render();
     }
 
@@ -139,6 +155,8 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         shadows: {
           idPrefix: foundry.utils.randomID(),
           config: foundry.utils.deepClone(this.getConfiguration()),
+          allowConfigSource: false,
+          configSource: this.overrideShadowConfigSource,
           spriteAnimations: game.modules?.get("sprite-animations")?.active ?? false,
           typeSelect: {
             blob: "SPRITESHADOWS.SETTINGS.TYPE.BLOB",
@@ -260,8 +278,21 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
     activateListeners(html: JQuery<HTMLElement>): void {
       super.activateListeners(html);
       const config = this.parseFlagData(this.getConfiguration());
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const context = this.prepareContext();
       const elem = html[0];
       this.toggleConfigSection(config.type);
+
+      const configSourceElem = elem.querySelector(`[name="sprite-shadows.configSource"]`);
+
+      if (configSourceElem instanceof HTMLSelectElement) {
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        this.toggleSceneSource(context.shadows?.configSource !== "scene");
+        configSourceElem.addEventListener("change", () => {
+          this.loadShadowConfigSettings(configSourceElem.value as ShadowConfigSource);
+        })
+      }
 
       const typeSelect = elem.querySelector(`select[name="${__MODULE_ID__}.type"]`);
       if (typeSelect instanceof HTMLSelectElement)

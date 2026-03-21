@@ -11,5 +11,12 @@
     "TABS": {
       "shadows": "Shadows"
     }
+  },
+  "SCENE": {
+    "TABS": {
+      "SHEET": {
+        "shadows": "Shadows"
+      }
+    }
   }
 }

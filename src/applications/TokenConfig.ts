@@ -1,6 +1,7 @@
 import { DeepPartial, ShadowConfiguration, ShadowConfigSource } from "types";
 import { ConfigMixin } from "./ConfigMixin";
 import { ShadowConfigContext } from "./types";
+import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
 
 export function TokenConfigMixin<t extends typeof foundry.applications.sheets.TokenConfig>(base: t) {
   class ShadowedTokenConfig extends ConfigMixin(base) {
@@ -18,7 +19,7 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       try {
         const actor = this.getActor();
         if (!actor) return;
-        this.overrideFlags = foundry.utils.deepClone(actor.flags[__MODULE_ID__] ?? {});
+        this.overrideShadowFlags = foundry.utils.deepClone(actor.flags[__MODULE_ID__] ?? {});
 
         await this.render();
       } catch (err) {
@@ -29,7 +30,7 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
     public static async LoadFromToken(this: ShadowedTokenConfig) {
       try {
-        this.overrideFlags = foundry.utils.deepClone((this.document as unknown as TokenDocument).flags[__MODULE_ID__] as DeepPartial<ShadowConfiguration> ?? {});
+        this.overrideShadowFlags = foundry.utils.deepClone((this.document as unknown as TokenDocument).flags[__MODULE_ID__] as DeepPartial<ShadowConfiguration> ?? {});
         await this.render();
       } catch (err) {
         console.error(err);
@@ -67,8 +68,9 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
             await actor.update({ flags: { [__MODULE_ID__]: flagData } });
           break;
         }
-        default: {
-          await this.document.update({ flags: { [__MODULE_ID__]: flagData } });
+        case "token": {
+          await this.document.setFlag(__MODULE_ID__, "config", flagData);
+          // await this.document.update({ flags: { [__MODULE_ID__]: flagData } });
           break;
         }
       }
@@ -78,6 +80,35 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
     protected getActor(): Actor | undefined { return (this as any).actor; }
+
+    protected async loadShadowConfigSettings(source: ShadowConfigSource) {
+      let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+      switch (source) {
+        case "token": {
+          flags = foundry.utils.deepClone(this.document.getFlag(__MODULE_ID__, "config") ?? DefaultShadowConfiguration);
+          break;
+        }
+        case "actor": {
+          const actor = this.getActor();
+          if (actor instanceof Actor) flags = foundry.utils.deepClone(actor.flags[__MODULE_ID__] ?? DefaultShadowConfiguration);
+          break;
+        }
+        case "scene": {
+          if (this.document?.parent) flags = foundry.utils.deepClone(this.document.parent.flags[__MODULE_ID__] ?? DefaultShadowConfiguration);
+          break;
+        }
+      }
+
+      if (!flags) return;
+      const actualFlags = flags.type === "blob" ? foundry.utils.deepClone(DefaultBlobShadowConfiguration) : flags.type === "stencil" ? foundry.utils.deepClone(DefaultStencilShadowConfiguration) : undefined;
+      if (!actualFlags) return;
+      foundry.utils.mergeObject(actualFlags, flags);
+
+      this.overrideShadowFlags = foundry.utils.deepClone(actualFlags);
+      this.overrideShadowConfigSource = source;
+      await this.render();
+    }
+
     protected getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined {
 
       let configSource = this.document.getFlag(__MODULE_ID__, "configSource") ?? "actor";
@@ -108,17 +139,17 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       }
     }
 
-    async _onRender(context: DeepPartial<ShadowConfigContext<TokenConfig.RenderContext>>, options: TokenConfig.RenderOptions) {
-      await super._onRender(context, options);
+    // async _onRender(context: DeepPartial<ShadowConfigContext<TokenConfig.RenderContext>>, options: TokenConfig.RenderOptions) {
+    //   await super._onRender(context, options);
 
 
-    }
+    // }
 
 
     protected async _prepareContext(options: DeepPartial<TokenConfig.RenderOptions>): Promise<ShadowConfigContext<TokenConfig.RenderContext>> {
       const context = await super._prepareContext(options);
-      context.shadows.allowTokenOverride = !this.isPrototype;
-      context.shadows.configSource = this.document.getFlag(__MODULE_ID__, "configSource") ?? "actor";
+      context.shadows.allowConfigSource = !this.isPrototype;
+      context.shadows.configSource = this.overrideShadowConfigSource ?? this.document.getFlag(__MODULE_ID__, "configSource") ?? "actor";
       return context;
     }
   }

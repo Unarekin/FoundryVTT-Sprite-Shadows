@@ -42,7 +42,7 @@ export interface MeshAdjustments {
   }
 }
 
-export const ShadowConfigSources = ["actor", "token", "scene"] as const;
+export const ShadowConfigSources = ["actor", "token", "scene", "tile"] as const;
 export type ShadowConfigSource = typeof ShadowConfigSources[number];
 
 interface BaseShadowConfiguration {
