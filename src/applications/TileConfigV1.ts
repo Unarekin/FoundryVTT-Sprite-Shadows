@@ -1,4 +1,4 @@
-import { DeepPartial, ShadowConfiguration } from "types";
+import { DeepPartial, ShadowConfigSource, ShadowConfiguration } from "types";
 import { ConfigMixinV1 } from "./ConfigMixinV1";
 import { ShadowConfigContext } from "./types";
 
@@ -16,11 +16,17 @@ export function TileConfigMixinV1<t extends typeof foundry.appv1.api.DocumentShe
       }
     }
 
-    protected setShadowConfiguration(config: DeepPartial<ShadowConfiguration>) {
-      const flags = this.parseFlagData(config);
-      return this.document.update({
+    protected async setShadowConfiguration(config: DeepPartial<ShadowConfiguration>) {
+      const flags = this.parseFlagData(config) as ShadowConfiguration & { configSource?: ShadowConfigSource };
+
+      const configSource = flags.configSource ?? "tile";
+      delete flags.configSource;
+      await this.document.update({
         flags: {
-          [__MODULE_ID__]: flags
+          [__MODULE_ID__]: {
+            config: flags,
+            configSource
+          }
         }
       })
     }

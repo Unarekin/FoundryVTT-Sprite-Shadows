@@ -59,7 +59,6 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       const configSource = flagData.configSource;
       delete flagData.configSource;
 
-      console.log("saving:", flagData);
       if (this.document)
         await this.document.setFlag(__MODULE_ID__, "configSource", configSource ?? "actor");
       switch (configSource) {
@@ -107,7 +106,6 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
       this.overrideShadowFlags = foundry.utils.deepClone(actualFlags);
       this.overrideShadowConfigSource = source;
-      console.log("loadShadowConfigSettings:", source, flags);
       await this.render();
     }
 

@@ -1,5 +1,5 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin, TileConfigMixin, TokenConfigMixinV1, TileConfigMixinV1, SceneConfigMixin } from "./applications";
+import { TokenConfigMixin, TileConfigMixin, TokenConfigMixinV1, TileConfigMixinV1, SceneConfigMixin, SceneConfigMixinV1 } from "./applications";
 import { TintFilter } from "./filters";
 
 
@@ -47,13 +47,15 @@ Hooks.on("ready", () => {
   if (game.release?.isNewer("13")) {
     applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
     applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
-    CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as foundry.applications.sheets.TokenConfig);
+    CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as unknown as foundry.applications.sheets.TokenConfig);
 
     applyMixin(CONFIG.Scene.sheetClasses.base, SceneConfigMixin);
   } else {
     applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixinV1);
     applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixinV1);
     CONFIG.Token.prototypeSheetClass = TokenConfigMixinV1(CONFIG.Token.prototypeSheetClass as foundry.appv1.sheets.DocumentSheet);
+
+    applyMixin(CONFIG.Scene.sheetClasses.base, SceneConfigMixinV1);
   }
 
 
