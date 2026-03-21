@@ -32,6 +32,7 @@ declare module "fvtt-types/configuration" {
 
   interface SettingConfig {
     "sprite-shadows.enableShadows": boolean;
+    "sprite-shadows.globalConfig": ShadowConfiguration;
   }
 
   interface FlagConfig {

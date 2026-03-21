@@ -1,5 +1,6 @@
 export * from './ConfigMixin';
 export * from './ConfigMixinV1';
+export * from './GlobalConfig';
 export * from './SceneConfig';
 export * from './SceneConfigV1';
 export * from './TileConfig';

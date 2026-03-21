@@ -1,10 +1,6 @@
 {
   "SPRITESHADOWS": {
     "SETTINGS": {
-      "CONFIGSOURCE": {
-        "LABEL": "Configuration Source",
-        "HINT": "Where to store the shadow configuration for this token"
-      },
       "ADJUSTMENTS": {
         "ANCHOR": "Anchor",
         "ANCHORTOOLTIP": "Auto-set anchor",
@@ -44,6 +40,10 @@
         "HINT": "Color of the shadow.",
         "LABEL": "Color"
       },
+      "CONFIGSOURCE": {
+        "HINT": "Where to store the shadow configuration for this token",
+        "LABEL": "Configuration Source"
+      },
       "ELEVATIONADJUST": {
         "HINT": "If enabled, will move the shadow based on the token's elevation.",
         "LABEL": "Adjust for Elevation"
@@ -63,6 +63,10 @@
         "DOWNLOAD": "Download JSON",
         "HINT": "Export JSON configuration",
         "LABEL": "Export Configuration"
+      },
+      "GLOBAL": {
+        "HINT": "Global settings to be applied by default to all tokens and tiles.",
+        "LABEL": "Global Settings"
       },
       "IGNORESAADJUSTMENTS": {
         "HINT": "If enabled, will ignore mesh adjustments configured by Sprite Animations.",
@@ -95,6 +99,9 @@
       "SKEW": {
         "HINT": "The amount by which to skew this shadow, to simulate projection angle.",
         "LABEL": "Skew Amount"
+      },
+      "SOURCE": {
+        "GLOBAL": "Global"
       },
       "STENCIL": {
         "HINT": "A faux-3d shadow based on the token's texture.",

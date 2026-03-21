@@ -1,3 +1,4 @@
+import { GlobalConfig } from "applications";
 import { BlobShadowConfiguration, ShadowConfiguration, StencilShadowConfiguration } from "types";
 
 
@@ -82,4 +83,32 @@ Hooks.on("ready", () => {
 
     }
   });
+
+  game?.settings?.register(__MODULE_ID__, "globalConfig", {
+    name: "SPRITESHADOWS.SETTINGS.GLOBAL.LABEL",
+    hint: "SPRITESHADOWS.SETTINGS.GLOBAL.HINT",
+    config: false,
+    scope: "world",
+    type: Object,
+    requiresReload: false,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    onChange(value: ShadowConfiguration) {
+      if (!game.SpriteShadows?.TokenClass) return;
+      canvas?.scene?.tokens.forEach(token => {
+        if (token.object instanceof (game.SpriteShadows.TokenClass as any)) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          (token.object as any).refreshShadow(true);
+        }
+      })
+    }
+  });
+
+  game?.settings?.registerMenu(__MODULE_ID__, "globalConfigMenu", {
+    name: "spriteShadows.globalConfig",
+    label: "SPRITESHADOWS.SETTINGS.GLOBAL.LABEL",
+    hint: "SPRITESHADOWS.SETTINGS.GLOBAL.HINT",
+    icon: "fa-solid fa-cogs",
+    restricted: true,
+    type: GlobalConfig
+  })
 })

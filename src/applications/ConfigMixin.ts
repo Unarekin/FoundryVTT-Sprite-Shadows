@@ -189,7 +189,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         configSourceSelect: {
           actor: "DOCUMENT.Actor",
           token: "DOCUMENT.Token",
-          scene: "DOCUMENT.Scene"
+          scene: "DOCUMENT.Scene",
+          global: "SPRITESHADOWS.SETTINGS.SOURCE.GLOBAL"
         },
         adjustPosTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`,
         adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
@@ -405,10 +406,10 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       const configSourceElem = this.element.querySelector(`[name="sprite-shadows.configSource"]`);
 
       if (configSourceElem instanceof HTMLSelectElement) {
-        this.toggleSceneSource(context.shadows?.configSource !== "scene");
+        this.toggleSceneSource(context.shadows?.configSource !== "scene" && context.shadows?.configSource !== "global");
         configSourceElem.addEventListener("change", () => {
           this.loadShadowConfigSettings(configSourceElem.value as ShadowConfigSource)
-            .then(() => { this.toggleSceneSource(configSourceElem.value !== "scene") })
+            .then(() => { this.toggleSceneSource(configSourceElem.value !== "scene" && context.shadows?.configSource !== "global") })
             .catch(console.error);
         })
       }

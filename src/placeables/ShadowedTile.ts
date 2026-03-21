@@ -21,6 +21,8 @@ export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base:
       switch (configSource) {
         case "scene":
           return foundry.utils.deepClone(doc.parent?.flags[__MODULE_ID__] ?? {});
+        case "global":
+          return (game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`) ? game.settings?.get(__MODULE_ID__, "globalConfig") : {}) ?? {};
         default:
           return foundry.utils.deepClone(doc.flags[__MODULE_ID__]?.config ?? {});
       }

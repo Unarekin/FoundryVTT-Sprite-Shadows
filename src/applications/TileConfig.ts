@@ -16,6 +16,8 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
           return this.document.parent?.flags[__MODULE_ID__];
         case "tile":
           return this.document.getFlag(__MODULE_ID__, "config");
+        case "global":
+          return game.settings?.get(__MODULE_ID__, "globalConfig");
       }
     }
 
@@ -26,7 +28,8 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
       context.shadows.configSource = this.overrideShadowConfigSource ?? this.document.getFlag(__MODULE_ID__, "configSource") ?? "tile";
       context.shadows.configSourceSelect = {
         tile: "DOCUMENT.Tile",
-        scene: "DOCUMENT.Scene"
+        scene: "DOCUMENT.Scene",
+        global: "SPRITESHADOWS.SETTINGS.SOURCE.GLOBAL"
       }
       return context;
     }
@@ -39,6 +42,9 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
           break;
         case "scene":
           if (this.document.parent) flags = foundry.utils.deepClone(this.document.parent.flags[__MODULE_ID__] ?? DefaultShadowConfiguration);
+          break;
+        case "global":
+          flags = foundry.utils.deepClone(game.settings?.get(__MODULE_ID__, "globalConfig"));
           break;
       }
 

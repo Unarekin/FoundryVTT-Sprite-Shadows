@@ -97,6 +97,10 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
           if (this.document?.parent) flags = foundry.utils.deepClone(this.document.parent.flags[__MODULE_ID__] ?? DefaultShadowConfiguration);
           break;
         }
+        case "global": {
+          flags = foundry.utils.deepClone(game.settings?.get(__MODULE_ID__, "globalConfig"));
+          break;
+        }
       }
 
       if (!flags) return;
@@ -123,6 +127,10 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
       if (!this.isPrototype && configSource === "token") {
         return this.document.getFlag(__MODULE_ID__, "config");
+      } else if (configSource === "global") {
+        return game.settings?.get(__MODULE_ID__, "globalConfig");
+      } else if (configSource === "scene") {
+        return this.document.parent?.flags[__MODULE_ID__];
       } else {
         const actor = this.getActor();
         if (actor) return actor.flags[__MODULE_ID__];

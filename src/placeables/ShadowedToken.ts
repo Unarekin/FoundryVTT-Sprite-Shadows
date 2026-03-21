@@ -20,6 +20,8 @@ export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(bas
             return doc.actor?.flags[__MODULE_ID__] ?? {};
           case "scene":
             return (doc.parent!).flags[__MODULE_ID__] ?? {};
+          case "global":
+            return (game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`) ? game.settings?.get(__MODULE_ID__, "globalConfig") : {}) ?? {};
           default:
             return doc.getFlag(__MODULE_ID__, "config") ?? {};
         }

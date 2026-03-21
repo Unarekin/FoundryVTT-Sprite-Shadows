@@ -13,7 +13,6 @@ export function TokenConfigMixinV1<t extends typeof foundry.appv1.api.DocumentSh
 
     protected prepareContext(): ShadowConfigContext<any> {
       const context = super.prepareContext() as ShadowConfigContext<Record<string, unknown>>;
-      context.shadows.allowTokenOverride = true;
       context.shadows.allowConfigSource = !this.isPrototype;
       return context;
     }
@@ -32,6 +31,10 @@ export function TokenConfigMixinV1<t extends typeof foundry.appv1.api.DocumentSh
         }
         case "scene": {
           if (this.document?.parent) flags = foundry.utils.deepClone(this.document.parent.flags[__MODULE_ID__] ?? DefaultShadowConfiguration);
+          break;
+        }
+        case "global": {
+          flags = foundry.utils.deepClone(game.settings?.get(__MODULE_ID__, "globalConfig"));
           break;
         }
       }
