@@ -1,5 +1,5 @@
 import { GlobalConfig } from "applications";
-import { BlobShadowConfiguration, ShadowConfiguration, StencilShadowConfiguration } from "types";
+import { BlobShadowConfiguration, ShadowConfiguration, StencilShadow, StencilShadowConfiguration } from "types";
 
 
 export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
@@ -29,11 +29,10 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
   }
 }
 
-export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
-  enabled: false,
-  // useTokenOverride: false,
+export const DefaultStencilShadow: StencilShadow = {
+  id: 'GKVHWpjjlP6H0apy',
+  enabled: true,
   ignoreSpriteAnimationsMeshAdjustments: false,
-  type: "stencil",
   color: "#000000",
   rotation: 0,
   alpha: 0.5,
@@ -53,6 +52,12 @@ export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
       y: 1
     }
   }
+}
+
+export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
+  enabled: false,
+  type: "stencil",
+  shadows: [DefaultStencilShadow]
 }
 
 export const DefaultShadowConfiguration: ShadowConfiguration = {

@@ -160,3 +160,13 @@ export function findBottomAnchorPoint(texture: PIXI.Texture): { x: number, y: nu
 
   return anchor;
 }
+
+/**
+ * Returns black or white based on the luminance of a given color
+ * @param {PIXI.Color} color - {@link PIXI.Color}
+ * @returns - {@link PIXI.Color} representing black or white
+ */
+export function contrastColor(color: PIXI.Color): PIXI.Color {
+  const yiq = ((color.red * 299) + (color.g * 587) + (color.b * 114)) / 1000;
+  return (yiq >= 128) ? new PIXI.Color(0x000000) : new PIXI.Color(0xFFFFFF);
+}

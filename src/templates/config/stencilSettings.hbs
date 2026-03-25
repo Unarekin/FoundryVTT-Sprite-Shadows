@@ -1,0 +1,51 @@
+<div class="tab{{#if tab.active}} active{{/if}} sprite-shadows-config scrollable" {{#unless omitGroup}}data-group="shadows"{{/unless}} data-tab="stencil" data-application-part="stencil">
+  <div class="flexrow">
+    <div class="flex1">
+      <h4 class="sprite-shadows-config__stencil-shadows">{{localize "SPRITESHADOWS.SETTINGS.TABS.STENCIL"}}</h4>
+    </div>
+    <div class="flex0">
+      <a data-action="addStencilShadow" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.ADDSTENCIL"}}">
+        <i class="fa-solid fa-plus"></i>
+      </a>
+    </div>
+  </div>
+  <div class="stencil-shadow-list" data-role="stencil-shadow-list">
+    <div class="stencil-shadow-list__col">{{localize "SPRITESHADOWS.SETTINGS.NAME"}}</div>
+    <div class="stencil-shadow-list__col"></div>
+    <div class="stencil-shadow-list__col"></div>
+    {{#each config.shadows as |shadow i|}}
+      <div class="stencil-shadow-list__col{{#if (isOdd i)}} stencil-shadow-list__col--alt-row{{/if}}" data-shadow="{{shadow.id}}">
+        <a data-action="editStencilShadow" data-shadow="{{shadow.id}}" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.EDITSTENCIL" name=shadow.label}}">{{shadow.label}}</a>
+      </div>
+      <div class="stencil-shadow-list__col{{#if (isOdd i)}} stencil-shadow-list__col--alt-row{{/if}}" data-shadow="{{shadow.id}}">
+        <a data-action="editStencilShadow" data-shadow="{{shadow.id}}" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.EDITSTENCIL" name=shadow.label}}">
+          <i class="fa-solid fa-gears"></i>
+        </a>
+      </div>
+      <div class="stencil-shadow-list__col{{#if (isOdd i)}} stencil-shadow-list__col--alt-row{{/if}}" data-shadow="{{shadow.id}}">
+        <a data-action="removeStencilShadow" data-shadow="{{shadow.id}}" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.REMOVESTENCIL" name=shadow.label}}">
+          <i class="fa-solid fa-trash"></i>
+        </a>
+      </div>
+    {{/each}}
+  </div>
+</div>
+  {{!-- <div class="form-group">
+    <label for="{{idPrefix}}-skew">{{localize "SPRITESHADOWS.SETTINGS.SKEW.LABEL"}}</label>
+    <range-picker id="{{idPrefix}}-skew" name="sprite-shadows.skew" step="any" placeholder="0" min="0" max="360" value="{{config.skew}}"></range-picker>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.SKEW.HINT"}}</p>
+  </div>
+
+  <div class="form-group">
+    <label for="{{idPrefix}}-useImage">{{localize "SPRITESHADOWS.SETTINGS.USEIMAGE.LABEL"}}</label>
+    <input type="checkbox" id="{{idPrefix}}-useImage" name="sprite-shadows.useImage" {{checked config.useImage}}>
+    <p class="hint">{{{localize "SPRITESHADOWS.SETTINGS.USEIMAGE.HINT"}}}</p>
+  </div>
+
+  <div class="form-group" data-role="stencil-image-config" style="display:none">
+    <label for="{{idPrefix}}-image">{{localize "SPRITESHADOWS.SETTINGS.STENCILIMAGE.LABEL"}}</label>
+    <file-picker type="image/video" id="{{idPrefix}}-image" name="sprite-shadows.image" value="{{config.image}}"></file-picker>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.STENCILIMAGE.HINT"}}</p>
+  </div> --}}
+
+</section>

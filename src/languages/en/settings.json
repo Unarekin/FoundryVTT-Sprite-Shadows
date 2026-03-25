@@ -1,6 +1,17 @@
 {
   "SPRITESHADOWS": {
     "SETTINGS": {
+      "REMOVE": {
+        "TITLE": "Remove Stencil Shadow",
+        "MESSAGE": "Are you sure you wish to remove {name}?<br>This cannot be undone."
+      },
+      "NAME": "Name",
+      "TABS": {
+        "BASICS": "Basics",
+        "APPEARANCE": "Appearance",
+        "BLOB": "Blob Shadow",
+        "STENCIL": "Stencil Shadows"
+      },
       "ADJUSTMENTS": {
         "ANCHOR": "Anchor",
         "ANCHORTOOLTIP": "Auto-set anchor",
@@ -117,7 +128,10 @@
       },
       "TOOLTIPS": {
         "EXPORT": "Export the current configuration as JSON",
-        "IMPORT": "Import a JSON configuration"
+        "IMPORT": "Import a JSON configuration",
+        "ADDSTENCIL": "Add Stencil Shadow",
+        "EDITSTENCIL": "Edit {name}",
+        "REMOVESTENCIL": "Remove {name}"
       },
       "TYPE": {
         "BLOB": "Blob",

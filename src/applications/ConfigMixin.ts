@@ -1,15 +1,10 @@
-import { BlobShadowConfiguration, DeepPartial, ShadowConfigSource, ShadowConfiguration, ShadowType, StencilShadowConfiguration } from "types";
+import { BlobShadowConfiguration, DeepPartial, ShadowConfigSource, ShadowConfiguration, ShadowType, StencilShadowConfiguration, ShadowedObject } from "types";
 import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
-import { TintFilter } from "filters";
-import { downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
+import { contrastColor, downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
 
 
-interface ShadowedObject {
-  refreshShadow: () => void;
-  blobSprite: PIXI.Sprite;
-  stencilSprite: PIXI.Sprite;
-}
+
 
 export function ConfigMixin<Document extends foundry.abstract.Document.Any = foundry.abstract.Document.Any, Context extends foundry.applications.api.ApplicationV2.RenderContext = foundry.applications.api.ApplicationV2.RenderContext, Config extends foundry.applications.api.DocumentSheetV2.Configuration<Document> = foundry.applications.api.DocumentSheetV2.Configuration<Document>, Options extends foundry.applications.api.DocumentSheetV2.RenderOptions = foundry.applications.api.DocumentSheetV2.RenderOptions>(base: typeof foundry.applications.api.DocumentSheetV2<Document, Context, Config, Options>) {
   abstract class ShadowedConfig extends base {
@@ -19,7 +14,39 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       actions: {
         ...(base.DEFAULT_OPTIONS.actions ?? {}),
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        autoSetShadowAnchor: ShadowedConfig.AutoSetAnchor
+        autoSetShadowAnchor: ShadowedConfig.AutoSetAnchor,
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        removeStencilShadow: ShadowedConfig.RemoveStencilShadow
+      }
+    }
+
+
+    public static PARTS: Record<string, foundry.applications.api.HandlebarsApplicationMixin.HandlebarsTemplatePart> = {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      ...(base as any).PARTS as Record<string, foundry.applications.api.HandlebarsApplicationMixin.HandlebarsTemplatePart>,
+      shadows: {
+        template: `modules/${__MODULE_ID__}/templates/config/tabs.hbs`,
+        scrollable: ['.scrollable'],
+        templates: [
+          `modules/${__MODULE_ID__}/templates/config/basics.hbs`,
+          `modules/${__MODULE_ID__}/templates/config/blobSettings.hbs`,
+          `modules/${__MODULE_ID__}/templates/config/stencilSettings.hbs`
+        ]
+      }
+    }
+
+    public static TABS: Record<string, foundry.applications.api.ApplicationV2.TabsConfiguration> = {
+      ...base.TABS,
+      sheet: {
+        ...base.TABS.sheet,
+        tabs: [
+          ...base.TABS.sheet.tabs,
+          {
+            id: "shadows",
+            cssClass: "",
+            icon: "fa-solid fa-lightbulb"
+          }
+        ]
       }
     }
 
@@ -30,35 +57,105 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       height: ""
     };
 
+    protected outlineFilters: PIXI.Filter[] = [];
+
     protected overrideShadowFlags: DeepPartial<ShadowConfiguration> | undefined = undefined;
     protected overrideShadowConfigSource: ShadowConfigSource | undefined = undefined;
 
     protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined;
     protected abstract getShadowedObject(): ShadowedObject | undefined;
     protected abstract loadShadowConfigSettings(source: ShadowConfigSource): Promise<void>;
+    protected abstract getOriginalShadowedObject(): foundry.canvas.placeables.PlaceableObject | undefined;
 
+
+    static async RemoveStencilShadow(this: ShadowedConfig, e: Event, elem: HTMLElement) {
+      try {
+        if (this.overrideShadowFlags?.type !== "stencil") return console.warn("overrideShadowFlags.type is not stencil");
+        if (!this.overrideShadowFlags?.shadows) return console.warn("No shadows on overrideShadowFlags");
+
+        const shadowId = elem.dataset.shadow;
+        if (!shadowId) return console.warn("No shadow ID on HTML element");
+
+        const config = this.overrideShadowFlags.shadows.find(elem => elem.id === shadowId);
+        if (!config) return console.warn(`Could not find config with id ${shadowId}`);
+
+        const confirmed = (await foundry.applications.api.DialogV2.confirm({
+          window: { title: game.i18n?.localize("SPRITESHADOWS.SETTINGS.REMOVE.TITLE") ?? "" },
+          content: game.i18n?.format("SPRITESHADOWS.SETTINGS.REMOVE.MESSAGE", { name: config.name ? config.name : config.id })
+        })) as boolean;
+        if (!confirmed) return console.warn("Removal canceled");
+
+        const index = this.overrideShadowFlags.shadows.findIndex(elem => elem.id === shadowId);
+        if (index !== -1) this.overrideShadowFlags.shadows.splice(index, 1);
+        else console.warn("Config not found in overrideShadowFlags")
+
+        const obj = this.getShadowedObject();
+        if (obj) {
+          const index = (obj.stencilSprites ?? []).findIndex(sprite => sprite.name === `StencilShadow.${shadowId}`);
+          if (index !== -1) {
+            const sprite = obj.stencilSprites[index];
+            console.log("Removing", sprite);
+            obj.stencilSprites.splice(index, 1);
+            sprite.destroy();
+          }
+        } else {
+          console.warn("No shadowed object found");
+        }
+
+        await this.render();
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false });
+      }
+    }
 
     static AutoSetAnchor(this: ShadowedConfig) {
       try {
-        if (!this.overrideShadowFlags?.adjustments?.anchor) return;
         const shadowedObj = this.getShadowedObject();
         if (!shadowedObj) return;
+
         const flags = this.overrideShadowFlags ?? this.getShadowFlags();
         if (!flags) return;
 
         if (flags.type === "blob" && !shadowedObj.blobSprite) return;
-        if (flags.type === "stencil" && !shadowedObj.stencilSprite) return;
+        if (flags.type === "stencil" && !shadowedObj.stencilSprites?.length) return;
 
-        const shadowTexture = flags.type === "blob" ? shadowedObj.blobSprite.texture : shadowedObj.stencilSprite.texture;
-        const anchor = flags.alignment === "bottom" ? findBottomAnchorPoint(shadowTexture) : findCentralAnchorPoint(shadowTexture);
+        if (flags.type === "blob") {
+          const shadowTexture = shadowedObj.blobSprite.texture;
+          const anchor = flags.alignment === "bottom" ? findBottomAnchorPoint(shadowTexture) : findCentralAnchorPoint(shadowTexture);
+          if (!anchor) return;
 
-        if (!anchor) return;
 
-        this.overrideShadowFlags.adjustments.anchor.x = anchor.x;
-        this.overrideShadowFlags.adjustments.anchor.y = anchor.y;
+          // this.overrideShadowFlags.adjustments.anchor.x = anchor?.x;
+          // this.overrideShadowFlags.adjustments.anchor.y = anchor?.y;
 
-        this.setFormElementValue(`[name="sprite-shadows.adjustments.anchor.x"]`, anchor.x.toString(), false);
-        this.setFormElementValue(`[name="sprite-shadows.adjustments.anchor.y"]`, anchor.y.toString());
+          this.setFormElementValue(`[name="sprite-shadows.adjustments.anchor.x"]`, anchor.x.toString(), false);
+          this.setFormElementValue(`[name="sprite-shadows.adjustments.anchor.y"]`, anchor.y.toString());
+        } else if (flags.type === "stencil") {
+          if (flags.shadows) {
+            for (let i = 0; i < flags.shadows?.length; i++) {
+              const shadowSprite = shadowedObj.stencilSprites[i];
+              if (!shadowSprite) break;
+
+              const shadowConfig = flags.shadows[i];
+              const anchor = shadowConfig.alignment === "bottom" ? findBottomAnchorPoint(shadowSprite.texture) : findCentralAnchorPoint(shadowSprite.texture);
+              if (!anchor) return;
+
+              shadowConfig.adjustments.anchor.x = anchor.x;
+              shadowConfig.adjustments.anchor.y = anchor.y;
+            }
+          }
+        }
+
+        // const shadowTexture = flags.type === "blob" ? shadowedObj.blobSprite.texture : shadowedObj.stencilSprite.texture;
+        // const anchor = flags.alignment === "bottom" ? findBottomAnchorPoint(shadowTexture) : findCentralAnchorPoint(shadowTexture);
+
+        // if (!anchor) return;
+
+        // this.overrideShadowFlags.adjustments.anchor.x = anchor.x;
+        // this.overrideShadowFlags.adjustments.anchor.y = anchor.y;
+
+
 
       } catch (err) {
         console.error(err);
@@ -148,17 +245,33 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       const data = foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as Record<string, unknown>;
       const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
 
-      if (formData.type === "stencil")
-        formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
+      // TODO: Implement stencil shadow split form processing here
 
-      const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
+      // if (formData.type === "stencil")
+      //   formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
 
-      if (typeof formData.adjustments?.x === "number") formData.adjustments.x *= adjustmentMultiplier.x;
-      if (typeof formData.adjustments?.y === "number") formData.adjustments.y *= adjustmentMultiplier.y;
-      if (typeof formData.adjustments?.width === "number") formData.adjustments.width *= adjustmentMultiplier.width;
-      if (typeof formData.adjustments?.height === "number") formData.adjustments.height *= adjustmentMultiplier.height;
+      // const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
+
+      // if (typeof formData.adjustments?.x === "number") formData.adjustments.x *= adjustmentMultiplier.x;
+      // if (typeof formData.adjustments?.y === "number") formData.adjustments.y *= adjustmentMultiplier.y;
+      // if (typeof formData.adjustments?.width === "number") formData.adjustments.width *= adjustmentMultiplier.width;
+      // if (typeof formData.adjustments?.height === "number") formData.adjustments.height *= adjustmentMultiplier.height;
 
       return formData;
+    }
+
+    protected async _preparePartContext(partId: string, context: ShadowConfigContext<Context>, options: Options): Promise<ShadowConfigContext<Context>> {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+      const ctx = await super._preparePartContext(partId, context, options) as any;
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (ctx.tabs && partId in (context.tabs ?? []))
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        ctx.tab = ctx.tabs[partId];
+
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return ctx;
     }
 
 
@@ -194,17 +307,58 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         },
         adjustPosTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`,
         adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
-      }
-      // Convert skew to degrees
-      if (context.shadows.config.type === "stencil") {
-        context.shadows.config.skew *= (180 / Math.PI);
+        tabs: [
+          {
+            id: "basics",
+            group: "shadows",
+            active: this.tabGroups.shadows === "basics" || !this.tabGroups.shadows,
+            cssClass: "",
+            icon: "fa-solid fa-cog",
+            label: "SPRITESHADOWS.SETTINGS.TABS.BASICS"
+          }
+        ]
       }
 
-      const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
-      context.shadows.config.adjustments.x *= 1 / adjustmentMultiplier.x;
-      context.shadows.config.adjustments.y *= 1 / adjustmentMultiplier.y;
-      context.shadows.config.adjustments.width *= 1 / adjustmentMultiplier.width;
-      context.shadows.config.adjustments.height *= 1 / adjustmentMultiplier.height;
+      if (context.shadows.config.type === "blob") {
+        context.shadows.tabs.push({
+          id: "blob",
+          group: "shadows",
+          label: "SPRITESHADOWS.SETTINGS.TABS.BLOB",
+          active: this.tabGroups.shadows === "blob",
+          cssClass: "",
+          icon: "fa-solid fa-lightbulb"
+        });
+      } else if (context.shadows.config.type === "stencil") {
+        context.shadows.tabs.push({
+          id: "stencil",
+          group: "shadows",
+          label: "SPRITESHADOWS.SETTINGS.TABS.STENCIL",
+          active: this.tabGroups.shadows === "stencil",
+          cssClass: "",
+          icon: "fa-solid fa-lightbulb"
+        });
+      }
+
+      if (context.shadows.config.type === "stencil") {
+        context.shadows.config.shadows.forEach(shadow => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          (shadow as any).label = shadow.name ? shadow.name : shadow.id;
+        })
+      }
+
+      // TODO: Convert skew to degrees with multiple stencil shadows
+      // // Convert skew to degrees
+      // if (context.shadows.config.type === "stencil") {
+      //   context.shadows.config.skew *= (180 / Math.PI);
+      // }
+
+      // TODO: Invert adjustment multiplier for multiple stencil shadows
+
+      // const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
+      // context.shadows.config.adjustments.x *= 1 / adjustmentMultiplier.x;
+      // context.shadows.config.adjustments.y *= 1 / adjustmentMultiplier.y;
+      // context.shadows.config.adjustments.width *= 1 / adjustmentMultiplier.width;
+      // context.shadows.config.adjustments.height *= 1 / adjustmentMultiplier.height;
 
       return context as unknown as ShadowConfigContext<Context>
     }
@@ -234,54 +388,58 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       }
     }
 
-    private intValue(val: unknown, defaultValue: number): number {
-      const parsed = Number(val);
-      if (isNaN(parsed)) return defaultValue;
-      return parsed;
-    }
-
     _onClose(options: any) {
       window.removeEventListener("mousemove", this._shadowDragAdjustMouseMove);
       window.removeEventListener("mouseup", this._shadowDragAdjustMouseUp)
       this.overrideShadowFlags = undefined;
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const obj = (this.document as any)?.object as ShadowedObject | undefined;
+      if (obj) obj.refreshShadow();
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       super._onClose(options);
+
+      this.outlineFilters.forEach(filter => filter.destroy());
+      this.outlineFilters = [];
     }
 
     protected previousFormData: DeepPartial<ShadowConfiguration> = this.getShadowFlags() ?? {};
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected applyFormChanges(changes: ShadowConfiguration, sprite: PIXI.Sprite, shadowType: ShadowType) {
-      if (typeof changes.alpha === "number")
-        sprite.alpha = changes.alpha;
+      // TODO: Re-implement for multiple stencil shadows
+      // if (typeof changes.alpha === "number")
+      //   sprite.alpha = changes.alpha;
 
 
-      if (typeof changes.color === "string") {
-        const tintFilter = sprite.filters?.find(filter => filter instanceof TintFilter);
-        if (tintFilter) tintFilter.color = new PIXI.Color(changes.color ?? "black");
-      }
+      // if (typeof changes.color === "string") {
+      //   const tintFilter = sprite.filters?.find(filter => filter instanceof TintFilter);
+      //   if (tintFilter) tintFilter.color = new PIXI.Color(changes.color ?? "black");
+      // }
 
-      if (typeof changes.blur === "number") {
-        const blurFilter = sprite.filters?.find(filter => filter instanceof PIXI.filters.BlurFilter);
-        if (blurFilter) blurFilter.blur = changes.blur;
-      }
+      // if (typeof changes.blur === "number") {
+      //   const blurFilter = sprite.filters?.find(filter => filter instanceof PIXI.filters.BlurFilter);
+      //   if (blurFilter) blurFilter.blur = changes.blur;
+      // }
 
-      if (changes.adjustments) {
-        sprite.x += changes.adjustments.x - (this.previousFormData.adjustments?.x ?? 0);
-        sprite.y -= (this.previousFormData.adjustments?.y ?? 0) - changes.adjustments.y;
-        sprite.width += changes.adjustments.width - (this.previousFormData.adjustments?.width ?? 0);
-        sprite.height -= (this.previousFormData.adjustments?.height ?? 0) - changes.adjustments.height;
-      }
+      // if (changes.adjustments) {
+      //   sprite.x += changes.adjustments.x - (this.previousFormData.adjustments?.x ?? 0);
+      //   sprite.y -= (this.previousFormData.adjustments?.y ?? 0) - changes.adjustments.y;
+      //   sprite.width += changes.adjustments.width - (this.previousFormData.adjustments?.width ?? 0);
+      //   sprite.height -= (this.previousFormData.adjustments?.height ?? 0) - changes.adjustments.height;
+      // }
 
-      if (shadowType === "stencil" && (changes as StencilShadowConfiguration).skew) {
-        sprite.skew.x = (changes as StencilShadowConfiguration).skew * (Math.PI / 180);
-      }
+      // if (shadowType === "stencil" && (changes as StencilShadowConfiguration).skew) {
+      //   sprite.skew.x = (changes as StencilShadowConfiguration).skew * (Math.PI / 180);
+      // }
 
-      if (typeof changes.rotation === "number")
-        sprite.angle = changes.rotation;
+      // if (typeof changes.rotation === "number")
+      //   sprite.angle = changes.rotation;
 
-      if (changes.adjustments?.anchor) {
-        sprite.anchor.set(changes.adjustments.anchor.x ?? 0.5, changes.adjustments.anchor.y ?? 1);
-      }
+      // if (changes.adjustments?.anchor) {
+      //   sprite.anchor.set(changes.adjustments.anchor.x ?? 0.5, changes.adjustments.anchor.y ?? 1);
+      // }
     }
 
     _onChangeForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event) {
@@ -299,10 +457,11 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         this.applyFormChanges(formData, shadowedObj.blobSprite, "blob");
       }
 
-      if (shadowedObj.stencilSprite) {
-        shadowedObj.stencilSprite.visible = formData.type === "stencil";
-        this.applyFormChanges(formData, shadowedObj.stencilSprite, "stencil");
-      }
+      // TODO: Reimplement for multiple stencil sprites
+      // if (shadowedObj.stencilSprite) {
+      //   shadowedObj.stencilSprite.visible = formData.type === "stencil";
+      //   this.applyFormChanges(formData, shadowedObj.stencilSprite, "stencil");
+      // }
 
       this.previousFormData = foundry.utils.deepClone(formData);
       this.overrideShadowFlags = foundry.utils.deepClone(formData);
@@ -399,9 +558,15 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       await super._onRender(context as any, options as any);
 
-      const config = this.parseFlagData(context.shadows?.config ?? {});
+      // const config = this.parseFlagData(context.shadows?.config ?? {});
 
-      this.toggleConfigSection(config.type);
+      const obj = this.getShadowedObject();
+
+      // if (obj) {
+      //   if (obj.blobSprite) obj.blobSprite.visible = false;
+      //   if (obj.stencilSprites)
+      //     obj.stencilSprites.forEach(sprite => sprite.visible = false);
+      // }
 
       const configSourceElem = this.element.querySelector(`[name="sprite-shadows.configSource"]`);
 
@@ -438,7 +603,9 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           const alpha = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
           const obj = this.getShadowedObject();
           if (obj?.blobSprite) obj.blobSprite.alpha = alpha;
-          if (obj?.stencilSprite) obj.stencilSprite.alpha = alpha;
+
+          if (Array.isArray(obj?.stencilSprites))
+            obj.stencilSprites.forEach(sprite => sprite.alpha = alpha);
         });
       }
 
@@ -448,7 +615,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           const angle = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
           const obj = this.getShadowedObject();
           if (obj?.blobSprite) obj.blobSprite.angle = angle;
-          if (obj?.stencilSprite) obj.stencilSprite.angle = angle;
+          if (Array.isArray(obj?.stencilSprites))
+            obj.stencilSprites.forEach(sprite => sprite.angle = angle);
         })
       }
 
@@ -457,8 +625,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         skewPicker.addEventListener("input", (e: Event) => {
           const skew = (e.target as foundry.applications.elements.HTMLRangePickerElement).value;
           const obj = this.getShadowedObject();
-          if (obj?.stencilSprite) {
-            obj.stencilSprite.skew.x = skew * (Math.PI / 180);
+          if (Array.isArray(obj?.stencilSprites)) {
+            obj.stencilSprites.forEach(sprite => sprite.skew.x = skew * (Math.PI / 180));
           }
         });
       }
@@ -523,10 +691,68 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         }
       )
 
+      // Set up hover outline
+      const stencilEntries = this.element.querySelectorAll(`.stencil-shadow-list .stencil-shadow-list__col`);
+      if (obj) {
+        for (const elem of stencilEntries) {
+          let outlineFilter: PIXI.Filter | undefined = undefined;
+          elem.addEventListener("mouseover", () => {
+            if (outlineFilter) return;
+            const shadowId = (elem as HTMLElement).dataset.shadow;
+            if (!shadowId) return;
+
+            const sprite = obj.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`)
+            if (!sprite) return;
+
+            const config = this.overrideShadowFlags?.type === "stencil" ? this.overrideShadowFlags.shadows?.find(config => config.id === shadowId) : undefined;
+            if (!config) return;
+
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+            outlineFilter = new (PIXI.filters as any).OutlineFilter(2, contrastColor(new PIXI.Color(config.color))) as PIXI.Filter;
+            this.outlineFilters.push(outlineFilter);
+
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (outlineFilter as any).id = `${shadowId}.outline`;
+            if (Array.isArray(sprite.filters)) sprite.filters.push(outlineFilter);
+            else sprite.filters = [outlineFilter];
+          });
+
+          elem.addEventListener("mouseleave", () => {
+            const shadowId = (elem as HTMLElement).dataset.shadow;
+            if (!shadowId) return;
+
+            const sprite = obj.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`)
+            if (!sprite) return;
+
+            if (Array.isArray(sprite.filters)) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              const index = sprite.filters.findIndex(filter => (filter as any).id === `${shadowId}.outline`);
+              if (index !== -1) {
+                const filter = sprite.filters[index];
+                sprite.filters.splice(index, 1);
+                filter.destroy();
+
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                const newIndex = this.outlineFilters.findIndex(filter => (filter as any).id === `${shadowId}.outline`);
+                if (newIndex) this.outlineFilters.splice(newIndex, 1);
+
+                outlineFilter = undefined;
+              }
+            }
+          });
+        }
+      }
+
     }
   }
 
 
+  // This is a little weird, but it forces footer to be after our own PARTs
+  // whereas destructuring it in the earlier declaration seems to not?
+  const footer = ShadowedConfig.PARTS.footer;
+  delete ShadowedConfig.PARTS.footer;
+
+  ShadowedConfig.PARTS.footer = footer;
 
   return ShadowedConfig;
 }

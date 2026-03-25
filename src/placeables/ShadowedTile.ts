@@ -18,14 +18,21 @@ export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base:
       const doc = this.getShadowDocument();
       const configSource = doc.getFlag(__MODULE_ID__, "configSource") ?? "tile";
 
+      let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+
       switch (configSource) {
         case "scene":
-          return foundry.utils.deepClone(doc.parent?.flags[__MODULE_ID__] ?? {});
+          if (doc.parent?.flags[__MODULE_ID__]) flags = doc.parent.flags[__MODULE_ID__];
+          break;
         case "global":
-          return (game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`) ? game.settings?.get(__MODULE_ID__, "globalConfig") : {}) ?? {};
+          if (game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`)) flags = game.settings?.get(__MODULE_ID__, "globalConfig");
+          break;
         default:
-          return foundry.utils.deepClone(doc.flags[__MODULE_ID__]?.config ?? {});
+          if (doc.flags[__MODULE_ID__]?.config) flags = doc.flags[__MODULE_ID__].config;
       }
+
+      if (flags) return this.migrateShadowSettings(flags);
+      else return {};
     }
 
     protected getSize() {

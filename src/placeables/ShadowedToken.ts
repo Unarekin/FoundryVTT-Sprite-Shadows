@@ -6,26 +6,36 @@ export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(bas
   return class ShadowedToken extends PlaceableMixin<t>(base) {
     protected getShadowFlags(): DeepPartial<ShadowConfiguration> {
       const doc = this.document as TokenDocument;
-      const configSource = doc.getFlag(__MODULE_ID__, "configSource");
+      let configSource = doc.getFlag(__MODULE_ID__, "configSource");
+
+
+
       // <1.2.0 compatibility
       if (!configSource) {
-
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if ((doc.flags as any)[__MODULE_ID__]?.useTokenOverride) return doc.getFlag(__MODULE_ID__, "config") ?? {};
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-        else return ((this as unknown as foundry.canvas.placeables.Token).actor?.flags as any)[__MODULE_ID__] ?? {}
-      } else {
-        switch (configSource) {
-          case "actor":
-            return doc.actor?.flags[__MODULE_ID__] ?? {};
-          case "scene":
-            return (doc.parent!).flags[__MODULE_ID__] ?? {};
-          case "global":
-            return (game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`) ? game.settings?.get(__MODULE_ID__, "globalConfig") : {}) ?? {};
-          default:
-            return doc.getFlag(__MODULE_ID__, "config") ?? {};
-        }
+        if ((doc.flags as any)[__MODULE_ID__]?.useTokenOverride) configSource = "token";
+        else configSource = "actor";
       }
+
+      let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+
+      switch (configSource) {
+        case "actor":
+          flags = doc.actor?.flags[__MODULE_ID__];
+          break;
+
+        case "scene":
+          flags = (doc.parent!).flags[__MODULE_ID__];
+          break;
+        case "global":
+          flags = game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`) ? game.settings?.get(__MODULE_ID__, "globalConfig") : undefined;
+          break;
+        default:
+          flags = doc.getFlag(__MODULE_ID__, "config");
+      }
+
+      if (flags) return this.migrateShadowSettings(flags);
+      else return {};
     }
     protected getShadowDocument() { return this.document as foundry.documents.TokenDocument; }
     protected getMesh() { return (this as unknown as foundry.canvas.placeables.Token).mesh ?? undefined; }

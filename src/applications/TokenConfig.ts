@@ -1,4 +1,4 @@
-import { DeepPartial, ShadowConfiguration, ShadowConfigSource } from "types";
+import { DeepPartial, ShadowConfiguration, ShadowConfigSource, ShadowedObject } from "types";
 import { ConfigMixin } from "./ConfigMixin";
 import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
@@ -36,6 +36,22 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
         console.error(err);
         if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
       }
+    }
+
+    protected getOriginalShadowedObject(): foundry.canvas.placeables.Token | undefined {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+      return (this as any).token?.object;
+    }
+
+    async _initializeTokenPreview() {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      await super._initializeTokenPreview();
+
+      const obj = this.getOriginalShadowedObject() as ShadowedObject | undefined;
+      if (!obj) return console.warn("Could not find original shadowed object");
+      if (obj.blobSprite) obj.blobSprite.renderable = false;
+      if (Array.isArray(obj.stencilSprites))
+        requestAnimationFrame(() => { obj.stencilSprites.forEach(sprite => sprite.visible = false); })
     }
 
     protected getDragAdjustmentMultiplier() {
@@ -162,45 +178,45 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
     }
   }
 
-  ShadowedTokenConfig.TABS.sheet.tabs.push({
-    id: "shadows",
-    icon: "fa-solid fa-lightbulb",
-    cssClass: ""
-  });
+  // ShadowedTokenConfig.TABS.sheet.tabs.push({
+  //   id: "shadows",
+  //   icon: "fa-solid fa-lightbulb",
+  //   cssClass: ""
+  // });
 
-  // Inject our configuration part before the footer
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const parts = (base as any).PARTS as Record<string, foundry.applications.api.HandlebarsApplicationMixin.HandlebarsTemplatePart>;
-  const footer = parts.footer;
-  delete parts.footer;
+  // // Inject our configuration part before the footer
+  // // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  // const parts = (base as any).PARTS as Record<string, foundry.applications.api.HandlebarsApplicationMixin.HandlebarsTemplatePart>;
+  // const footer = parts.footer;
+  // delete parts.footer;
 
-  foundry.utils.mergeObject(parts, {
-    shadows: {
-      template: `modules/${__MODULE_ID__}/templates/ShadowConfig.hbs`,
-      scrollable: ['.scrollable'],
-      templates: [
-        `modules/${__MODULE_ID__}/templates/BlobConfig.hbs`,
-        `modules/${__MODULE_ID__}/templates/StencilConfig.hbs`
-      ]
-    },
-    footer
-  });
+  // foundry.utils.mergeObject(parts, {
+  //   shadows: {
+  //     template: `modules/${__MODULE_ID__}/templates/ShadowConfig.hbs`,
+  //     scrollable: ['.scrollable'],
+  //     templates: [
+  //       `modules/${__MODULE_ID__}/templates/BlobConfig.hbs`,
+  //       `modules/${__MODULE_ID__}/templates/StencilConfig.hbs`
+  //     ]
+  //   },
+  //   footer
+  // });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  foundry.utils.mergeObject((base as any).PARTS ?? {}, parts);
+  // // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  // foundry.utils.mergeObject((base as any).PARTS ?? {}, parts);
 
-  ((canvas?.scene?.tokens.contents ?? [])).forEach(token => {
-    if (token.sheet && !(token.sheet instanceof ShadowedTokenConfig)) {
+  // ((canvas?.scene?.tokens.contents ?? [])).forEach(token => {
+  //   if (token.sheet && !(token.sheet instanceof ShadowedTokenConfig)) {
 
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        token._sheet = new ShadowedTokenConfig(token.sheet.options);
-      } catch (err) {
-        console.warn(err);
-      }
-    }
+  //     try {
+  //       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  //       token._sheet = new ShadowedTokenConfig(token.sheet.options);
+  //     } catch (err) {
+  //       console.warn(err);
+  //     }
+  //   }
 
-  })
+  // })
 
   return ShadowedTokenConfig
 }

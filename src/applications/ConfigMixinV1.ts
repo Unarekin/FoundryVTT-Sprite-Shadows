@@ -180,14 +180,15 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         }
       }
 
-      if (context.shadows.config.type === "stencil")
-        context.shadows.config.skew *= (180 / Math.PI);
+      // if (context.shadows.config.type === "stencil")
+      //   context.shadows.config.skew *= (180 / Math.PI);
 
-      const adjustmentMultiplier = this.getShadowDragAdjustmentMultiplier();
-      context.shadows.config.adjustments.x *= 1 / adjustmentMultiplier.x;
-      context.shadows.config.adjustments.y *= 1 / adjustmentMultiplier.y;
-      context.shadows.config.adjustments.width *= 1 / adjustmentMultiplier.width;
-      context.shadows.config.adjustments.height *= 1 / adjustmentMultiplier.height;
+      // TODO: Reimplement for multiple stencil sprites
+      // const adjustmentMultiplier = this.getShadowDragAdjustmentMultiplier();
+      // context.shadows.config.adjustments.x *= 1 / adjustmentMultiplier.x;
+      // context.shadows.config.adjustments.y *= 1 / adjustmentMultiplier.y;
+      // context.shadows.config.adjustments.width *= 1 / adjustmentMultiplier.width;
+      // context.shadows.config.adjustments.height *= 1 / adjustmentMultiplier.height;
 
       return context;
     }
@@ -229,15 +230,17 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         const data = foundry.utils.expandObject(new FormDataExtended(form).object) as Record<string, unknown>;
 
         const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
-        if (formData.type === "stencil")
-          formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
 
-        const adjustmentMultiplier = this.getShadowDragAdjustmentMultiplier();
+        // TODO: Reimplement for multiple stencil sprites
+        // if (formData.type === "stencil")
+        //   formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
 
-        if (typeof formData.adjustments?.x === "number") formData.adjustments.x *= adjustmentMultiplier.x;
-        if (typeof formData.adjustments?.y === "number") formData.adjustments.y *= adjustmentMultiplier.y;
-        if (typeof formData.adjustments?.width === "number") formData.adjustments.width *= adjustmentMultiplier.width;
-        if (typeof formData.adjustments?.height === "number") formData.adjustments.height *= adjustmentMultiplier.height;
+        // const adjustmentMultiplier = this.getShadowDragAdjustmentMultiplier();
+
+        // if (typeof formData.adjustments?.x === "number") formData.adjustments.x *= adjustmentMultiplier.x;
+        // if (typeof formData.adjustments?.y === "number") formData.adjustments.y *= adjustmentMultiplier.y;
+        // if (typeof formData.adjustments?.width === "number") formData.adjustments.width *= adjustmentMultiplier.width;
+        // if (typeof formData.adjustments?.height === "number") formData.adjustments.height *= adjustmentMultiplier.height;
 
         return formData;
       }

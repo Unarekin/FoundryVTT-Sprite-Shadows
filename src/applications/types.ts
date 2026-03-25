@@ -13,5 +13,8 @@ export type ShadowConfigContext<t extends foundry.applications.api.ApplicationV2
     spriteAnimations: boolean;
     configSourceSelect: Partial<Record<ShadowConfigSource, string>>;
     configSource?: ShadowConfigSource;
+
+    tabs: foundry.applications.api.ApplicationV2.Tab[];
   }
+  tab?: foundry.applications.api.ApplicationV2.Tab;
 }
