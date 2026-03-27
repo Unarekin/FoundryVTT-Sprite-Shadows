@@ -155,10 +155,10 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
     protected getShadowedObject() { return (this as foundry.applications.sheets.TokenConfig).document?.object ?? undefined }
 
     async _onSubmitForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event | SubmitEvent): Promise<void> {
-      const flagData = this.parseShadowFormData() as ShadowConfiguration;;
       await super._onSubmitForm(formConfig, event);
       if (this.isPrototype) {
         const actor = this.getActor();
+        const flagData = this.parseShadowFormData() as ShadowConfiguration;
         if (actor) await actor.update({ flags: { [__MODULE_ID__]: flagData } });
       }
     }

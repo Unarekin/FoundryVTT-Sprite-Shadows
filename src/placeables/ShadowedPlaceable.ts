@@ -464,6 +464,62 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       return sprite;
     }
 
+    public setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh) {
+      if (!this.isShadowVisible()) {
+        sprite.renderable = false;
+      } else {
+        sprite.renderable = true;
+
+        if (mesh.parent && sprite.parent !== mesh.parent) mesh.parent.addChild(sprite);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (sprite as any).sortLayer = mesh.sortLayer;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (sprite as any).elevation = mesh.elevation;
+
+        sprite.x = mesh.x;
+        if (config.alignment === "bottom")
+          sprite.y = mesh.y + (mesh.height * (1 - mesh.anchor.y));
+        else
+          sprite.y = mesh.y;
+
+        sprite.anchor.set(config.adjustments?.anchor?.x ?? 0.5, config.adjustments?.anchor?.y ?? (config.alignment === "bottom" ? 1 : 0.5));
+
+        const scale = this.getModifiedScale();
+        sprite.scale.set(scale.x, scale.y);
+
+        sprite.skew.x = config.skew ?? 0;
+
+        const adjustments = this.getShadowAdjustments(config);
+        if (adjustments?.x) sprite.x += adjustments.x;
+        if (adjustments?.y) sprite.y += adjustments.y;
+        if (adjustments?.width) sprite.width += adjustments.width;
+        if (adjustments?.height) sprite.height += adjustments.height;
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        const blur = this.upsertFilter<PIXI.BlurFilter>(sprite, PIXI.BlurFilter as any);
+        blur.blur = config.blur;
+
+        const tint = this.upsertFilter<TintFilter>(sprite, TintFilter);
+        tint.color = new PIXI.Color(config.color ?? 0x000000).toHex();
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if ((this.getShadowDocument() as any).hidden) sprite.alpha = 0;
+        else sprite.alpha = config.alpha;
+
+        sprite.visible = true;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (sprite as any).sort = mesh.sort;
+        sprite.zIndex = mesh.zIndex - 1;
+
+        sprite.angle = config.rotation;
+      }
+    }
+
+    protected upsertFilter<t extends PIXI.Filter>(sprite: PIXI.Sprite, filterType: typeof PIXI.Filter): t {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return (Array.isArray(sprite.filters) ? sprite.filters : []).find(filter => filter instanceof filterType) ?? this.addFilter(sprite, new filterType()) as any;
+    }
+
     /**
      * Refreshes thes ize, position, etc. of this placeable's stencil shadow
      * @param {boolean} force - If true, will forcefully recreate the stencil shadow sprite
@@ -492,57 +548,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
         if (!sprite) throw new LocalizedError("TEXTUREGEN");
 
-        if (!this.isShadowVisible() || !shadowConfig.enabled) {
-          sprite.renderable = false;
-        } else {
-          sprite.renderable = true;
-          if (sprite.parent !== mesh.parent) mesh.parent.addChild(sprite);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          (sprite as any).sortLayer = mesh.sortLayer;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          (sprite as any).elevation = mesh.elevation;
+        this.setStencilShadowConfig(sprite, shadowConfig, mesh);
 
-          sprite.anchor.x = mesh.anchor.x;
-          sprite.anchor.y = shadowConfig.alignment === "bottom" ? 1 : 0.5;
-
-          sprite.x = mesh.x;
-          if (shadowConfig.alignment === "bottom")
-            sprite.y = mesh.y + (mesh.height * (1 - mesh.anchor.y));
-          else
-            sprite.y = mesh.y;
-
-          sprite.anchor.set(shadowConfig.adjustments?.anchor?.x ?? 0.5, shadowConfig.adjustments?.anchor?.y ?? 1);
-
-          const scale = this.getModifiedScale();
-          sprite.scale.set(scale.x, scale.y);
-
-          sprite.skew.x = shadowConfig.skew ?? 0;
-
-          const adjustments = this.getShadowAdjustments(shadowConfig);
-
-          if (adjustments?.x) sprite.x += adjustments.x;
-          if (adjustments?.y) sprite.y += adjustments.y;
-          if (adjustments?.width) sprite.width += adjustments.width;
-          if (adjustments?.height) sprite.height += adjustments.height;
-
-          const blur = (sprite.filters ?? []).find(filter => filter instanceof PIXI.BlurFilter) ?? this.addFilter<PIXI.BlurFilter>(sprite, new PIXI.BlurFilter());
-          blur.blur = shadowConfig.blur;
-
-          const tint = (sprite.filters ?? []).find(filter => filter instanceof TintFilter) ?? this.addFilter<TintFilter>(sprite, new TintFilter());
-          tint.color = shadowConfig.color ?? 0x000000;
-
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          if ((this.getShadowDocument() as any).hidden) sprite.alpha = 0;
-          else sprite.alpha = shadowConfig.alpha;
-
-          sprite.visible = true;
-
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          (sprite as any).sort = mesh.sort;
-          sprite.zIndex = mesh.zIndex - 1;
-
-          sprite.angle = shadowConfig.rotation;
-        }
       }
     }
 

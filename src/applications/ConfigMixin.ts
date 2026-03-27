@@ -1,14 +1,14 @@
 import { BlobShadowConfiguration, DeepPartial, ShadowConfigSource, ShadowConfiguration, ShadowType, StencilShadowConfiguration, ShadowedObject } from "types";
 import { ShadowConfigContext } from "./types";
-import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
+import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
 import { contrastColor, downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
+import { StencilShadowConfig } from "./StencilShadowConfig";
 
 
 
 
 export function ConfigMixin<Document extends foundry.abstract.Document.Any = foundry.abstract.Document.Any, Context extends foundry.applications.api.ApplicationV2.RenderContext = foundry.applications.api.ApplicationV2.RenderContext, Config extends foundry.applications.api.DocumentSheetV2.Configuration<Document> = foundry.applications.api.DocumentSheetV2.Configuration<Document>, Options extends foundry.applications.api.DocumentSheetV2.RenderOptions = foundry.applications.api.DocumentSheetV2.RenderOptions>(base: typeof foundry.applications.api.DocumentSheetV2<Document, Context, Config, Options>) {
   abstract class ShadowedConfig extends base {
-
     public static DEFAULT_OPTIONS = {
       ...base.DEFAULT_OPTIONS,
       actions: {
@@ -16,7 +16,11 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         // eslint-disable-next-line @typescript-eslint/unbound-method
         autoSetShadowAnchor: ShadowedConfig.AutoSetAnchor,
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        removeStencilShadow: ShadowedConfig.RemoveStencilShadow
+        removeStencilShadow: ShadowedConfig.RemoveStencilShadow,
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        editStencilShadow: ShadowedConfig.EditStencilShadow,
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        addStencilShadow: ShadowedConfig.AddStencilShadow
       }
     }
 
@@ -67,6 +71,59 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     protected abstract loadShadowConfigSettings(source: ShadowConfigSource): Promise<void>;
     protected abstract getOriginalShadowedObject(): foundry.canvas.placeables.PlaceableObject | undefined;
 
+    static async AddStencilShadow(this: ShadowedConfig) {
+      try {
+        const obj = this.getShadowedObject();
+        let sprite: PIXI.Sprite | undefined = undefined;
+        const shadowConfig = foundry.utils.deepClone(DefaultStencilShadow);
+        if (obj) {
+          shadowConfig.id = foundry.utils.randomID();
+          sprite = obj.createStencilShadowSprite(shadowConfig);
+          if (sprite && obj.mesh) {
+            obj.setStencilShadowConfig(sprite, shadowConfig, obj.mesh);
+          }
+        }
+        const data = await StencilShadowConfig.Edit(shadowConfig, sprite);
+
+
+        if (data && this.overrideShadowFlags?.type === "stencil") {
+          if (Array.isArray(this.overrideShadowFlags.shadows)) this.overrideShadowFlags.shadows.push(foundry.utils.deepClone(data));
+          else this.overrideShadowFlags.shadows = [foundry.utils.deepClone(data)];
+          if (obj && sprite) obj.stencilSprites.push(sprite);
+        } else {
+          sprite?.destroy();
+        }
+        await this.render();
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false });
+      }
+    }
+
+    static async EditStencilShadow(this: ShadowedConfig, e: Event, elem: HTMLElement) {
+      try {
+        if (this.overrideShadowFlags?.type !== "stencil") return console.warn("No shadow flags stored");
+        if (!Array.isArray(this.overrideShadowFlags.shadows)) return console.warn("No shadows on flags");
+
+        if (!elem.dataset.shadow) return console.warn("No shadow ID");
+        const shadowId = elem.dataset.shadow;
+        const shadowConfig = this.overrideShadowFlags.shadows.find(item => item.id === shadowId);
+        if (!shadowConfig) return console.warn("No shadow config found");
+
+        const obj = this.getShadowedObject();
+        const sprite: PIXI.Sprite | undefined = obj?.stencilSprites?.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
+        const data = await StencilShadowConfig.Edit(shadowConfig, sprite);
+        if (data) {
+          // empty
+          const index = this.overrideShadowFlags.shadows.findIndex(item => item.id === data.id);
+          if (index !== -1) this.overrideShadowFlags.shadows.splice(index, 1, foundry.utils.mergeObject(DefaultStencilShadowConfiguration, data));
+        }
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) ui.notifications?.error(err.message, { console: false });
+      }
+    }
+
 
     static async RemoveStencilShadow(this: ShadowedConfig, e: Event, elem: HTMLElement) {
       try {
@@ -81,7 +138,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
         const confirmed = (await foundry.applications.api.DialogV2.confirm({
           window: { title: game.i18n?.localize("SPRITESHADOWS.SETTINGS.REMOVE.TITLE") ?? "" },
-          content: game.i18n?.format("SPRITESHADOWS.SETTINGS.REMOVE.MESSAGE", { name: config.name ? config.name : config.id })
+          content: game.i18n?.format("SPRITESHADOWS.SETTINGS.REMOVE.MESSAGE", { name: config.id })
         })) as boolean;
         if (!confirmed) return console.warn("Removal canceled");
 
@@ -243,31 +300,26 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     protected parseShadowFormData(): DeepPartial<ShadowConfiguration> {
       if (!this.form) return {};
       const data = foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as Record<string, unknown>;
+
       const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
 
-      // TODO: Implement stencil shadow split form processing here
+      const actualData = foundry.utils.deepClone(formData.type === "stencil" ? DefaultStencilShadowConfiguration : formData.type === "blob" ? DefaultBlobShadowConfiguration : DefaultShadowConfiguration);
+      foundry.utils.mergeObject(actualData, formData);
 
-      // if (formData.type === "stencil")
-      //   formData.skew = typeof formData.skew === "number" ? formData.skew * (Math.PI / 180) : 0;
+      if (formData.type === "stencil")
+        foundry.utils.setProperty(actualData, "shadows", foundry.utils.deepClone((this.overrideShadowFlags as StencilShadowConfiguration).shadows));
 
-      // const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
-
-      // if (typeof formData.adjustments?.x === "number") formData.adjustments.x *= adjustmentMultiplier.x;
-      // if (typeof formData.adjustments?.y === "number") formData.adjustments.y *= adjustmentMultiplier.y;
-      // if (typeof formData.adjustments?.width === "number") formData.adjustments.width *= adjustmentMultiplier.width;
-      // if (typeof formData.adjustments?.height === "number") formData.adjustments.height *= adjustmentMultiplier.height;
-
-      return formData;
+      return actualData;
     }
 
     protected async _preparePartContext(partId: string, context: ShadowConfigContext<Context>, options: Options): Promise<ShadowConfigContext<Context>> {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const ctx = await super._preparePartContext(partId, context, options) as any;
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (ctx.tabs && partId in (context.tabs ?? []))
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        ctx.tab = ctx.tabs[partId];
+      // // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      // if (ctx.tabs && partId in (context.tabs ?? []))
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      ctx.tab = ctx.tabs[partId];
 
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -307,7 +359,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         },
         adjustPosTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`,
         adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
-        tabs: [
+        tabs: {
+          basics:
           {
             id: "basics",
             group: "shadows",
@@ -316,49 +369,35 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
             icon: "fa-solid fa-cog",
             label: "SPRITESHADOWS.SETTINGS.TABS.BASICS"
           }
-        ]
+        }
       }
 
       if (context.shadows.config.type === "blob") {
-        context.shadows.tabs.push({
+        context.shadows.tabs.blob = {
           id: "blob",
           group: "shadows",
           label: "SPRITESHADOWS.SETTINGS.TABS.BLOB",
           active: this.tabGroups.shadows === "blob",
           cssClass: "",
           icon: "fa-solid fa-lightbulb"
-        });
+        };
       } else if (context.shadows.config.type === "stencil") {
-        context.shadows.tabs.push({
+        context.shadows.tabs.stencil = {
           id: "stencil",
           group: "shadows",
           label: "SPRITESHADOWS.SETTINGS.TABS.STENCIL",
           active: this.tabGroups.shadows === "stencil",
           cssClass: "",
           icon: "fa-solid fa-lightbulb"
-        });
+        };
       }
 
       if (context.shadows.config.type === "stencil") {
         context.shadows.config.shadows.forEach(shadow => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          (shadow as any).label = shadow.name ? shadow.name : shadow.id;
+          (shadow as any).label = shadow.id;
         })
       }
-
-      // TODO: Convert skew to degrees with multiple stencil shadows
-      // // Convert skew to degrees
-      // if (context.shadows.config.type === "stencil") {
-      //   context.shadows.config.skew *= (180 / Math.PI);
-      // }
-
-      // TODO: Invert adjustment multiplier for multiple stencil shadows
-
-      // const adjustmentMultiplier = this.getDragAdjustmentMultiplier();
-      // context.shadows.config.adjustments.x *= 1 / adjustmentMultiplier.x;
-      // context.shadows.config.adjustments.y *= 1 / adjustmentMultiplier.y;
-      // context.shadows.config.adjustments.width *= 1 / adjustmentMultiplier.width;
-      // context.shadows.config.adjustments.height *= 1 / adjustmentMultiplier.height;
 
       return context as unknown as ShadowConfigContext<Context>
     }
@@ -452,15 +491,10 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       const formData = (foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as any)[__MODULE_ID__] as ShadowConfiguration;
 
-      if (shadowedObj.blobSprite) {
-        shadowedObj.blobSprite.visible = formData.type === "blob";
-        this.applyFormChanges(formData, shadowedObj.blobSprite, "blob");
-      }
 
-      // TODO: Reimplement for multiple stencil sprites
-      // if (shadowedObj.stencilSprite) {
-      //   shadowedObj.stencilSprite.visible = formData.type === "stencil";
-      //   this.applyFormChanges(formData, shadowedObj.stencilSprite, "stencil");
+      // if (shadowedObj.blobSprite) {
+      //   shadowedObj.blobSprite.visible = formData.type === "blob";
+      //   this.applyFormChanges(formData, shadowedObj.blobSprite, "blob");
       // }
 
       this.previousFormData = foundry.utils.deepClone(formData);

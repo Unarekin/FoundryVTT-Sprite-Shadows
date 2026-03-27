@@ -82,7 +82,6 @@ export interface StencilShadow extends ExtendedShadowConfiguration {
   skew: number;
   useImage: boolean;
   image: string;
-  name: string;
 }
 
 export interface StencilShadowConfiguration extends BaseShadowConfiguration {
@@ -106,4 +105,7 @@ export interface ShadowedObject {
   refreshShadow: (force?: boolean) => void;
   blobSprite: PIXI.Sprite;
   stencilSprites: PIXI.Sprite[];
+  createStencilShadowSprite(config: StencilShadow): PIXI.Sprite | undefined;
+  setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh): void;
+  mesh?: foundry.canvas.primary.PrimarySpriteMesh
 }

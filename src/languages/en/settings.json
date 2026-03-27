@@ -21,6 +21,8 @@
         "HINT": "Fine tune the position and size of the shadow.",
         "LABEL": "Adjustments",
         "WIDTH": "Width",
+        "POSITION": "Position",
+        "SIZE": "Size",
         "X": "X",
         "Y": "Y"
       },

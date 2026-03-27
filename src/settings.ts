@@ -30,7 +30,7 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
 }
 
 export const DefaultStencilShadow: StencilShadow = {
-  id: 'GKVHWpjjlP6H0apy',
+  id: 'INVALID',
   enabled: true,
   ignoreSpriteAnimationsMeshAdjustments: false,
   color: "#000000",
