@@ -287,6 +287,9 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
 
     context.spriteAnimations = game.modules?.get("sprite-animations")?.active ?? false;
 
+    context.adjustPosTooltip = `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`;
+    context.adjustSizeTooltip = `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`;
+
     context.alignmentSelect = {
       bottom: "SPRITESHADOWS.SETTINGS.ALIGNMENT.BOTTOM",
       center: "SPRITESHADOWS.SETTINGS.ALIGNMENT.CENTER"

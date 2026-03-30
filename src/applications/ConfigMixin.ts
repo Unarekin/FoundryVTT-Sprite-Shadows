@@ -1,4 +1,4 @@
-import { BlobShadowConfiguration, DeepPartial, ShadowConfigSource, ShadowConfiguration, ShadowType, StencilShadowConfiguration, ShadowedObject } from "types";
+import { BlobShadowConfiguration, DeepPartial, ShadowConfigSource, ShadowConfiguration, ShadowType, StencilShadowConfiguration, ShadowedObject, MeshAdjustments } from "types";
 import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
 import { contrastColor, downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
@@ -9,6 +9,9 @@ import { StencilShadowConfig } from "./StencilShadowConfig";
 
 export function ConfigMixin<Document extends foundry.abstract.Document.Any = foundry.abstract.Document.Any, Context extends foundry.applications.api.ApplicationV2.RenderContext = foundry.applications.api.ApplicationV2.RenderContext, Config extends foundry.applications.api.DocumentSheetV2.Configuration<Document> = foundry.applications.api.DocumentSheetV2.Configuration<Document>, Options extends foundry.applications.api.DocumentSheetV2.RenderOptions = foundry.applications.api.DocumentSheetV2.RenderOptions>(base: typeof foundry.applications.api.DocumentSheetV2<Document, Context, Config, Options>) {
   abstract class ShadowedConfig extends base {
+
+    #previousBlobDragAdjustments: { x: number, y: number, width: number, height: number } | undefined = undefined;
+
     public static DEFAULT_OPTIONS = {
       ...base.DEFAULT_OPTIONS,
       actions: {
@@ -103,7 +106,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     static async EditStencilShadow(this: ShadowedConfig, e: Event, elem: HTMLElement) {
       try {
         if (this.overrideShadowFlags?.type !== "stencil") return console.warn("No shadow flags stored");
-        console.log("EditStencilShadow:", this);
         if (!Array.isArray(this.overrideShadowFlags.shadows)) return console.warn("No shadows on flags");
 
         if (!elem.dataset.shadow) return console.warn("No shadow ID");
@@ -205,17 +207,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
             }
           }
         }
-
-        // const shadowTexture = flags.type === "blob" ? shadowedObj.blobSprite.texture : shadowedObj.stencilSprite.texture;
-        // const anchor = flags.alignment === "bottom" ? findBottomAnchorPoint(shadowTexture) : findCentralAnchorPoint(shadowTexture);
-
-        // if (!anchor) return;
-
-        // this.overrideShadowFlags.adjustments.anchor.x = anchor.x;
-        // this.overrideShadowFlags.adjustments.anchor.y = anchor.y;
-
-
-
       } catch (err) {
         console.error(err);
         if (err instanceof Error) ui.notifications?.error(err.message, { console: false });
@@ -279,10 +270,36 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
     protected applyShadowDragAdjustment(selector: string, delta: number) {
       const elem = this.element.querySelector(selector);
-      if (elem instanceof HTMLInputElement) {
+      if (elem instanceof HTMLInputElement)
         this.setFormElementValue(selector, Math.floor((parseFloat(elem.value) + delta)).toString());
-        // elem.value = Math.floor((parseFloat(elem.value) + delta)).toString();
-        // elem.dispatchEvent(new Event("change", { bubbles: true }));
+      this.applyShadowDragAdjustmentPreview();
+    }
+
+    protected applyShadowDragAdjustmentPreview() {
+      const data = this.parseShadowFormData();
+      if (!data) return;
+
+      if (data.type === "blob") {
+        const sprite = this.getShadowedObject()?.blobSprite;
+        if (sprite) {
+          const adjustments = {
+            x: data.adjustments?.x ?? 0,
+            y: data.adjustments?.y ?? 0,
+            width: data.adjustments?.width ?? 0,
+            height: data.adjustments?.height ?? 0
+          }
+          const delta = {
+            x: adjustments.x - (this.#previousBlobDragAdjustments?.x ?? 0),
+            y: adjustments.y - (this.#previousBlobDragAdjustments?.y ?? 0),
+            width: adjustments.width - (this.#previousBlobDragAdjustments?.width ?? 0),
+            height: adjustments.height - (this.#previousBlobDragAdjustments?.height ?? 0)
+          };
+          sprite.x += delta.x;
+          sprite.y += delta.y;
+          sprite.width += delta.width;
+          sprite.height += delta.height;
+          this.#previousBlobDragAdjustments = adjustments;
+        }
       }
     }
 
@@ -545,6 +562,17 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       await super._onFirstRender(context, options);
       window.addEventListener("mousemove", this._shadowDragAdjustMouseMove);
       window.addEventListener("mouseup", this._shadowDragAdjustMouseUp);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const adjustments = (context.shadows?.config as any).adjustments as MeshAdjustments | undefined;
+      if (adjustments) {
+        this.#previousBlobDragAdjustments = {
+          x: adjustments.x ?? 0,
+          y: adjustments.y ?? 0,
+          width: adjustments.width ?? 0,
+          height: adjustments.height ?? 0
+        }
+      }
     }
 
     protected toggleSceneSource(enabled: boolean) {

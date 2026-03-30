@@ -26,4 +26,6 @@ export interface StencilShadowContext extends foundry.applications.api.Applicati
   spriteAnimations: boolean;
   alignmentSelect: Record<ShadowAlignment, string>;
   buttons: foundry.applications.api.ApplicationV2.FormFooterButton[];
+  adjustPosTooltip: string;
+  adjustSizeTooltip: string;
 }
