@@ -1,0 +1,19 @@
+<div class="tab{{#if tab.active}} active{{/if}} sprite-shadows-config scrollable" {{#unless omitGroup}}data-group="{{#if v1}}main{{else}}sheet{{/if}}"{{/unless}} data-tab="shadows" data-application-part="shadows">
+{{log "Context:" this}}
+  {{#with shadows}}
+  <nav class="sheet-tabs tabs{{#if verticalTabs}} vertical{{/if}}"
+      aria-roledescription="{{localize "SHEETS.FormNavLabel"}}" data-group="shadows">
+      {{#each tabs as |tab|}}
+      <a data-action="tab" data-group="{{tab.group}}" data-tab="{{tab.id}}"
+          {{#if tab.cssClass}}class="{{tab.cssClass}}"{{/if}}
+          {{#if tab.tooltip}}data-tooltip="{{tab.tooltip}}"{{/if}}>
+          {{#if tab.icon}}<i class="{{tab.icon}}" inert></i>{{/if}}
+          {{#if tab.label}}<span>{{localize tab.label}}</span>{{/if}}
+      </a>
+      {{/each}}
+  </nav>
+    {{> "modules/sprite-shadows/templates/config/basics.hbs" tab=tabs.basics }}
+    {{> "modules/sprite-shadows/templates/config/blobSettings.hbs" tab=tabs.blob }}
+    {{> "modules/sprite-shadows/templates/config/stencilSettings.hbs" tab=tabs.stencil}}
+  {{/with}}
+</div>

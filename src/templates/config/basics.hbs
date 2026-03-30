@@ -1,0 +1,53 @@
+<div class="{{#unless global}}tab{{#if tab.active}} active{{/if}}{{/unless}} sprite-shadows-config scrollable" {{#unless omitGroup}}data-group="shadows"{{/unless}} data-tab="basics" data-application-part="basics">
+  {{#if allowConfigSource }}
+    <div class="form-group">
+      <label for="{{idPrefix}}-configSource">{{localize "SPRITESHADOWS.SETTINGS.CONFIGSOURCE.LABEL"}}</label>
+      <select id="{{idPrefix}}-configSource" name="sprite-shadows.configSource" >
+        {{selectOptions configSourceSelect localize=true selected=configSource}}
+      </select>
+      <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.CONFIGSOURCE.HINT"}}</p>
+    </div>
+  {{/if}}
+
+  <div class="form-group">
+    <label for="{{idPrefix}}-enable">{{localize "SPRITESHADOWS.SETTINGS.ENABLE.LABEL"}}</label>
+    <input type="checkbox" name="sprite-shadows.enabled" id="{{idPrefix}}-enable" {{checked config.enabled }}>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ENABLE.HINT"}}</p>
+  </div>
+
+  <div class="form-group" data-role="export-shadows-container">
+    <div class="flexrow">
+      <div class="flex1">
+        <label for="{{idPrefix}}-shadows-export">{{localize "SPRITESHADOWS.SETTINGS.EXPORT.LABEL"}}</label>
+      </div>
+      <div class="flex0">
+        <a data-action="" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.EXPORT"}}" data-role="export-shadows">
+          <i class="fa-solid fa-download"></i>
+        </a>
+      </div>
+    </div>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.EXPORT.HINT"}}</p>
+  </div>
+
+  <div class="form-group">
+    <div class="flexrow">
+      <div class="flex1">
+        <label for="{{idPrefix}}-shadows-import">{{localize "SPRITESHADOWS.SETTINGS.IMPORT.LABEL"}}</label>
+      </div>
+      <div class="flex0">
+        <a data-action="" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.IMPORT"}}" data-role="import-shadows">
+          <i class="fa-solid fa-upload"></i>
+        </a>
+      </div>
+    </div>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.IMPORT.HINT"}}</p>
+  </div>
+
+  <div class="form-group">
+    <label for="{{idPrefix}}-type">{{localize "SPRITESHADOWS.SETTINGS.TYPE.LABEL"}}</label>
+    <select id="{{idPrefix}}-type" name="sprite-shadows.type">
+      {{selectOptions typeSelect localize=true selected=config.type}}
+    </select>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.TYPE.HINT"}}</p>
+  </div>
+</div>

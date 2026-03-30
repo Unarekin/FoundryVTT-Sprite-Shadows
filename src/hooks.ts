@@ -43,7 +43,7 @@ function applyMixin(collection: Record<string, any>, mixin: Function) {
   }
 }
 
-Hooks.on("ready", () => {
+Hooks.on("canvasConfig", () => {
   if (game.release?.isNewer("13")) {
     applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
     applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);

@@ -34,6 +34,16 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
       return context;
     }
 
+    protected getOriginalShadowedObject() { return undefined; }
+
+    protected hideShadowsForPreview() {
+      // TODO: Implement this
+    }
+
+    protected unhideShadowsForPreview() {
+      // TODO: Impelment this
+    }
+
     protected async loadShadowConfigSettings(source: ShadowConfigSource) {
       let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
       switch (source) {
@@ -73,40 +83,40 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
     }
   }
 
-  ShadowedTileConfig.TABS.sheet.tabs.push({
-    id: "shadows",
-    icon: "fa-solid fa-lightbulb",
-    cssClass: ""
-  });
+  // ShadowedTileConfig.TABS.sheet.tabs.push({
+  //   id: "shadows",
+  //   icon: "fa-solid fa-lightbulb",
+  //   cssClass: ""
+  // });
 
-  // Inject our configuration part before the footer
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const parts = (base as any).PARTS as Record<string, foundry.applications.api.HandlebarsApplicationMixin.HandlebarsTemplatePart>;
-  const footer = parts.footer;
-  delete parts.footer;
+  // // Inject our configuration part before the footer
+  // // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  // const parts = (base as any).PARTS as Record<string, foundry.applications.api.HandlebarsApplicationMixin.HandlebarsTemplatePart>;
+  // const footer = parts.footer;
+  // delete parts.footer;
 
-  foundry.utils.mergeObject(parts, {
-    shadows: {
-      template: `modules/${__MODULE_ID__}/templates/ShadowConfig.hbs`,
-      scrollable: ['.scrollable'],
-      templates: [
-        `modules/${__MODULE_ID__}/templates/BlobConfig.hbs`,
-        `modules/${__MODULE_ID__}/templates/StencilConfig.hbs`
-      ]
-    },
-    footer
-  });
+  // foundry.utils.mergeObject(parts, {
+  //   shadows: {
+  //     template: `modules/${__MODULE_ID__}/templates/ShadowConfig.hbs`,
+  //     scrollable: ['.scrollable'],
+  //     templates: [
+  //       `modules/${__MODULE_ID__}/templates/BlobConfig.hbs`,
+  //       `modules/${__MODULE_ID__}/templates/StencilConfig.hbs`
+  //     ]
+  //   },
+  //   footer
+  // });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  foundry.utils.mergeObject((base as any).PARTS ?? {}, parts);
+  // // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  // foundry.utils.mergeObject((base as any).PARTS ?? {}, parts);
 
-  ((canvas?.scene?.tiles.contents ?? [])).forEach(tile => {
-    if (tile.sheet && !(tile.sheet instanceof ShadowedTileConfig)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      tile._sheet = new ShadowedTileConfig(tile.sheet.options);
-    }
+  // ((canvas?.scene?.tiles.contents ?? [])).forEach(tile => {
+  //   if (tile.sheet && !(tile.sheet instanceof ShadowedTileConfig)) {
+  //     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  //     tile._sheet = new ShadowedTileConfig(tile.sheet.options);
+  //   }
 
-  })
+  // })
 
   return ShadowedTileConfig;
 }
