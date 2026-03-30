@@ -116,7 +116,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         const obj = this.getShadowedObject();
         const sprite: PIXI.Sprite | undefined = obj?.stencilSprites?.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
         const data = await StencilShadowConfig.Edit(shadowConfig, sprite);
-        console.log("Edit data:", data);
         if (data) {
           // empty
           const index = this.overrideShadowFlags.shadows.findIndex(item => item.id === data.id);
