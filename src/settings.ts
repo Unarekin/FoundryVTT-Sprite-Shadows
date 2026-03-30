@@ -109,7 +109,7 @@ Hooks.on("ready", () => {
   });
 
   game?.settings?.registerMenu(__MODULE_ID__, "globalConfigMenu", {
-    name: "spriteShadows.globalConfig",
+    name: "SPRITESHADOWS.SETTINGS.GLOBAL.LABEL",
     label: "SPRITESHADOWS.SETTINGS.GLOBAL.LABEL",
     hint: "SPRITESHADOWS.SETTINGS.GLOBAL.HINT",
     icon: "fa-solid fa-cogs",

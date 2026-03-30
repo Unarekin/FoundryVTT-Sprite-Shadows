@@ -20,31 +20,49 @@ export interface MeshAdjustments {
     y: number;
     width: number;
     height: number;
+    anchor: {
+        x: number;
+        y: number;
+    };
 }
-interface BaseShadowConfiguration {
-    type: ShadowType;
-    enabled: boolean;
+export declare const ShadowConfigSources: readonly ["actor", "token", "scene", "tile", "global"];
+export type ShadowConfigSource = typeof ShadowConfigSources[number];
+interface ExtendedShadowConfiguration {
     alpha: number;
     color: string;
     alignment: ShadowAlignment;
     adjustments: MeshAdjustments;
     blur: number;
     rotation: number;
-    useTokenOverride: boolean;
     ignoreSpriteAnimationsMeshAdjustments: boolean;
 }
-export interface BlobShadowConfiguration extends BaseShadowConfiguration {
+interface BaseShadowConfiguration {
+    type: ShadowType;
+    enabled: boolean;
+}
+export type BlobShadowConfiguration = BaseShadowConfiguration & ExtendedShadowConfiguration & {
     type: "blob";
     shape: BlobShape;
     adjustForElevation: boolean;
     elevationIncrement: number;
     liftToken: boolean;
-}
-export interface StencilShadowConfiguration extends BaseShadowConfiguration {
+};
+export type OldStencilShadowType = BaseShadowConfiguration & ExtendedShadowConfiguration & {
     type: "stencil";
     skew: number;
     useImage: boolean;
     image: string;
+};
+export interface StencilShadow extends ExtendedShadowConfiguration {
+    id: string;
+    enabled: boolean;
+    skew: number;
+    useImage: boolean;
+    image: string;
+}
+export interface StencilShadowConfiguration extends BaseShadowConfiguration {
+    type: "stencil";
+    shadows: StencilShadow[];
 }
 export type ShadowConfiguration = BlobShadowConfiguration | StencilShadowConfiguration;
 export interface IsometricFlags {
@@ -54,5 +72,13 @@ export interface IsometricFlags {
     offsetY: number;
     scale: number;
     isoTokenDisabled: boolean;
+}
+export interface ShadowedObject {
+    refreshShadow: (force?: boolean) => void;
+    blobSprite: PIXI.Sprite;
+    stencilSprites: PIXI.Sprite[];
+    createStencilShadowSprite(config: StencilShadow): PIXI.Sprite | undefined;
+    setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh): void;
+    mesh?: foundry.canvas.primary.PrimarySpriteMesh;
 }
 export {};
