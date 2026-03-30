@@ -1,17 +1,6 @@
 {
   "SPRITESHADOWS": {
     "SETTINGS": {
-      "REMOVE": {
-        "TITLE": "Remove Stencil Shadow",
-        "MESSAGE": "Are you sure you wish to remove {name}?<br>This cannot be undone."
-      },
-      "NAME": "Name",
-      "TABS": {
-        "BASICS": "Basics",
-        "APPEARANCE": "Appearance",
-        "BLOB": "Blob Shadow",
-        "STENCIL": "Stencil Shadows"
-      },
       "ADJUSTMENTS": {
         "ANCHOR": "Anchor",
         "ANCHORTOOLTIP": "Auto-set anchor",
@@ -20,9 +9,9 @@
         "HEIGHT": "Height",
         "HINT": "Fine tune the position and size of the shadow.",
         "LABEL": "Adjustments",
-        "WIDTH": "Width",
         "POSITION": "Position",
         "SIZE": "Size",
+        "WIDTH": "Width",
         "X": "X",
         "Y": "Y"
       },
@@ -81,6 +70,7 @@
         "HINT": "Global settings to be applied by default to all tokens and tiles.",
         "LABEL": "Global Settings"
       },
+      "ID": "ID",
       "IGNORESAADJUSTMENTS": {
         "HINT": "If enabled, will ignore mesh adjustments configured by Sprite Animations.",
         "LABEL": "Ignore Sprite Animations Adjustments"
@@ -105,6 +95,11 @@
         "HINT": "Load current settings from this token",
         "LABEL": "Load From Token"
       },
+      "NAME": "Name",
+      "REMOVE": {
+        "MESSAGE": "Are you sure you wish to remove {name}?<br>This cannot be undone.",
+        "TITLE": "Remove Stencil Shadow"
+      },
       "ROTATION": {
         "HINT": "Angle by which to rotate the shadow",
         "LABEL": "Rotation"
@@ -117,6 +112,10 @@
         "GLOBAL": "Global"
       },
       "STENCIL": {
+        "ENABLE": {
+          "HINT": "Toggle this shadow on or off.",
+          "LABEL": "Enable Shadow"
+        },
         "HINT": "A faux-3d shadow based on the token's texture.",
         "LABEL": "Stencil Shadow"
       },
@@ -124,15 +123,21 @@
         "HINT": "The image to use for the shape of the stencil shadow.",
         "LABEL": "Image"
       },
+      "TABS": {
+        "APPEARANCE": "Appearance",
+        "BASICS": "Basics",
+        "BLOB": "Blob Shadow",
+        "STENCIL": "Stencil Shadows"
+      },
       "TOKENOVERRIDE": {
         "HINT": "If enabled, will store shadow settings directly on this token rather than the actor.",
         "LABEL": "Use Token Overrides"
       },
       "TOOLTIPS": {
-        "EXPORT": "Export the current configuration as JSON",
-        "IMPORT": "Import a JSON configuration",
         "ADDSTENCIL": "Add Stencil Shadow",
         "EDITSTENCIL": "Edit {name}",
+        "EXPORT": "Export the current configuration as JSON",
+        "IMPORT": "Import a JSON configuration",
         "REMOVESTENCIL": "Remove {name}"
       },
       "TYPE": {

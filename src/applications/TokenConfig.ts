@@ -6,52 +6,33 @@ import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultSten
 export function TokenConfigMixin<t extends typeof foundry.applications.sheets.TokenConfig>(base: t) {
   class ShadowedTokenConfig extends ConfigMixin(base) {
 
-    static DEFAULT_OPTIONS = {
-      actions: {
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        loadFromActor: ShadowedTokenConfig.LoadFromActor,
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        loadFromToken: ShadowedTokenConfig.LoadFromToken
-      }
-    }
-
-    public static async LoadFromActor(this: ShadowedTokenConfig) {
-      try {
-        const actor = this.getActor();
-        if (!actor) return;
-        this.overrideShadowFlags = foundry.utils.deepClone(actor.flags[__MODULE_ID__] ?? {});
-
-        await this.render();
-      } catch (err) {
-        console.error(err);
-        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
-      }
-    }
-
-    public static async LoadFromToken(this: ShadowedTokenConfig) {
-      try {
-        this.overrideShadowFlags = foundry.utils.deepClone((this.document as unknown as TokenDocument).flags[__MODULE_ID__] as DeepPartial<ShadowConfiguration> ?? {});
-        await this.render();
-      } catch (err) {
-        console.error(err);
-        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
-      }
-    }
 
     protected getOriginalShadowedObject(): foundry.canvas.placeables.Token | undefined {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
       return (this as any).token?.object;
     }
 
+    protected hidePreviewShadows() {
+      requestAnimationFrame(() => {
+        const obj = this.getOriginalShadowedObject() as ShadowedObject | undefined;
+        if (!obj) return console.warn("Could not find original shadowed object");
+        if (obj.blobSprite) obj.blobSprite.visible = false;
+        if (Array.isArray(obj.stencilSprites))
+          obj.stencilSprites.forEach(sprite => sprite.visible = false);
+      });
+    }
+
+    async _initializePreview() {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      await super._initializePreview();
+      this.hidePreviewShadows();
+    }
+
+    // TODO: Remove when dropping v13 support
     async _initializeTokenPreview() {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await super._initializeTokenPreview();
-
-      const obj = this.getOriginalShadowedObject() as ShadowedObject | undefined;
-      if (!obj) return console.warn("Could not find original shadowed object");
-      if (obj.blobSprite) obj.blobSprite.renderable = false;
-      if (Array.isArray(obj.stencilSprites))
-        requestAnimationFrame(() => { obj.stencilSprites.forEach(sprite => sprite.visible = false); })
+      this.hidePreviewShadows();
     }
 
     protected getDragAdjustmentMultiplier() {
@@ -126,6 +107,7 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
       this.overrideShadowFlags = foundry.utils.deepClone(actualFlags);
       this.overrideShadowConfigSource = source;
+      console.log("Override source:", source);
       await this.render();
     }
 

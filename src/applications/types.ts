@@ -16,6 +16,7 @@ export type ShadowConfigContext<t extends foundry.applications.api.ApplicationV2
 
     tabs: Record<string, foundry.applications.api.ApplicationV2.Tab>;
   }
+  v1?: boolean;
   tab?: foundry.applications.api.ApplicationV2.Tab;
 }
 

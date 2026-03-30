@@ -103,6 +103,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     static async EditStencilShadow(this: ShadowedConfig, e: Event, elem: HTMLElement) {
       try {
         if (this.overrideShadowFlags?.type !== "stencil") return console.warn("No shadow flags stored");
+        console.log("EditStencilShadow:", this);
         if (!Array.isArray(this.overrideShadowFlags.shadows)) return console.warn("No shadows on flags");
 
         if (!elem.dataset.shadow) return console.warn("No shadow ID");
@@ -113,10 +114,11 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         const obj = this.getShadowedObject();
         const sprite: PIXI.Sprite | undefined = obj?.stencilSprites?.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
         const data = await StencilShadowConfig.Edit(shadowConfig, sprite);
+        console.log("Edit data:", data);
         if (data) {
           // empty
           const index = this.overrideShadowFlags.shadows.findIndex(item => item.id === data.id);
-          if (index !== -1) this.overrideShadowFlags.shadows.splice(index, 1, foundry.utils.mergeObject(DefaultStencilShadowConfiguration, data));
+          if (index !== -1) this.overrideShadowFlags.shadows[index] = foundry.utils.mergeObject(foundry.utils.deepClone(DefaultStencilShadowConfiguration), data)
         }
       } catch (err) {
         console.error(err);
@@ -331,12 +333,11 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const context = (await super._prepareContext(options as any)) as unknown as ShadowConfigContext<Context>;
 
-      const flags = this.getConfiguration();
-      this.overrideShadowFlags ??= flags;
+      this.overrideShadowFlags ??= this.getConfiguration();
 
       context.shadows = {
         idPrefix: foundry.utils.randomID(),
-        config: foundry.utils.deepClone(flags),
+        config: foundry.utils.deepClone(this.overrideShadowFlags) as ShadowConfiguration,
         allowConfigSource: false,
         configSource: this.overrideShadowConfigSource,
         spriteAnimations: game.modules?.get("sprite-animations")?.active ?? false,
@@ -368,38 +369,44 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
             cssClass: "",
             icon: "fa-solid fa-cog",
             label: "SPRITESHADOWS.SETTINGS.TABS.BASICS"
+          },
+          blob: {
+            id: "blob",
+            group: "shadows",
+            label: "SPRITESHADOWS.SETTINGS.TABS.BLOB",
+            active: this.tabGroups.shadows === "blob",
+            cssClass: "",
+            icon: "fa-solid fa-lightbulb"
+          },
+          stencil:
+          {
+            id: "stencil",
+            group: "shadows",
+            label: "SPRITESHADOWS.SETTINGS.TABS.STENCIL",
+            active: this.tabGroups.shadows === "stencil",
+            cssClass: "",
+            icon: "fa-solid fa-lightbulb"
           }
         }
       }
 
-      if (context.shadows.config.type === "blob") {
-        context.shadows.tabs.blob = {
-          id: "blob",
-          group: "shadows",
-          label: "SPRITESHADOWS.SETTINGS.TABS.BLOB",
-          active: this.tabGroups.shadows === "blob",
-          cssClass: "",
-          icon: "fa-solid fa-lightbulb"
-        };
-      } else if (context.shadows.config.type === "stencil") {
-        context.shadows.tabs.stencil = {
-          id: "stencil",
-          group: "shadows",
-          label: "SPRITESHADOWS.SETTINGS.TABS.STENCIL",
-          active: this.tabGroups.shadows === "stencil",
-          cssClass: "",
-          icon: "fa-solid fa-lightbulb"
-        };
-      }
 
-      if (context.shadows.config.type === "stencil") {
-        context.shadows.config.shadows.forEach(shadow => {
+      if ((context.shadows.config as StencilShadowConfiguration).shadows) {
+        (context.shadows.config as StencilShadowConfiguration).shadows.forEach(shadow => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           (shadow as any).label = shadow.id;
-        })
+        });
       }
 
       return context as unknown as ShadowConfigContext<Context>
+    }
+
+    protected showShadowTypeTab(shadowType: ShadowType) {
+      const blobTab = this.element.querySelector(`[data-group="shadows"][data-tab="blob"]`);
+      const stencilTab = this.element.querySelector(`[data-group="shadows"][data-tab="stencil"]`);
+      if (blobTab instanceof HTMLElement) blobTab.style.display = shadowType === "blob" ? "block" : "none";
+      if (stencilTab instanceof HTMLElement) stencilTab.style.display = shadowType === "stencil" ? "block" : "none";
+
     }
 
     protected iterateElements(selector: string, fn: ((elem: HTMLElement) => void)) {
@@ -445,41 +452,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
     protected previousFormData: DeepPartial<ShadowConfiguration> = this.getShadowFlags() ?? {};
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected applyFormChanges(changes: ShadowConfiguration, sprite: PIXI.Sprite, shadowType: ShadowType) {
-      // TODO: Re-implement for multiple stencil shadows
-      // if (typeof changes.alpha === "number")
-      //   sprite.alpha = changes.alpha;
-
-
-      // if (typeof changes.color === "string") {
-      //   const tintFilter = sprite.filters?.find(filter => filter instanceof TintFilter);
-      //   if (tintFilter) tintFilter.color = new PIXI.Color(changes.color ?? "black");
-      // }
-
-      // if (typeof changes.blur === "number") {
-      //   const blurFilter = sprite.filters?.find(filter => filter instanceof PIXI.filters.BlurFilter);
-      //   if (blurFilter) blurFilter.blur = changes.blur;
-      // }
-
-      // if (changes.adjustments) {
-      //   sprite.x += changes.adjustments.x - (this.previousFormData.adjustments?.x ?? 0);
-      //   sprite.y -= (this.previousFormData.adjustments?.y ?? 0) - changes.adjustments.y;
-      //   sprite.width += changes.adjustments.width - (this.previousFormData.adjustments?.width ?? 0);
-      //   sprite.height -= (this.previousFormData.adjustments?.height ?? 0) - changes.adjustments.height;
-      // }
-
-      // if (shadowType === "stencil" && (changes as StencilShadowConfiguration).skew) {
-      //   sprite.skew.x = (changes as StencilShadowConfiguration).skew * (Math.PI / 180);
-      // }
-
-      // if (typeof changes.rotation === "number")
-      //   sprite.angle = changes.rotation;
-
-      // if (changes.adjustments?.anchor) {
-      //   sprite.anchor.set(changes.adjustments.anchor.x ?? 0.5, changes.adjustments.anchor.y ?? 1);
-      // }
-    }
 
     _onChangeForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event) {
       super._onChangeForm(formConfig, event);
@@ -488,17 +460,20 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (!shadowedObj) return;
 
       if (!this.form) return;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const formData = (foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as any)[__MODULE_ID__] as ShadowConfiguration;
+      const formData = this.parseShadowFormData();
+      // // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      // const formData = (foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as any)[__MODULE_ID__] as ShadowConfiguration;
 
 
-      // if (shadowedObj.blobSprite) {
-      //   shadowedObj.blobSprite.visible = formData.type === "blob";
-      //   this.applyFormChanges(formData, shadowedObj.blobSprite, "blob");
-      // }
+      if (shadowedObj.blobSprite) {
+        shadowedObj.blobSprite.visible = formData.type === "blob";
+      }
 
       this.previousFormData = foundry.utils.deepClone(formData);
-      this.overrideShadowFlags = foundry.utils.deepClone(formData);
+      if (this.overrideShadowFlags)
+        foundry.utils.mergeObject(this.overrideShadowFlags, formData);
+
+      // this.overrideShadowFlags = foundry.utils.deepClone(formData);
     }
 
     protected async finishImport(data: ShadowConfiguration) {
@@ -587,20 +562,22 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     }
 
 
+    shadowTypeChanged(shadowType: ShadowType) {
+      this.showShadowTypeTab(shadowType);
+    }
 
     async _onRender(context: DeepPartial<ShadowConfigContext<Context>>, options: Options) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       await super._onRender(context as any, options as any);
 
+      const tabs = this.element.querySelector(`.tabs.top-tabs:has([data-group="shadows"])`);
+      if (tabs instanceof HTMLElement)
+        tabs.classList.remove("top-tabs");
+
       // const config = this.parseFlagData(context.shadows?.config ?? {});
 
       const obj = this.getShadowedObject();
 
-      // if (obj) {
-      //   if (obj.blobSprite) obj.blobSprite.visible = false;
-      //   if (obj.stencilSprites)
-      //     obj.stencilSprites.forEach(sprite => sprite.visible = false);
-      // }
 
       const configSourceElem = this.element.querySelector(`[name="sprite-shadows.configSource"]`);
 
@@ -665,9 +642,13 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         });
       }
 
+      this.showShadowTypeTab(context.shadows?.config?.type ?? "blob");
       const typeSelect = this.element.querySelector(`select[name="${__MODULE_ID__}.type"]`);
       if (typeSelect instanceof HTMLSelectElement)
-        typeSelect.addEventListener("change", () => { this.toggleConfigSection(typeSelect.value as ShadowType); });
+        typeSelect.addEventListener("change", () => {
+          this.toggleConfigSection(typeSelect.value as ShadowType);
+          this.shadowTypeChanged(typeSelect.value as ShadowType);
+        });
 
       const useImage = this.element.querySelector(`[name="${__MODULE_ID__}.useImage"]`);
       if (useImage instanceof HTMLInputElement) {
@@ -724,6 +705,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           fixed: true
         }
       )
+
 
       // Set up hover outline
       const stencilEntries = this.element.querySelectorAll(`.stencil-shadow-list .stencil-shadow-list__col`);

@@ -150,7 +150,7 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
     }
 
     protected prepareContext(): ShadowConfigContext<any> {
-      const context = {
+      const context: ShadowConfigContext<Record<string, unknown>> = {
         v1: true,
         shadows: {
           idPrefix: foundry.utils.randomID(),
@@ -177,7 +177,44 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
           },
           adjustPosTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`,
           adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
+          tabs: {
+            basics: {
+              id: "basics",
+              group: "shadows",
+              active: true,
+              cssClass: "",
+              icon: "fa-solid fa-cog",
+              label: "SPRITESHADOWS.SETTINGS.TABS.BASICS"
+            }
+          }
         }
+      }
+
+      if (context.shadows.config.type === "blob") {
+        context.shadows.tabs.blob = {
+          id: "blob",
+          group: "shadows",
+          label: "SPRITESHADOWS.SETTINGS.TABS.BLOB",
+          active: false,
+          cssClass: "",
+          icon: "fa-solid fa-lightbulb"
+        };
+      } else if (context.shadows.config.type === "stencil") {
+        context.shadows.tabs.stencil = {
+          id: "stencil",
+          group: "shadows",
+          label: "SPRITESHADOWS.SETTINGS.TABS.STENCIL",
+          active: false,
+          cssClass: "",
+          icon: "fa-solid fa-lightbulb"
+        };
+      }
+
+      if (context.shadows.config.type === "stencil") {
+        context.shadows.config.shadows.forEach(shadow => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          (shadow as any).label = shadow.id;
+        })
       }
 
       // if (context.shadows.config.type === "stencil")
@@ -443,6 +480,18 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         eventName: "click"
       })
 
+      const tabs = new Tabs({
+        group: "shadows",
+        navSelector: `.tabs[data-group="shadows"]`,
+        contentSelector: `.tab[data-group="shadows"]`,
+        initial: "basics",
+        callback: (...args: unknown[]) => {
+          console.log("Activated tab:", args);
+        }
+      });
+      tabs.bind(html[0]);
+      if (!this._tabs.find(tab => tab.group === "shadows"))
+        this._tabs.push(tabs);
 
       window.removeEventListener("mousemove", this._shadowDragAdjustMouseMove);
       window.removeEventListener("mouseup", this._shadowDragAdjustMouseUp);
@@ -470,18 +519,32 @@ export function ConfigMixinV1<t extends foundry.abstract.Document.Any = foundry.
         )
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      const content = await renderTemplate(`modules/${__MODULE_ID__}/templates/ShadowConfig.hbs`, this.prepareContext());
+      const content = await renderTemplate(`modules/${__MODULE_ID__}/templates/config/tabsv1.hbs`, this.prepareContext());
 
       html.find(`.sheet-footer`).before(content);
 
       return html;
     }
 
+    constructor(obj: any, options?: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      super(obj, options);
+
+      // // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      // this._tabs.push({
+      //   active: "basics",
+      //   group: "shadows",
+      //   _navSelector: `.tabs[data-group="shadows"]`,
+      //   _contentSelector: `.tab[data-group="shadows"]`,
+      // } as any);
+    }
+
   }
 
   void loadTemplates([
-    `modules/${__MODULE_ID__}/templates/BlobConfig.hbs`,
-    `modules/${__MODULE_ID__}/templates/StencilConfig.hbs`
+    `modules/${__MODULE_ID__}/templates/config/basics.hbs`,
+    `modules/${__MODULE_ID__}/templates/config/blobSettings.hbs`,
+    `modules/${__MODULE_ID__}/templates/config/stencilSettings.hbs`
   ]);
 
   return ShadowedConfigV1;

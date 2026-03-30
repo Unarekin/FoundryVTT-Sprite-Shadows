@@ -1,5 +1,4 @@
 <div class="tab{{#if tab.active}} active{{/if}} sprite-shadows-config scrollable" {{#unless omitGroup}}data-group="shadows"{{/unless}} data-tab="stencil" data-application-part="stencil">
-  {{log "Context" this}}
   <div class="flexrow">
     <div class="flex1">
       <h4 class="sprite-shadows-config__stencil-shadows">{{localize "SPRITESHADOWS.SETTINGS.TABS.STENCIL"}}</h4>
@@ -11,7 +10,7 @@
     </div>
   </div>
   <div class="stencil-shadow-list" data-role="stencil-shadow-list">
-    <div class="stencil-shadow-list__col">{{localize "SPRITESHADOWS.SETTINGS.NAME"}}</div>
+    <div class="stencil-shadow-list__col">{{localize "SPRITESHADOWS.SETTINGS.ID"}}</div>
     <div class="stencil-shadow-list__col"></div>
     <div class="stencil-shadow-list__col"></div>
     {{#each config.shadows as |shadow i|}}
