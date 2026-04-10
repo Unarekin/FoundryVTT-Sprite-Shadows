@@ -422,7 +422,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       const stencilTab = this.element.querySelector(`[data-group="shadows"][data-tab="stencil"]`);
       if (blobTab instanceof HTMLElement) blobTab.style.display = shadowType === "blob" ? "block" : "none";
       if (stencilTab instanceof HTMLElement) stencilTab.style.display = shadowType === "stencil" ? "block" : "none";
-
     }
 
     protected iterateElements(selector: string, fn: ((elem: HTMLElement) => void)) {

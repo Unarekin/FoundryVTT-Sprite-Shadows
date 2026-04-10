@@ -160,45 +160,5 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
     }
   }
 
-  // ShadowedTokenConfig.TABS.sheet.tabs.push({
-  //   id: "shadows",
-  //   icon: "fa-solid fa-lightbulb",
-  //   cssClass: ""
-  // });
-
-  // // Inject our configuration part before the footer
-  // // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  // const parts = (base as any).PARTS as Record<string, foundry.applications.api.HandlebarsApplicationMixin.HandlebarsTemplatePart>;
-  // const footer = parts.footer;
-  // delete parts.footer;
-
-  // foundry.utils.mergeObject(parts, {
-  //   shadows: {
-  //     template: `modules/${__MODULE_ID__}/templates/ShadowConfig.hbs`,
-  //     scrollable: ['.scrollable'],
-  //     templates: [
-  //       `modules/${__MODULE_ID__}/templates/BlobConfig.hbs`,
-  //       `modules/${__MODULE_ID__}/templates/StencilConfig.hbs`
-  //     ]
-  //   },
-  //   footer
-  // });
-
-  // // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  // foundry.utils.mergeObject((base as any).PARTS ?? {}, parts);
-
-  // ((canvas?.scene?.tokens.contents ?? [])).forEach(token => {
-  //   if (token.sheet && !(token.sheet instanceof ShadowedTokenConfig)) {
-
-  //     try {
-  //       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  //       token._sheet = new ShadowedTokenConfig(token.sheet.options);
-  //     } catch (err) {
-  //       console.warn(err);
-  //     }
-  //   }
-
-  // })
-
   return ShadowedTokenConfig
 }
