@@ -576,7 +576,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     protected toggleSceneSource(enabled: boolean) {
       const tab = this.element.querySelector(`div.tab.sprite-shadows-config`);
       if (!(tab instanceof HTMLElement)) return;
-      const elements = Array.from<HTMLElement>(tab.querySelectorAll(`input, select:not([name="sprite-shadows.configSource"]), range-picker, color-picker, button`));
+      const elements = Array.from<HTMLElement>(tab.querySelectorAll(`input, select:not([name="sprite-shadows.configSource"]), range-picker, color-picker, button, [data-role="import-shadows"]`));
       for (const elem of elements) {
         if (elem instanceof HTMLButtonElement) {
           elem.disabled = !enabled;
@@ -611,7 +611,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         this.toggleSceneSource(context.shadows?.configSource !== "scene" && context.shadows?.configSource !== "global");
         configSourceElem.addEventListener("change", () => {
           this.loadShadowConfigSettings(configSourceElem.value as ShadowConfigSource)
-            .then(() => { this.toggleSceneSource(configSourceElem.value !== "scene" && context.shadows?.configSource !== "global") })
+            .then(() => { this.toggleSceneSource(configSourceElem.value !== "scene" && configSourceElem.value !== "global") })
             .catch(console.error);
         })
       }
