@@ -67,6 +67,7 @@ export type BlobShadowConfiguration = BaseShadowConfiguration & ExtendedShadowCo
   adjustForElevation: boolean;
   elevationIncrement: number;
   liftToken: boolean;
+  rotateWithToken: boolean;
 }
 
 export type OldStencilShadowType = BaseShadowConfiguration & ExtendedShadowConfiguration & {

@@ -59,6 +59,12 @@
   </div>
 
   <div class="form-group">
+    <label for="{{idPrefix}}-rotateWithToken">{{localize "SPRITESHADOWS.SETTINGS.ROTATEWITHTOKEN.LABEL"}}</label>
+    <input type="checkbox" id="{{idPrefix}}-rotateWithToken" name="sprite-shadows.rotateWithToken" {{checked config.rotateWithToken}}>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.ROTATEWITHTOKEN.HINT"}}</p>
+  </div>
+
+  <div class="form-group">
     <label for="{{idPrefix}}-adjustForElevation">{{localize
         "SPRITESHADOWS.SETTINGS.ELEVATIONADJUST.LABEL"
       }}</label>

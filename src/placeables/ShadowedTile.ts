@@ -14,6 +14,16 @@ export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base:
       return this.getShadowDocument().flags["isometric-perspective"] as DeepPartial<IsometricFlags>;
     }
 
+    protected getDocumentRotation() { return this.getShadowDocument().rotation; }
+
+    protected getAnchor() {
+      const doc = this.getShadowDocument();
+      return new PIXI.Point(
+        doc.texture.anchorX,
+        doc.texture.anchorY
+      );
+    }
+
     protected getShadowFlags(): DeepPartial<ShadowConfiguration> {
       const doc = this.getShadowDocument();
       const configSource = doc.getFlag(__MODULE_ID__, "configSource") ?? "tile";

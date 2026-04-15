@@ -3,7 +3,7 @@ import { TintFilter } from "filters";
 import { cartesianToIso } from "functions";
 import { HandleEmptyObject } from "fvtt-types/utils";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
-import { BlobShadowConfiguration, DeepPartial, IsometricFlags, MeshAdjustments, OldStencilShadowType, ShadowConfiguration, StencilShadow, StencilShadowConfiguration } from "types";
+import { BlobShadowConfiguration, DeepPartial, IsometricFlags, MeshAdjustments, OldStencilShadowType, ShadowAlignment, ShadowConfiguration, StencilShadow, StencilShadowConfiguration } from "types";
 
 interface PlaceableSize {
   width: number;
@@ -19,6 +19,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
   abstract class ShadowedPlaceable extends base {
     protected blobSprite: PIXI.Sprite | undefined = undefined;
     protected stencilSprites: PIXI.Sprite[] = [];
+    protected shadowRotationMarker: PIXI.Sprite | undefined = undefined;
 
     protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration>;
     protected abstract getShadowDocument(): foundry.abstract.Document.Any;
@@ -426,8 +427,37 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         this.blobSprite.zIndex = mesh.zIndex - 1;
 
         this.blobSprite.angle = config.rotation;
+
+        if (config.rotateWithToken) {
+          this.blobSprite.angle += this.getDocumentRotation();
+          if (config.alignment === "bottom" && this.shadowRotationMarker) {
+            const global = this.shadowRotationMarker.toGlobal(new PIXI.Point(0, 0));
+            const relative = this.blobSprite.parent.toLocal(global);
+            this.blobSprite.position.set(relative.x, relative.y);
+          }
+
+        }
       }
     }
+    protected abstract getAnchor(): PIXI.Point;
+
+    protected calculateShadowRotationAdjustment(align: ShadowAlignment): PIXI.Point {
+      const { height } = this.getSize();
+      switch (align) {
+        case "bottom": {
+          const r = (height * this.getAnchor().y);
+          return new PIXI.Point(
+            r * Math.cos(this.rotation),
+            r * Math.sin(this.rotation)
+          )
+          break;
+        }
+        default:
+          return new PIXI.Point(0, 0);
+      }
+    }
+
+    protected abstract getDocumentRotation(): number;
 
     protected isShadowVisible(): boolean {
       if (!canvas?.visibility) return true;
@@ -571,6 +601,22 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       if (Array.isArray(this.stencilSprites) && (!enabled || shadowConfig.type !== "stencil"))
         this.stencilSprites.forEach(sprite => sprite.visible = false)
 
+      if (force && this.shadowRotationMarker) {
+        this.shadowRotationMarker.destroy();
+        this.shadowRotationMarker = undefined;
+      }
+      if (!this.shadowRotationMarker) {
+        const mesh = this.getMesh();
+        if (mesh) {
+          this.shadowRotationMarker = new PIXI.Sprite(PIXI.Texture.WHITE);
+          this.shadowRotationMarker.tint = 0xFF0000;
+          this.shadowRotationMarker.renderable = false;
+          this.shadowRotationMarker.y = this.getSize().height * 1.5;
+          mesh.addChild(this.shadowRotationMarker);
+        }
+      }
+
+
 
       switch (shadowConfig.type) {
         case "blob":
@@ -584,6 +630,11 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       }
     }
 
+    protected _refreshRotation() {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      super._refreshRotation();
+      this.refreshShadow();
+    }
 
     protected _refreshPosition() {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
