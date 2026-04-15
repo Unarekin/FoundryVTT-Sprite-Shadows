@@ -1,5 +1,5 @@
 import { LocalizedError } from "errors";
-import { TintFilter } from "filters";
+import { AlphaThresholdFilter, TintFilter } from "filters";
 import { cartesianToIso } from "functions";
 import { HandleEmptyObject } from "fvtt-types/utils";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
@@ -496,15 +496,26 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         if (adjustments?.height) sprite.height += adjustments.height;
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        const blur = this.upsertFilter<PIXI.BlurFilter>(sprite, PIXI.BlurFilter as any);
-        blur.blur = config.blur;
+        const alphaFilter = this.upsertFilter<AlphaThresholdFilter>(sprite, AlphaThresholdFilter as any);
+        const thisConfig = (this.shadowConfiguration as StencilShadowConfiguration);
+        alphaFilter.threshold = thisConfig.alphaThreshold ?? 0
+        // if (game.settings?.settings.get(`${__MODULE_ID__}.alphaThreshold`))
+        //   alphaFilter.threshold = game.settings?.get(__MODULE_ID__, "alphaThreshold") ?? 0;
+        // else
+        //   alphaFilter.threshold = 0;
+
+        alphaFilter.alpha = config.alpha;
 
         const tint = this.upsertFilter<TintFilter>(sprite, TintFilter);
         tint.color = new PIXI.Color(config.color ?? 0x000000).toHex();
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        const blur = this.upsertFilter<PIXI.BlurFilter>(sprite, PIXI.BlurFilter as any);
+        blur.blur = config.blur;
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if ((this.getShadowDocument() as any).hidden) sprite.alpha = 0;
-        else sprite.alpha = config.alpha;
+        // else sprite.alpha = config.alpha;
 
         sprite.visible = true;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

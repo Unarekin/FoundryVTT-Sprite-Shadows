@@ -95,6 +95,10 @@
         "HINT": "Load current settings from this token",
         "LABEL": "Load From Token"
       },
+      "THRESHOLD": {
+        "LABEL": "Alpha Cut-off",
+        "HINT": "Discard pixels with an alpha below this value when creating stencil shadows"
+      },
       "NAME": "Name",
       "REMOVE": {
         "MESSAGE": "Are you sure you wish to remove {name}?<br>This cannot be undone.",

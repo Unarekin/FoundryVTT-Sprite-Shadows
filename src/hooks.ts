@@ -1,6 +1,6 @@
 import { TokenMixin, TileMixin } from "./placeables";
 import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin } from "./applications";
-import { TintFilter } from "./filters";
+import { TintFilter, AlphaThresholdFilter } from "./filters";
 
 
 Hooks.once("canvasReady", () => {
@@ -26,7 +26,8 @@ Hooks.once("canvasConfig", () => {
     TokenClass: ShadowedToken,
     TileClass: ShadowedTile,
     filters: {
-      TintFilter
+      TintFilter,
+      AlphaThresholdFilter
     }
   };
 
