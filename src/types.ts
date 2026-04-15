@@ -87,6 +87,7 @@ export interface StencilShadow extends ExtendedShadowConfiguration {
 
 export interface StencilShadowConfiguration extends BaseShadowConfiguration {
   type: "stencil";
+  alphaThreshold: number;
   shadows: StencilShadow[];
 }
 

@@ -1,4 +1,9 @@
 <div class="tab{{#if tab.active}} active{{/if}} sprite-shadows-config scrollable" {{#unless omitGroup}}data-group="shadows"{{/unless}} data-tab="stencil" data-application-part="stencil">
+  <div class="form-group">
+    <label for="{{idPrefix}}-alphaThreshold">{{localize "SPRITESHADOWS.SETTINGS.THRESHOLD.LABEL"}}</label>
+    <range-picker id="{{idPrefix}}-alphaThreshold" name="sprite-shadows.alphaThreshold" value="{{config.alphaThreshold}}" min="0" max="1"></range-picker>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.THRESHOLD.HINT"}}</p>
+  </div>
   <div class="flexrow">
     <div class="flex1">
       <h4 class="sprite-shadows-config__stencil-shadows">{{localize "SPRITESHADOWS.SETTINGS.TABS.STENCIL"}}</h4>

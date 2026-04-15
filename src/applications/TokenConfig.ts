@@ -126,7 +126,10 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       if (!this.isPrototype && configSource === "token") {
         return this.document.getFlag(__MODULE_ID__, "config");
       } else if (configSource === "global") {
-        return game.settings?.get(__MODULE_ID__, "globalConfig");
+        if (game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`))
+          return game.settings?.get(__MODULE_ID__, "globalConfig");
+        else
+          return foundry.utils.deepClone(DefaultShadowConfiguration);
       } else if (configSource === "scene") {
         return this.document.parent?.flags[__MODULE_ID__];
       } else {
