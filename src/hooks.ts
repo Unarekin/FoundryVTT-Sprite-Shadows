@@ -16,20 +16,22 @@ Hooks.once("canvasReady", () => {
 
 
 Hooks.once("canvasConfig", () => {
-  const ShadowedToken = TokenMixin(CONFIG.Token.objectClass);
-  CONFIG.Token.objectClass = ShadowedToken;
+  setTimeout(() => {
+    const ShadowedToken = TokenMixin(CONFIG.Token.objectClass);
+    CONFIG.Token.objectClass = ShadowedToken;
 
-  const ShadowedTile = TileMixin(CONFIG.Tile.objectClass);
-  CONFIG.Tile.objectClass = ShadowedTile;
+    const ShadowedTile = TileMixin(CONFIG.Tile.objectClass);
+    CONFIG.Tile.objectClass = ShadowedTile;
 
-  game.SpriteShadows = {
-    TokenClass: ShadowedToken,
-    TileClass: ShadowedTile,
-    filters: {
-      TintFilter,
-      AlphaThresholdFilter
-    }
-  };
+    game.SpriteShadows = {
+      TokenClass: ShadowedToken,
+      TileClass: ShadowedTile,
+      filters: {
+        TintFilter,
+        AlphaThresholdFilter
+      }
+    };
+  });
 
 });
 
