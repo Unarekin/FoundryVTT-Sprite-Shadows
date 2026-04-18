@@ -195,6 +195,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     }
 
     protected async _draw(options: HandleEmptyObject<PlaceableObject.DrawOptions>): Promise<void> {
+      console.log("Sprite Shadows _draw");
       await super._draw(options);
       this.refreshShadow(true);
     }
@@ -662,7 +663,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected _refreshMesh() {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       super._refreshMesh();
-      this.refreshShadow();
+      this.refreshShadow(true);
     }
 
     protected _refreshState() {
