@@ -16,19 +16,21 @@ Hooks.once("canvasReady", () => {
 
 
 Hooks.once("canvasConfig", () => {
-  const ShadowedToken = TokenMixin(CONFIG.Token.objectClass);
-  CONFIG.Token.objectClass = ShadowedToken;
+  setTimeout(() => {
+    const ShadowedToken = TokenMixin(CONFIG.Token.objectClass);
+    CONFIG.Token.objectClass = ShadowedToken;
 
-  const ShadowedTile = TileMixin(CONFIG.Tile.objectClass);
-  CONFIG.Tile.objectClass = ShadowedTile;
+    const ShadowedTile = TileMixin(CONFIG.Tile.objectClass);
+    CONFIG.Tile.objectClass = ShadowedTile;
 
-  game.SpriteShadows = {
-    TokenClass: ShadowedToken,
-    TileClass: ShadowedTile,
-    filters: {
-      TintFilter
-    }
-  };
+    game.SpriteShadows = {
+      TokenClass: ShadowedToken,
+      TileClass: ShadowedTile,
+      filters: {
+        TintFilter
+      }
+    };
+  });
 
 });
 
@@ -53,7 +55,6 @@ Hooks.on("ready", () => {
     applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixinV1);
     CONFIG.Token.prototypeSheetClass = TokenConfigMixinV1(CONFIG.Token.prototypeSheetClass as foundry.appv1.sheets.DocumentSheet);
   }
-
 
 
   if (game?.modules?.get("isometric-perspective")?.active) {
