@@ -1,10 +1,11 @@
-import { BlobShadowConfiguration, ShadowConfiguration, StencilShadowConfiguration } from "types";
+import { GlobalConfig } from "applications";
+import { BlobShadowConfiguration, ShadowConfiguration, StencilShadow, StencilShadowConfiguration } from "types";
 
 
 export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
   enabled: false,
   type: "blob",
-  useTokenOverride: false,
+  // useTokenOverride: false,
   ignoreSpriteAnimationsMeshAdjustments: false,
   alpha: 1,
   rotation: 0,
@@ -15,26 +16,31 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
   elevationIncrement: 1,
   alignment: "bottom",
   liftToken: false,
+  rotateWithToken: false,
   adjustments: {
     enabled: false,
     x: 0,
     y: 0,
     width: 0,
-    height: 0
+    height: 0,
+    anchor: {
+      x: 0.5,
+      y: 0.5
+    }
   }
 }
 
-export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
-  enabled: false,
-  useTokenOverride: false,
+export const DefaultStencilShadow: StencilShadow = {
+  id: '4Hbd7aDO1IFjiQVV',
+  enabled: true,
   ignoreSpriteAnimationsMeshAdjustments: false,
-  type: "stencil",
   color: "#000000",
   rotation: 0,
   alpha: 0.5,
   skew: (360 - 45) * (Math.PI / 180),
   blur: 2,
   useImage: false,
+  rotateWithToken: true,
   image: "",
   alignment: "bottom",
   adjustments: {
@@ -42,12 +48,22 @@ export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
     x: 0,
     y: 0,
     width: 0,
-    height: 0
+    height: 0,
+    anchor: {
+      x: 0.5,
+      y: 1
+    }
   }
 }
 
+export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
+  enabled: false,
+  type: "stencil",
+  shadows: [foundry.utils.deepClone(DefaultStencilShadow)]
+}
+
 export const DefaultShadowConfiguration: ShadowConfiguration = {
-  ...DefaultBlobShadowConfiguration,
+  ...foundry.utils.deepClone(DefaultBlobShadowConfiguration),
   enabled: false,
   type: "blob"
 }
@@ -74,4 +90,32 @@ Hooks.on("ready", () => {
 
     }
   });
+
+  game?.settings?.register(__MODULE_ID__, "globalConfig", {
+    name: "SPRITESHADOWS.SETTINGS.GLOBAL.LABEL",
+    hint: "SPRITESHADOWS.SETTINGS.GLOBAL.HINT",
+    config: false,
+    scope: "world",
+    type: Object,
+    requiresReload: false,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    onChange(value: ShadowConfiguration) {
+      if (!game.SpriteShadows?.TokenClass) return;
+      canvas?.scene?.tokens.forEach(token => {
+        if (token.object instanceof (game.SpriteShadows.TokenClass as any)) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          (token.object as any).refreshShadow(true);
+        }
+      })
+    }
+  });
+
+  game?.settings?.registerMenu(__MODULE_ID__, "globalConfigMenu", {
+    name: "SPRITESHADOWS.SETTINGS.GLOBAL.LABEL",
+    label: "SPRITESHADOWS.SETTINGS.GLOBAL.LABEL",
+    hint: "SPRITESHADOWS.SETTINGS.GLOBAL.HINT",
+    icon: "fa-solid fa-cogs",
+    restricted: true,
+    type: GlobalConfig
+  })
 })

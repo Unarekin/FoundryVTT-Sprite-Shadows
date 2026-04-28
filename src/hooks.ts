@@ -1,6 +1,6 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin, TileConfigMixin, TokenConfigMixinV1, TileConfigMixinV1 } from "./applications";
-import { TintFilter } from "./filters";
+import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin } from "./applications";
+import { TintFilter, AlphaThresholdFilter } from "./filters";
 
 
 Hooks.once("canvasReady", () => {
@@ -27,7 +27,8 @@ Hooks.once("canvasConfig", () => {
       TokenClass: ShadowedToken,
       TileClass: ShadowedTile,
       filters: {
-        TintFilter
+        TintFilter,
+        AlphaThresholdFilter
       }
     };
   });
@@ -45,17 +46,12 @@ function applyMixin(collection: Record<string, any>, mixin: Function) {
   }
 }
 
-Hooks.on("ready", () => {
-  if (game.release?.isNewer("13")) {
-    applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
-    applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
-    CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as foundry.applications.sheets.TokenConfig);
-  } else {
-    applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixinV1);
-    applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixinV1);
-    CONFIG.Token.prototypeSheetClass = TokenConfigMixinV1(CONFIG.Token.prototypeSheetClass as foundry.appv1.sheets.DocumentSheet);
-  }
+Hooks.on("canvasConfig", () => {
+  applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
+  applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
+  CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as unknown as foundry.applications.sheets.TokenConfig);
 
+  applyMixin(CONFIG.Scene.sheetClasses.base, SceneConfigMixin);
 
   if (game?.modules?.get("isometric-perspective")?.active) {
     // Check if it needs to be positioned according to isometric projection
@@ -92,5 +88,42 @@ Hooks.on("updateTile", (tile: TileDocument, delta: TileDocument.UpdateData, opti
   if (game.SpriteShadows?.TileClass && tile.object instanceof (game.SpriteShadows.TileClass as any)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     (tile.object as any).refreshShadow(true);
+  }
+});
+
+Hooks.on("getHeaderControlsActorSheetV2", (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
+  controls.unshift({
+    icon: "fa-solid fa-lightbulb",
+    label: "SPRITESHADOWS.TITLE",
+    class: "sprite-shadows",
+    onClick: async () => {
+      if (app.actor.token) {
+
+        if (app.actor.token.sheet instanceof foundry.applications.api.ApplicationV2) {
+          await app.actor.token.sheet.render({ force: true, tab: "shadows" });
+        } else {
+          ui.notifications?.warn("SPRITESHADOWS.ERRORS.UNKNOWNACTORAPP", { localize: true });
+        }
+      } else if (app.actor.prototypeToken) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const sheet = new CONFIG.Token.prototypeSheetClass({ prototype: app.actor.prototypeToken });
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        await sheet.render({ force: true, tab: "shadows" });
+      }
+    }
+  });
+});
+
+let lastVisibilityRefreshWarn = 0;
+Hooks.on("visibilityRefresh", () => {
+  if (!canvas?.scene) return;
+  const start = performance.now();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  canvas.scene.tokens.forEach(doc => { (doc.object as any).refreshShadow(); });
+  const duration = performance.now() - start;
+  // Warn if refresh took over 16 ms and we haven't warn them in the last 5 mins
+  if (duration > 16 && (Date.now() - lastVisibilityRefreshWarn) > 300000) {
+    lastVisibilityRefreshWarn = Date.now();
+    if (game.i18n) console.warn(game.i18n.format("SPRITESHADOWS.ERRORS.VISIONREFRESHPERFORMANCE", { duration: duration.toString() }));
   }
 })

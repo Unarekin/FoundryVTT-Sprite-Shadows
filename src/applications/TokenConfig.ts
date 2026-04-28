@@ -1,47 +1,38 @@
-import { DeepPartial, ShadowConfiguration } from "types";
+import { DeepPartial, ShadowConfiguration, ShadowConfigSource, ShadowedObject } from "types";
 import { ConfigMixin } from "./ConfigMixin";
 import { ShadowConfigContext } from "./types";
+import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
 
 export function TokenConfigMixin<t extends typeof foundry.applications.sheets.TokenConfig>(base: t) {
   class ShadowedTokenConfig extends ConfigMixin(base) {
 
-    static DEFAULT_OPTIONS = {
-      actions: {
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        loadFromActor: ShadowedTokenConfig.LoadFromActor,
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        loadFromToken: ShadowedTokenConfig.LoadFromToken
-      }
+
+    protected getOriginalShadowedObject(): foundry.canvas.placeables.Token | undefined {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+      return (this as any).token?.object;
     }
 
-    public static async LoadFromActor(this: ShadowedTokenConfig) {
-      try {
-        const actor = this.getActor();
-        if (!actor) return;
-        this.overrideFlags = foundry.utils.deepClone(actor.flags[__MODULE_ID__] ?? {});
-        const overrideCheck = this.element.querySelector(`[name="${__MODULE_ID__}.useTokenOverride"]`);
-        if (overrideCheck instanceof HTMLInputElement)
-          this.overrideFlags.useTokenOverride = overrideCheck.checked;
-
-        await this.render();
-      } catch (err) {
-        console.error(err);
-        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
-      }
+    protected hidePreviewShadows() {
+      requestAnimationFrame(() => {
+        const obj = this.getOriginalShadowedObject() as ShadowedObject | undefined;
+        if (!obj) return console.warn("Could not find original shadowed object");
+        if (obj.blobSprite) obj.blobSprite.visible = false;
+        if (Array.isArray(obj.stencilSprites))
+          obj.stencilSprites.forEach(sprite => sprite.visible = false);
+      });
     }
 
-    public static async LoadFromToken(this: ShadowedTokenConfig) {
-      try {
-        this.overrideFlags = foundry.utils.deepClone(this.document.flags[__MODULE_ID__] as DeepPartial<ShadowConfiguration> ?? {});
-        const overrideCheck = this.element.querySelector(`[name="${__MODULE_ID__}.useTokenOverride"]`);
-        if (overrideCheck instanceof HTMLInputElement)
-          this.overrideFlags.useTokenOverride = overrideCheck.checked;
+    async _initializePreview() {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      await super._initializePreview();
+      this.hidePreviewShadows();
+    }
 
-        await this.render();
-      } catch (err) {
-        console.error(err);
-        if (err instanceof Error) ui.notifications?.error(err.message, { console: false })
-      }
+    // TODO: Remove when dropping v13 support
+    async _initializeTokenPreview() {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      await super._initializeTokenPreview();
+      this.hidePreviewShadows();
     }
 
     protected getDragAdjustmentMultiplier() {
@@ -60,106 +51,116 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
     }
 
     async _processSubmitData(event: SubmitEvent, form: HTMLFormElement, submitData: foundry.applications.ux.FormDataExtended, options: any): Promise<void> {
-      const flagData = this.parseShadowFormData();
-      foundry.utils.setProperty(submitData, `flags.${__MODULE_ID__}.useTokenOverride`, !!flagData.useTokenOverride);
-      if (flagData.useTokenOverride) {
-        foundry.utils.setProperty(submitData, `flags.${__MODULE_ID__}`, flagData);
-      } else {
-        if (this.document)
-          await this.document.setFlag(__MODULE_ID__, "useTokenOverride", false);
-        const actor = this.getActor();
-        if (actor) await actor.update({ flags: { [__MODULE_ID__]: flagData } });
+      const flagData = this.parseShadowFormData() as ShadowConfiguration & { configSource?: ShadowConfigSource };
+
+      const configSource = flagData.configSource;
+      delete flagData.configSource;
+
+      if (this.document)
+        await this.document.setFlag(__MODULE_ID__, "configSource", configSource ?? "actor");
+      switch (configSource) {
+        case "actor": {
+          const actor = this.getActor();
+          if (actor)
+            await actor.update({ flags: { [__MODULE_ID__]: flagData } });
+          break;
+        }
+        case "token": {
+          await this.document.setFlag(__MODULE_ID__, "config", flagData);
+          // await this.document.update({ flags: { [__MODULE_ID__]: flagData } });
+          break;
+        }
       }
+
       await super._processSubmitData(event, form, submitData, options);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
     protected getActor(): Actor | undefined { return (this as any).actor; }
+
+    protected async loadShadowConfigSettings(source: ShadowConfigSource) {
+      let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+      switch (source) {
+        case "token": {
+          flags = foundry.utils.deepClone(this.document.getFlag(__MODULE_ID__, "config") ?? DefaultShadowConfiguration);
+          break;
+        }
+        case "actor": {
+          const actor = this.getActor();
+          if (actor instanceof Actor) flags = foundry.utils.deepClone(actor.flags[__MODULE_ID__] ?? DefaultShadowConfiguration);
+          break;
+        }
+        case "scene": {
+          if (this.document?.parent) flags = foundry.utils.deepClone(this.document.parent.flags[__MODULE_ID__] ?? DefaultShadowConfiguration);
+          break;
+        }
+        case "global": {
+          flags = foundry.utils.deepClone(game.settings?.get(__MODULE_ID__, "globalConfig"));
+          break;
+        }
+      }
+
+      if (!flags) return;
+      const actualFlags = flags.type === "blob" ? foundry.utils.deepClone(DefaultBlobShadowConfiguration) : flags.type === "stencil" ? foundry.utils.deepClone(DefaultStencilShadowConfiguration) : undefined;
+      if (!actualFlags) return;
+      foundry.utils.mergeObject(actualFlags, flags);
+
+      this.overrideShadowFlags = foundry.utils.deepClone(actualFlags);
+      this.overrideShadowConfigSource = source;
+      await this.render();
+    }
+
     protected getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined {
+
+      let configSource = this.document.getFlag(__MODULE_ID__, "configSource") ?? "actor";
+
+      const flags = this.document.flags[__MODULE_ID__] ?? {};
+      // <1.2.0 compatibility check
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (!this.isPrototype && this.document.flags[__MODULE_ID__]?.useTokenOverride) return this.document.flags[__MODULE_ID__] as DeepPartial<ShadowConfiguration>;
-      else return this.getActor()?.flags[__MODULE_ID__];
+      if (typeof (flags as any).useTokenOverride !== "undefined") {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        configSource = (flags as any).useTokenOverride ? "token" : "actor";
+      }
+
+      if (!this.isPrototype && configSource === "token") {
+        return this.document.getFlag(__MODULE_ID__, "config");
+      } else if (configSource === "global") {
+        if (game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`))
+          return game.settings?.get(__MODULE_ID__, "globalConfig");
+        else
+          return foundry.utils.deepClone(DefaultShadowConfiguration);
+      } else if (configSource === "scene") {
+        return this.document.parent?.flags[__MODULE_ID__];
+      } else {
+        const actor = this.getActor();
+        if (actor) return actor.flags[__MODULE_ID__];
+      }
     }
     protected getShadowedObject() { return (this as foundry.applications.sheets.TokenConfig).document?.object ?? undefined }
 
     async _onSubmitForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, event: Event | SubmitEvent): Promise<void> {
-      const flagData = this.parseShadowFormData();
       await super._onSubmitForm(formConfig, event);
       if (this.isPrototype) {
         const actor = this.getActor();
+        const flagData = this.parseShadowFormData() as ShadowConfiguration;
         if (actor) await actor.update({ flags: { [__MODULE_ID__]: flagData } });
       }
     }
 
-    async _onRender(context: DeepPartial<ShadowConfigContext<TokenConfig.RenderContext>>, options: TokenConfig.RenderOptions) {
-      await super._onRender(context, options);
-      const overrideCheck = this.element.querySelector(`[name="${__MODULE_ID__}.useTokenOverride"]`);
-      if (overrideCheck instanceof HTMLInputElement) {
-        overrideCheck.addEventListener("change", () => {
-          if (overrideCheck.checked) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            this.overrideFlags = this.document.flags[__MODULE_ID__] ?? {};
-          } else {
-            this.overrideFlags = this.document.actor?.flags[__MODULE_ID__] ?? {};
-          }
-          if (this.overrideFlags) this.overrideFlags.useTokenOverride = overrideCheck.checked;
-          void this.render();
-        });
-      }
+    // async _onRender(context: DeepPartial<ShadowConfigContext<TokenConfig.RenderContext>>, options: TokenConfig.RenderOptions) {
+    //   await super._onRender(context, options);
 
-      this.hideElements(`[data-action="loadFromActor"],[data-action="loadFromToken"]`);
-      if (context.shadows?.config?.useTokenOverride && this.getActor()?.flags[__MODULE_ID__])
-        this.showElements(`[data-action="loadFromActor"]`);
-      else if (!context.shadows?.config?.useTokenOverride && (!this.isPrototype && this.document.flags[__MODULE_ID__]))
-        this.showElements(`[data-action="loadFromToken"]`);
-    }
+
+    // }
 
 
     protected async _prepareContext(options: DeepPartial<TokenConfig.RenderOptions>): Promise<ShadowConfigContext<TokenConfig.RenderContext>> {
       const context = await super._prepareContext(options);
-      context.shadows.allowTokenOverride = !this.isPrototype;
+      context.shadows.allowConfigSource = !this.isPrototype;
+      context.shadows.configSource = this.overrideShadowConfigSource ?? this.document.getFlag(__MODULE_ID__, "configSource") ?? "actor";
       return context;
     }
   }
-
-  ShadowedTokenConfig.TABS.sheet.tabs.push({
-    id: "shadows",
-    icon: "fa-solid fa-lightbulb",
-    cssClass: ""
-  });
-
-  // Inject our configuration part before the footer
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const parts = (base as any).PARTS as Record<string, foundry.applications.api.HandlebarsApplicationMixin.HandlebarsTemplatePart>;
-  const footer = parts.footer;
-  delete parts.footer;
-
-  foundry.utils.mergeObject(parts, {
-    shadows: {
-      template: `modules/${__MODULE_ID__}/templates/ShadowConfig.hbs`,
-      templates: [
-        `modules/${__MODULE_ID__}/templates/BlobConfig.hbs`,
-        `modules/${__MODULE_ID__}/templates/StencilConfig.hbs`
-      ]
-    },
-    footer
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  foundry.utils.mergeObject((base as any).PARTS ?? {}, parts);
-
-  ((canvas?.scene?.tokens.contents ?? [])).forEach(token => {
-    if (token.sheet && !(token.sheet instanceof ShadowedTokenConfig)) {
-
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        token._sheet = new ShadowedTokenConfig(token.sheet.options);
-      } catch (err) {
-        console.warn(err);
-      }
-    }
-
-  })
 
   return ShadowedTokenConfig
 }

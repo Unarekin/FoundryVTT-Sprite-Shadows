@@ -1,6 +1,6 @@
 {
   "name": "foundryvtt-sprite-shadows",
-  "version": "1.1.6",
+  "version": "2.0.0",
   "description": "A module for FoundryVTT to add some options for different types of shadows for tokens and tiles.",
   "main": "dist/module.js",
   "scripts": {
@@ -35,6 +35,8 @@
     "esbuild-sass-plugin": "^3.3.1",
     "eslint": "^9.11.0",
     "fvtt-types": "github:League-of-Foundry-Developers/foundry-vtt-types#main",
+    "pixi-filters": "^5",
+    "pixi.js": "7.4.2",
     "typedoc": "^0.26.10",
     "typedoc-plugin-rename-defaults": "^0.7.1",
     "typescript": "<5.6.0",

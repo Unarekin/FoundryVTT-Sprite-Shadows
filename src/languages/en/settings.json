@@ -2,11 +2,15 @@
   "SPRITESHADOWS": {
     "SETTINGS": {
       "ADJUSTMENTS": {
+        "ANCHOR": "Anchor",
+        "ANCHORTOOLTIP": "Auto-set anchor",
         "DRAGPOS": "Click and drag to fine-tune position",
         "DRAGSIZE": "Click and drag to fine-tune size",
         "HEIGHT": "Height",
         "HINT": "Fine tune the position and size of the shadow.",
         "LABEL": "Adjustments",
+        "POSITION": "Position",
+        "SIZE": "Size",
         "WIDTH": "Width",
         "X": "X",
         "Y": "Y"
@@ -38,6 +42,10 @@
         "HINT": "Color of the shadow.",
         "LABEL": "Color"
       },
+      "CONFIGSOURCE": {
+        "HINT": "Where to store the shadow configuration for this token",
+        "LABEL": "Configuration Source"
+      },
       "ELEVATIONADJUST": {
         "HINT": "If enabled, will move the shadow based on the token's elevation.",
         "LABEL": "Adjust for Elevation"
@@ -58,6 +66,11 @@
         "HINT": "Export JSON configuration",
         "LABEL": "Export Configuration"
       },
+      "GLOBAL": {
+        "HINT": "Global settings to be applied by default to all tokens and tiles.",
+        "LABEL": "Global Settings"
+      },
+      "ID": "ID",
       "IGNORESAADJUSTMENTS": {
         "HINT": "If enabled, will ignore mesh adjustments configured by Sprite Animations.",
         "LABEL": "Ignore Sprite Animations Adjustments"
@@ -82,15 +95,35 @@
         "HINT": "Load current settings from this token",
         "LABEL": "Load From Token"
       },
+      "THRESHOLD": {
+        "LABEL": "Alpha Cut-off",
+        "HINT": "Discard pixels with an alpha below this value when creating stencil shadows"
+      },
+      "NAME": "Name",
+      "REMOVE": {
+        "MESSAGE": "Are you sure you wish to remove {name}?<br>This cannot be undone.",
+        "TITLE": "Remove Stencil Shadow"
+      },
       "ROTATION": {
         "HINT": "Angle by which to rotate the shadow",
         "LABEL": "Rotation"
+      },
+      "ROTATEWITHTOKEN": {
+        "LABEL": "Rotate With Token",
+        "HINT": "Enable to automatically rotate this shadow when its token rotates."
       },
       "SKEW": {
         "HINT": "The amount by which to skew this shadow, to simulate projection angle.",
         "LABEL": "Skew Amount"
       },
+      "SOURCE": {
+        "GLOBAL": "Global"
+      },
       "STENCIL": {
+        "ENABLE": {
+          "HINT": "Toggle this shadow on or off.",
+          "LABEL": "Enable Shadow"
+        },
         "HINT": "A faux-3d shadow based on the token's texture.",
         "LABEL": "Stencil Shadow"
       },
@@ -98,13 +131,22 @@
         "HINT": "The image to use for the shape of the stencil shadow.",
         "LABEL": "Image"
       },
+      "TABS": {
+        "APPEARANCE": "Appearance",
+        "BASICS": "Basics",
+        "BLOB": "Blob Shadow",
+        "STENCIL": "Stencil Shadows"
+      },
       "TOKENOVERRIDE": {
         "HINT": "If enabled, will store shadow settings directly on this token rather than the actor.",
         "LABEL": "Use Token Overrides"
       },
       "TOOLTIPS": {
+        "ADDSTENCIL": "Add Stencil Shadow",
+        "EDITSTENCIL": "Edit {name}",
         "EXPORT": "Export the current configuration as JSON",
-        "IMPORT": "Import a JSON configuration"
+        "IMPORT": "Import a JSON configuration",
+        "REMOVESTENCIL": "Remove {name}"
       },
       "TYPE": {
         "BLOB": "Blob",

@@ -1,0 +1,38 @@
+<div class="tab{{#if tab.active}} active{{/if}} sprite-shadows-config scrollable" {{#unless omitGroup}}data-group="shadows"{{/unless}} data-tab="stencil" data-application-part="stencil">
+  <div class="form-group">
+    <label for="{{idPrefix}}-alphaThreshold">{{localize "SPRITESHADOWS.SETTINGS.THRESHOLD.LABEL"}}</label>
+    <range-picker id="{{idPrefix}}-alphaThreshold" name="sprite-shadows.alphaThreshold" value="{{config.alphaThreshold}}" min="0" max="1"></range-picker>
+    <p class="hint">{{localize "SPRITESHADOWS.SETTINGS.THRESHOLD.HINT"}}</p>
+  </div>
+  <div class="flexrow">
+    <div class="flex1">
+      <h4 class="sprite-shadows-config__stencil-shadows">{{localize "SPRITESHADOWS.SETTINGS.TABS.STENCIL"}}</h4>
+    </div>
+    <div class="flex0">
+      <a data-action="addStencilShadow" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.ADDSTENCIL"}}">
+        <i class="fa-solid fa-plus"></i>
+      </a>
+    </div>
+  </div>
+  <div class="stencil-shadow-list" data-role="stencil-shadow-list">
+    <div class="stencil-shadow-list__col">{{localize "SPRITESHADOWS.SETTINGS.ID"}}</div>
+    <div class="stencil-shadow-list__col"></div>
+    <div class="stencil-shadow-list__col"></div>
+    {{#each config.shadows as |shadow i|}}
+      <div class="stencil-shadow-list__col{{#if (isOdd i)}} stencil-shadow-list__col--alt-row{{/if}}" data-shadow="{{shadow.id}}">
+        <a data-action="editStencilShadow" data-shadow="{{shadow.id}}" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.EDITSTENCIL" name=shadow.label}}">{{shadow.label}}</a>
+      </div>
+      <div class="stencil-shadow-list__col{{#if (isOdd i)}} stencil-shadow-list__col--alt-row{{/if}}" data-shadow="{{shadow.id}}">
+        <a data-action="editStencilShadow" data-shadow="{{shadow.id}}" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.EDITSTENCIL" name=shadow.label}}">
+          <i class="fa-solid fa-gears"></i>
+        </a>
+      </div>
+      <div class="stencil-shadow-list__col{{#if (isOdd i)}} stencil-shadow-list__col--alt-row{{/if}}" data-shadow="{{shadow.id}}">
+        <a data-action="removeStencilShadow" data-shadow="{{shadow.id}}" data-tooltip="{{localize "SPRITESHADOWS.SETTINGS.TOOLTIPS.REMOVESTENCIL" name=shadow.label}}">
+          <i class="fa-solid fa-trash"></i>
+        </a>
+      </div>
+    {{/each}}
+  </div>
+</div>
+</section>

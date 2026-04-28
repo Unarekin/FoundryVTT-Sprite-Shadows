@@ -1,8 +1,26 @@
 // TODO: Safe to remove when dropping v12 support
-[data-role="import-shadows"],[data-role="export-shadows"] {
+[data-role="import-shadows"],
+[data-role="export-shadows"] {
   [id="context-menu"] {
     left: auto !important;
     right: 0;
     white-space: preserve;
+  }
+}
+
+.stencil-shadow-list {
+  max-height: 256px;
+  overflow-y: auto;
+
+  display: grid;
+  grid-template-columns: 1fr 24px 24px;
+
+  &__col {
+    padding: 4px 6px;
+    position: relative;
+
+    &--alt-row {
+      background-color: var(--table-row-color-even);
+    }
   }
 }

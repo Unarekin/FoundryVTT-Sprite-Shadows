@@ -1,23 +1,60 @@
 import { DeepPartial, IsometricFlags, ShadowConfiguration } from "types";
 import { PlaceableMixin } from "./ShadowedPlaceable";
 
+
 export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(base: t) {
   return class ShadowedToken extends PlaceableMixin<t>(base) {
     protected getShadowFlags(): DeepPartial<ShadowConfiguration> {
-      const doc = this.document as foundry.documents.TokenDocument;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-      if (doc.flags[__MODULE_ID__]?.useTokenOverride) return doc.flags[__MODULE_ID__] ?? {};
-      else return (this as unknown as foundry.canvas.placeables.Token).actor?.flags[__MODULE_ID__] ?? {}
+      const doc = this.document as TokenDocument;
+      let configSource = doc.getFlag(__MODULE_ID__, "configSource");
+
+
+
+      // <1.2.0 compatibility
+      if (!configSource) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if ((doc.flags as any)[__MODULE_ID__]?.useTokenOverride) configSource = "token";
+        else configSource = "actor";
+      }
+
+      let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+
+      switch (configSource) {
+        case "actor":
+          flags = doc.actor?.flags[__MODULE_ID__];
+          break;
+
+        case "scene":
+          flags = (doc.parent!).flags[__MODULE_ID__];
+          break;
+        case "global":
+          flags = game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`) ? game.settings?.get(__MODULE_ID__, "globalConfig") : undefined;
+          break;
+        default:
+          flags = doc.getFlag(__MODULE_ID__, "config");
+      }
+
+      if (flags) return this.migrateShadowSettings(flags);
+      else return {};
     }
+
+    protected getAnchor() {
+      const doc = this.getShadowDocument();
+      return new PIXI.Point(
+        doc.texture.anchorX,
+        doc.texture.anchorY
+      );
+    }
+    protected getDocumentRotation() { return this.getShadowDocument().rotation; }
     protected getShadowDocument() { return this.document as foundry.documents.TokenDocument; }
     protected getMesh() { return (this as unknown as foundry.canvas.placeables.Token).mesh ?? undefined; }
 
     protected getIsometricFlags(): IsometricFlags | undefined {
       if (!(game?.modules?.get("isometric-perspective")?.active)) return undefined;
-      return this.document.flags["isometric-perspective"] as DeepPartial<IsometricFlags>;
+      return (this.document as TokenDocument).flags["isometric-perspective"] as IsometricFlags;
     }
 
-    protected getAnimationDocument(): Actor | undefined { return (this as unknown as foundry.canvas.placeables.Token).document.actor ?? undefined; }
+    protected getAnimationDocument(): Actor | undefined { return (this as unknown as foundry.canvas.placeables.Token).document.actor! ?? undefined; }
 
     protected getAdjustmentMultipliers(): { x: number, y: number, width: number, height: number } {
       const token = (this as unknown as foundry.canvas.placeables.Token);
@@ -29,7 +66,7 @@ export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(bas
       };
     }
 
-    protected getMeshPosition(): { x: number, y: number } { 
+    protected getMeshPosition(): { x: number, y: number } {
       const doc = this.document as TokenDocument;
       const mesh = this.getMesh();
       return {

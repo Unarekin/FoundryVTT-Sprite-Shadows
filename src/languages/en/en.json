@@ -1,4 +1,7 @@
 {
+  "SPRITESHADOWS": {
+    "TITLE": "Sprite Shadows"
+  },
   "TOKEN": {
     "TABS": {
       "shadows": "Shadows"
@@ -7,6 +10,13 @@
   "TILE": {
     "TABS": {
       "shadows": "Shadows"
+    }
+  },
+  "SCENE": {
+    "TABS": {
+      "SHEET": {
+        "shadows": "Shadows"
+      }
     }
   }
 }
