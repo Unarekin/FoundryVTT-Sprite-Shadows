@@ -108,6 +108,10 @@
         "HINT": "Angle by which to rotate the shadow",
         "LABEL": "Rotation"
       },
+      "ROTATEWITHTOKEN": {
+        "LABEL": "Rotate With Token",
+        "HINT": "Enable to automatically rotate this shadow when its token rotates."
+      },
       "SKEW": {
         "HINT": "The amount by which to skew this shadow, to simulate projection angle.",
         "LABEL": "Skew Amount"

@@ -37,6 +37,15 @@ export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(bas
       if (flags) return this.migrateShadowSettings(flags);
       else return {};
     }
+
+    protected getAnchor() {
+      const doc = this.getShadowDocument();
+      return new PIXI.Point(
+        doc.texture.anchorX,
+        doc.texture.anchorY
+      );
+    }
+    protected getDocumentRotation() { return this.getShadowDocument().rotation; }
     protected getShadowDocument() { return this.document as foundry.documents.TokenDocument; }
     protected getMesh() { return (this as unknown as foundry.canvas.placeables.Token).mesh ?? undefined; }
 

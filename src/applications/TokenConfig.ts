@@ -107,7 +107,6 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
       this.overrideShadowFlags = foundry.utils.deepClone(actualFlags);
       this.overrideShadowConfigSource = source;
-      console.log("Override source:", source);
       await this.render();
     }
 

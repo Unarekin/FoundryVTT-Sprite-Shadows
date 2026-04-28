@@ -3,7 +3,7 @@ import { AlphaThresholdFilter, TintFilter } from "filters";
 import { cartesianToIso } from "functions";
 import { HandleEmptyObject } from "fvtt-types/utils";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
-import { BlobShadowConfiguration, DeepPartial, IsometricFlags, MeshAdjustments, OldStencilShadowType, ShadowConfiguration, StencilShadow, StencilShadowConfiguration } from "types";
+import { BlobShadowConfiguration, DeepPartial, IsometricFlags, MeshAdjustments, OldStencilShadowType, ShadowAlignment, ShadowConfiguration, StencilShadow, StencilShadowConfiguration } from "types";
 
 interface PlaceableSize {
   width: number;
@@ -19,6 +19,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
   abstract class ShadowedPlaceable extends base {
     protected blobSprite: PIXI.Sprite | undefined = undefined;
     protected stencilSprites: PIXI.Sprite[] = [];
+    protected shadowContainer = new PIXI.Container();
 
     protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration>;
     protected abstract getShadowDocument(): foundry.abstract.Document.Any;
@@ -194,7 +195,6 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     }
 
     protected async _draw(options: HandleEmptyObject<PlaceableObject.DrawOptions>): Promise<void> {
-      console.log("Sprite Shadows _draw");
       await super._draw(options);
       this.refreshShadow(true);
     }
@@ -262,15 +262,24 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       // If no document, we're not in a scene, so no need to position.
       if (!doc) return;
 
+      const { width, height } = this.getSize();
+      this.shadowContainer.x = this.x + (width * mesh.anchor.x);
+      this.shadowContainer.y = this.y + (height * mesh.anchor.y);
 
-      const bounds = this.getBlobSpriteBounds();
+      // this.shadowContainer.x = mesh.x;
+      // this.shadowContainer.y = mesh.y;
 
-      this.blobSprite.x = bounds.x; //doc.x + ((doc.width * this.scene.dimensions.size) * this.blobSprite.anchor.x);
-      this.blobSprite.y = bounds.y;
-      // if (config.alignment === "bottom")
-      //   this.blobSprite.y = bounds.y //doc.y + ((doc.height * this.scene.dimensions.size));
-      // else
-      //   this.blobSprite.y = bounds.y //doc.y + ((doc.height * this.scene.dimensions.size) * this.blobSprite.anchor.y);
+      this.blobSprite.x = (doc.width * (mesh?.anchor?.x ?? .5));
+
+      if (config.alignment === "bottom" && !this.shouldUseIsometric) {
+        // Empty
+        const size = this.getSize();
+        this.blobSprite.y = size.height - (size.height * (mesh.anchor.y))
+      } else if (!this.shouldUseIsometric) {
+        // this.blobSprite.y = (doc.height * (mesh.anchor.y ?? 0.5));
+        const size = this.getSize();
+        this.blobSprite.y = size.height;
+      }
 
       // Apply adjustments
       const adjustments = this.getShadowAdjustments(config);
@@ -289,7 +298,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
           mesh.y = meshPos.y - elevationAdjustment;
         // mesh.y = this.y + (doc.height * this.scene.dimensions.size * mesh.anchor.y) + this.scene.dimensions.sceneY - elevationAdjustment;
         else
-          this.blobSprite.y += elevationAdjustment;
+          this.shadowContainer.y += elevationAdjustment;
       } else {
         mesh.y = meshPos.y;
         // mesh.y = this.y;
@@ -310,7 +319,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected getBlobSpriteBounds(): { x: number, y: number, width: number, height: number } {
       const doc = this.document as TokenDocument | TileDocument;
       const mesh = this.getMesh();
-      const config = this.shadowConfiguration;
+      const config = this.shadowConfiguration as BlobShadowConfiguration;
       return {
         x: doc.x + (doc.width * (mesh?.anchor?.x ?? .5)),
         y: doc.y + (doc.height * ((config.alignment === "bottom" && !this.shouldUseIsometric) ? 1 : (mesh?.anchor?.y ?? .5))),
@@ -386,7 +395,9 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         this.blobSprite.renderable = true;
         if (this.blobSprite.parent !== mesh.parent) {
           const index = mesh.parent.getChildIndex(mesh);
-          mesh.parent.addChildAt(this.blobSprite, index);
+          // mesh.parent.addChildAt(this.blobSprite, index);
+          mesh.parent.addChildAt(this.shadowContainer, index);
+          this.shadowContainer.addChild(this.blobSprite);
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -427,8 +438,40 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         this.blobSprite.zIndex = mesh.zIndex - 1;
 
         this.blobSprite.angle = config.rotation;
+
+
+        if (config.rotateWithToken) {
+          // this.blobSprite.angle += this.getDocumentRotation();
+          this.shadowContainer.angle = this.getDocumentRotation();
+
+          // const rotationAdjustment = this.calculateShadowRotationAdjustment(config.alignment);
+          // console.log("Rotation adjustment:", rotationAdjustment);
+          // this.blobSprite.x -= rotationAdjustment.x;
+          // this.blobSprite.y += rotationAdjustment.y;
+        }
       }
     }
+    protected abstract getAnchor(): PIXI.Point;
+
+    protected calculateShadowRotationAdjustment(align: ShadowAlignment): PIXI.Point {
+      const { height } = this.getSize();
+      // const anchor = this.getAnchor();
+      switch (align) {
+        case "bottom": {
+          const r = (height * this.getAnchor().y);
+
+
+          return new PIXI.Point(
+            r * Math.cos(this.rotation),
+            r * Math.sin(this.rotation)
+          )
+        }
+        default:
+          return new PIXI.Point(0, 0);
+      }
+    }
+
+    protected abstract getDocumentRotation(): number;
 
     protected isShadowVisible(): boolean {
       if (!canvas?.visibility) return true;
@@ -446,16 +489,6 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       if (canvas.visibility.testVisibility({ x: this.x + (width * canvas.scene.dimensions.size), y: this.y + (height * canvas.scene.dimensions.size) })) return true;
       return false;
     }
-
-    protected refreshStencilShadowItem(shadow: StencilShadow, sprite: PIXI.Sprite) {
-      if (!this.isShadowVisible()) {
-        sprite.renderable = false;
-        return;
-      }
-
-
-    }
-
     protected createStencilShadowSprite(config: StencilShadow): PIXI.Sprite | undefined {
       const mesh = this.getMesh();
       if (!mesh) return;
@@ -465,23 +498,34 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       return sprite;
     }
 
-    public setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh) {
+    public setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh, mainConfig: ShadowConfiguration) {
       if (!this.isShadowVisible()) {
         sprite.renderable = false;
       } else {
         sprite.renderable = true;
 
-        if (mesh.parent && sprite.parent !== mesh.parent) mesh.parent.addChild(sprite);
+        const doc = this.document as TokenDocument | TileDocument | undefined;
+        // If no document, we're not in a scene, so no need to position.
+        if (!doc) return;
+
+        this.shadowContainer.addChild(sprite);
+
+        // if (mesh.parent && sprite.parent !== mesh.parent) mesh.parent.addChild(sprite);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         (sprite as any).sortLayer = mesh.sortLayer;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         (sprite as any).elevation = mesh.elevation;
 
-        sprite.x = mesh.x;
-        if (config.alignment === "bottom")
-          sprite.y = mesh.y + (mesh.height * (1 - mesh.anchor.y));
-        else
-          sprite.y = mesh.y;
+
+        sprite.x = (doc.width * (mesh?.anchor?.x ?? .5));
+
+        if (config.alignment === "bottom" && !this.shouldUseIsometric) {
+          const size = this.getSize();
+          sprite.y = size.height - (size.height * (mesh.anchor.y));
+        } else if (!this.shouldUseIsometric) {
+          const size = this.getSize();
+          sprite.y = size.height;
+        }
 
         sprite.anchor.set(config.adjustments?.anchor?.x ?? 0.5, config.adjustments?.anchor?.y ?? (config.alignment === "bottom" ? 1 : 0.5));
 
@@ -524,6 +568,12 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         sprite.zIndex = mesh.zIndex - 1;
 
         sprite.angle = config.rotation;
+
+        if (mainConfig.rotateWithToken && !this.shouldUseIsometric) {
+          // Handle
+          this.shadowContainer.angle = this.getDocumentRotation();
+        }
+
       }
     }
 
@@ -549,6 +599,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const mesh = this.getMesh();
       if (!mesh?.texture) return;
 
+      const { width, height } = this.getSize();
+      this.shadowContainer.x = this.x + (width * mesh.anchor.x);
+      this.shadowContainer.y = this.y + (height * mesh.anchor.y);
+
       for (let i = 0; i < config.shadows.length; i++) {
         const shadowConfig = config.shadows[i];
         if (!this.stencilSprites[i]) {
@@ -560,7 +614,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
         if (!sprite) throw new LocalizedError("TEXTUREGEN");
 
-        this.setStencilShadowConfig(sprite, shadowConfig, mesh);
+        this.setStencilShadowConfig(sprite, shadowConfig, mesh, config);
 
       }
     }
@@ -583,6 +637,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       if (Array.isArray(this.stencilSprites) && (!enabled || shadowConfig.type !== "stencil"))
         this.stencilSprites.forEach(sprite => sprite.visible = false)
 
+      const mesh = this.getMesh();
+      if (mesh) mesh.parent.addChild(this.shadowContainer);
+      this.shadowContainer.name = `ShadowContainer.${this.document.id}`
+
 
       switch (shadowConfig.type) {
         case "blob":
@@ -596,6 +654,11 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       }
     }
 
+    protected _refreshRotation() {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      super._refreshRotation();
+      this.refreshShadow();
+    }
 
     protected _refreshPosition() {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call

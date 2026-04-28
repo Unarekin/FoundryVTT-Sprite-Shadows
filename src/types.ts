@@ -58,7 +58,7 @@ interface ExtendedShadowConfiguration {
 interface BaseShadowConfiguration {
   type: ShadowType;
   enabled: boolean;
-
+  rotateWithToken: boolean;
 }
 
 export type BlobShadowConfiguration = BaseShadowConfiguration & ExtendedShadowConfiguration & {
@@ -107,6 +107,6 @@ export interface ShadowedObject {
   blobSprite: PIXI.Sprite;
   stencilSprites: PIXI.Sprite[];
   createStencilShadowSprite(config: StencilShadow): PIXI.Sprite | undefined;
-  setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh): void;
+  setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh, mainConfig: ShadowConfiguration): void;
   mesh?: foundry.canvas.primary.PrimarySpriteMesh
 }

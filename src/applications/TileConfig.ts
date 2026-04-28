@@ -66,7 +66,6 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
       this.overrideShadowFlags = flags;
       this.overrideShadowConfigSource = source;
 
-      console.log("loadShadowConfigSettings:", source, flags);
       await this.render();
     }
 

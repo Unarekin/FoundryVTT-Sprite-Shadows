@@ -16,6 +16,7 @@ export const DefaultBlobShadowConfiguration: BlobShadowConfiguration = {
   elevationIncrement: 1,
   alignment: "bottom",
   liftToken: false,
+  rotateWithToken: false,
   adjustments: {
     enabled: false,
     x: 0,
@@ -39,6 +40,7 @@ export const DefaultStencilShadow: StencilShadow = {
   skew: (360 - 45) * (Math.PI / 180),
   blur: 2,
   useImage: false,
+  rotateWithToken: true,
   image: "",
   alignment: "bottom",
   adjustments: {
@@ -57,11 +59,11 @@ export const DefaultStencilShadow: StencilShadow = {
 export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
   enabled: false,
   type: "stencil",
-  shadows: [DefaultStencilShadow]
+  shadows: [foundry.utils.deepClone(DefaultStencilShadow)]
 }
 
 export const DefaultShadowConfiguration: ShadowConfiguration = {
-  ...DefaultBlobShadowConfiguration,
+  ...foundry.utils.deepClone(DefaultBlobShadowConfiguration),
   enabled: false,
   type: "blob"
 }
