@@ -576,7 +576,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     protected toggleSceneSource(enabled: boolean) {
       const tab = this.element.querySelector(`div.tab.sprite-shadows-config`);
       if (!(tab instanceof HTMLElement)) return;
-      const elements = Array.from<HTMLElement>(tab.querySelectorAll(`input, select:not([name="sprite-shadows.configSource"]), range-picker, color-picker, button, [data-role="import-shadows"]`));
+      const elements = Array.from<HTMLElement>(tab.querySelectorAll(`input, select:not([name="sprite-shadows.configSource"]), range-picker, color-picker, button, [data-role="import-shadows"], [data-role="export-shadows"], [data-action="addStencilShadow"], [data-action="editStencilShadow"], [data-action="removeStencilShadow"]`));
       for (const elem of elements) {
         if (elem instanceof HTMLButtonElement) {
           elem.disabled = !enabled;
