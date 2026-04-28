@@ -40,6 +40,7 @@ export const DefaultStencilShadow: StencilShadow = {
   skew: (360 - 45) * (Math.PI / 180),
   blur: 2,
   useImage: false,
+  rotateWithToken: true,
   image: "",
   alignment: "bottom",
   adjustments: {

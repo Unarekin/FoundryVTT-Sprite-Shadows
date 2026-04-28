@@ -195,7 +195,6 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     }
 
     protected async _draw(options: HandleEmptyObject<PlaceableObject.DrawOptions>): Promise<void> {
-      console.log("Sprite Shadows _draw");
       await super._draw(options);
       this.refreshShadow(true);
     }
@@ -272,27 +271,15 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
       this.blobSprite.x = (doc.width * (mesh?.anchor?.x ?? .5));
 
-      /*
-            return {
-        x: doc.x + (doc.width * (mesh?.anchor?.x ?? .5)),
-        y: doc.y + (doc.height * ((config.alignment === "bottom" && !this.shouldUseIsometric) ? 1 : (mesh?.anchor?.y ?? .5))),
-        width: doc.width,
-        height: doc.height
-      }
-      */
-
       if (config.alignment === "bottom" && !this.shouldUseIsometric) {
         // Empty
         const size = this.getSize();
         this.blobSprite.y = size.height - (size.height * (mesh.anchor.y))
-      } else {
+      } else if (!this.shouldUseIsometric) {
         // this.blobSprite.y = (doc.height * (mesh.anchor.y ?? 0.5));
+        const size = this.getSize();
+        this.blobSprite.y = size.height;
       }
-
-      // this.shadowContainer.x = bounds.x;
-      // this.shadowContainer.y = bounds.y;
-      // this.blobSprite.x = bounds.x; //doc.x + ((doc.width * this.scene.dimensions.size) * this.blobSprite.anchor.x);
-      // this.blobSprite.y = bounds.y;
 
       // Apply adjustments
       const adjustments = this.getShadowAdjustments(config);
@@ -502,16 +489,6 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       if (canvas.visibility.testVisibility({ x: this.x + (width * canvas.scene.dimensions.size), y: this.y + (height * canvas.scene.dimensions.size) })) return true;
       return false;
     }
-
-    protected refreshStencilShadowItem(shadow: StencilShadow, sprite: PIXI.Sprite) {
-      if (!this.isShadowVisible()) {
-        sprite.renderable = false;
-        return;
-      }
-
-
-    }
-
     protected createStencilShadowSprite(config: StencilShadow): PIXI.Sprite | undefined {
       const mesh = this.getMesh();
       if (!mesh) return;
@@ -521,23 +498,34 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       return sprite;
     }
 
-    public setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh) {
+    public setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh, mainConfig: ShadowConfiguration) {
       if (!this.isShadowVisible()) {
         sprite.renderable = false;
       } else {
         sprite.renderable = true;
 
-        if (mesh.parent && sprite.parent !== mesh.parent) mesh.parent.addChild(sprite);
+        const doc = this.document as TokenDocument | TileDocument | undefined;
+        // If no document, we're not in a scene, so no need to position.
+        if (!doc) return;
+
+        this.shadowContainer.addChild(sprite);
+
+        // if (mesh.parent && sprite.parent !== mesh.parent) mesh.parent.addChild(sprite);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         (sprite as any).sortLayer = mesh.sortLayer;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         (sprite as any).elevation = mesh.elevation;
 
-        sprite.x = mesh.x;
-        if (config.alignment === "bottom")
-          sprite.y = mesh.y + (mesh.height * (1 - mesh.anchor.y));
-        else
-          sprite.y = mesh.y;
+
+        sprite.x = (doc.width * (mesh?.anchor?.x ?? .5));
+
+        if (config.alignment === "bottom" && !this.shouldUseIsometric) {
+          const size = this.getSize();
+          sprite.y = size.height - (size.height * (mesh.anchor.y));
+        } else if (!this.shouldUseIsometric) {
+          const size = this.getSize();
+          sprite.y = size.height;
+        }
 
         sprite.anchor.set(config.adjustments?.anchor?.x ?? 0.5, config.adjustments?.anchor?.y ?? (config.alignment === "bottom" ? 1 : 0.5));
 
@@ -580,6 +568,12 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         sprite.zIndex = mesh.zIndex - 1;
 
         sprite.angle = config.rotation;
+
+        if (mainConfig.rotateWithToken && !this.shouldUseIsometric) {
+          // Handle
+          this.shadowContainer.angle = this.getDocumentRotation();
+        }
+
       }
     }
 
@@ -605,6 +599,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const mesh = this.getMesh();
       if (!mesh?.texture) return;
 
+      const { width, height } = this.getSize();
+      this.shadowContainer.x = this.x + (width * mesh.anchor.x);
+      this.shadowContainer.y = this.y + (height * mesh.anchor.y);
+
       for (let i = 0; i < config.shadows.length; i++) {
         const shadowConfig = config.shadows[i];
         if (!this.stencilSprites[i]) {
@@ -616,7 +614,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
 
         if (!sprite) throw new LocalizedError("TEXTUREGEN");
 
-        this.setStencilShadowConfig(sprite, shadowConfig, mesh);
+        this.setStencilShadowConfig(sprite, shadowConfig, mesh, config);
 
       }
     }
