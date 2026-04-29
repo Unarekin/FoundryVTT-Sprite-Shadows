@@ -1,5 +1,6 @@
 export * from './ConfigMixin';
 export * from './GlobalConfig';
+export * from './PrototypeTokenConfig';
 export * from './SceneConfig';
 export * from './StandaloneSceneConfig';
 export * from './StandaloneTileConfig';

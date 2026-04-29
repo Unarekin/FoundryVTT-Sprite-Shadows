@@ -1,5 +1,5 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin, StandaloneTokenConfig, StandaloneTileConfig, StandaloneSceneConfig } from "./applications";
+import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin, StandaloneTokenConfig, StandaloneTileConfig, StandaloneSceneConfig, PrototypeTokenConfigMixin } from "./applications";
 import { TintFilter, AlphaThresholdFilter } from "./filters";
 import { DeepPartial, ShadowedObject } from "types";
 
@@ -51,7 +51,7 @@ Hooks.on("canvasConfig", () => {
   if (game?.settings?.get(__MODULE_ID__, "injectConfigTab")) {
     applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
     applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
-    CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as unknown as foundry.applications.sheets.TokenConfig);
+    CONFIG.Token.prototypeSheetClass = PrototypeTokenConfigMixin(CONFIG.Token.prototypeSheetClass as unknown as typeof foundry.applications.sheets.PrototypeTokenConfig);
 
     applyMixin(CONFIG.Scene.sheetClasses.base, SceneConfigMixin);
   }
