@@ -1,7 +1,10 @@
 export * from './ConfigMixin';
 export * from './GlobalConfig';
 export * from './SceneConfig';
+export * from './StandaloneSceneConfig';
+export * from './StandaloneTileConfig';
+export * from './StandaloneTokenConfig';
 export * from './StencilShadowConfig';
 export * from './TileConfig';
 export * from './TokenConfig';
-
+export * from './types';

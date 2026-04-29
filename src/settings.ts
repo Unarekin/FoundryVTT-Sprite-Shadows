@@ -40,7 +40,6 @@ export const DefaultStencilShadow: StencilShadow = {
   skew: (360 - 45) * (Math.PI / 180),
   blur: 2,
   useImage: false,
-  rotateWithToken: true,
   image: "",
   alignment: "bottom",
   adjustments: {
@@ -59,6 +58,8 @@ export const DefaultStencilShadow: StencilShadow = {
 export const DefaultStencilShadowConfiguration: StencilShadowConfiguration = {
   enabled: false,
   type: "stencil",
+  rotateWithToken: true,
+  alphaThreshold: 0,
   shadows: [foundry.utils.deepClone(DefaultStencilShadow)]
 }
 
@@ -68,7 +69,7 @@ export const DefaultShadowConfiguration: ShadowConfiguration = {
   type: "blob"
 }
 
-Hooks.on("ready", () => {
+Hooks.on("init", () => {
   game?.settings?.register(__MODULE_ID__, "enableShadows", {
     name: "SPRITESHADOWS.SETTINGS.ENABLE.LABEL",
     hint: "SPRITESHADOWS.SETTINGS.ENABLE.HINT",
@@ -117,5 +118,15 @@ Hooks.on("ready", () => {
     icon: "fa-solid fa-cogs",
     restricted: true,
     type: GlobalConfig
+  });
+
+  game?.settings?.register(__MODULE_ID__, "injectConfigTab", {
+    name: "SPRITESHADOWS.SETTINGS.INJECTCONFIGTAB.LABEL",
+    hint: "SPRITESHADOWS.SETTINGS.INJECTCONFIGTAB.LABEL",
+    config: true,
+    default: true,
+    scope: "world",
+    type: Boolean,
+    requiresReload: true
   })
 })

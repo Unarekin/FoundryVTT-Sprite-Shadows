@@ -1,6 +1,7 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin } from "./applications";
+import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin, StandaloneTokenConfig, StandaloneTileConfig, StandaloneSceneConfig } from "./applications";
 import { TintFilter, AlphaThresholdFilter } from "./filters";
+import { DeepPartial, ShadowedObject } from "types";
 
 
 Hooks.once("canvasReady", () => {
@@ -47,11 +48,14 @@ function applyMixin(collection: Record<string, any>, mixin: Function) {
 }
 
 Hooks.on("canvasConfig", () => {
-  applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
-  applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
-  CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as unknown as foundry.applications.sheets.TokenConfig);
+  if (game?.settings?.get(__MODULE_ID__, "injectConfigTab")) {
+    applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
+    applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
+    CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as unknown as foundry.applications.sheets.TokenConfig);
 
-  applyMixin(CONFIG.Scene.sheetClasses.base, SceneConfigMixin);
+    applyMixin(CONFIG.Scene.sheetClasses.base, SceneConfigMixin);
+  }
+
 
   if (game?.modules?.get("isometric-perspective")?.active) {
     // Check if it needs to be positioned according to isometric projection
@@ -91,27 +95,91 @@ Hooks.on("updateTile", (tile: TileDocument, delta: TileDocument.UpdateData, opti
   }
 });
 
-Hooks.on("getHeaderControlsActorSheetV2", (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
-  controls.unshift({
+Hooks.on("updateScene", (scene: Scene) => {
+  if (canvas?.scene === scene) {
+    scene.tokens.forEach(token => { (token.object as ShadowedObject<foundry.canvas.placeables.Token>).refreshShadow(); });
+    scene.tiles.forEach(tile => { (tile.object as ShadowedObject<foundry.canvas.placeables.Tile>).refreshShadow(); });
+  }
+})
+
+const _standaloneConfigs = new WeakMap<ShadowedObject | Scene, StandaloneTokenConfig | StandaloneTileConfig | StandaloneSceneConfig>();
+
+function createHeaderControl(callback: (() => Promise<void> | void), visible?: boolean | (() => boolean)): foundry.applications.api.ApplicationV2.HeaderControlsEntry {
+  return {
     icon: "fa-solid fa-lightbulb",
     label: "SPRITESHADOWS.TITLE",
     class: "sprite-shadows",
-    onClick: async () => {
-      if (app.actor.token) {
+    visible,
+    onClick: callback
+  }
+}
 
-        if (app.actor.token.sheet instanceof foundry.applications.api.ApplicationV2) {
-          await app.actor.token.sheet.render({ force: true, tab: "shadows" });
-        } else {
-          ui.notifications?.warn("SPRITESHADOWS.ERRORS.UNKNOWNACTORAPP", { localize: true });
+function canModifyDocument(doc: foundry.abstract.Document.Any): boolean {
+  return !!(game.user && doc.canUserModify(game.user, "update"));
+}
+
+Hooks.on("getHeaderControlsTileConfig", (app: foundry.applications.sheets.TileConfig, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
+  controls.unshift(createHeaderControl(async () => {
+    const tile = app.document.object as unknown as ShadowedObject;
+    if (tile) {
+      let configApp: StandaloneTileConfig | undefined = undefined;
+      if (_standaloneConfigs.has(tile) && _standaloneConfigs.get(tile)) {
+        configApp = _standaloneConfigs.get(tile) as StandaloneTileConfig;
+      } else {
+        configApp = new StandaloneTileConfig(tile);
+        _standaloneConfigs.set(tile, configApp);
+        const origClose = configApp.close.bind(configApp);
+        configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
+          _standaloneConfigs.delete(tile);
+          return origClose(options);
         }
-      } else if (app.actor.prototypeToken) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const sheet = new CONFIG.Token.prototypeSheetClass({ prototype: app.actor.prototypeToken });
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-        await sheet.render({ force: true, tab: "shadows" });
+      }
+      if (configApp)
+        await configApp.render({ force: true })
+    }
+  }, canModifyDocument(app.document)));
+})
+
+Hooks.on("getHeaderControlsSceneConfig", (app: foundry.applications.sheets.SceneConfig, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
+  controls.unshift(createHeaderControl(async () => {
+    let configApp: StandaloneSceneConfig | undefined = undefined;
+    if (_standaloneConfigs.has(app.document)) {
+      configApp = _standaloneConfigs.get(app.document) as StandaloneSceneConfig;
+    } else {
+      configApp = new StandaloneSceneConfig(app.document);
+      _standaloneConfigs.set(app.document, configApp);
+      const origClose = configApp.close.bind(configApp);
+      configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
+        _standaloneConfigs.delete(app.document);
+        return origClose(options);
       }
     }
-  });
+
+    if (configApp)
+      await configApp.render({ force: true });
+  }, canModifyDocument(app.document)));
+});
+
+Hooks.on("getHeaderControlsActorSheetV2", (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
+  controls.unshift(createHeaderControl(async () => {
+    if (app.actor.token?.object) {
+      const token = app.actor.token.object as unknown as ShadowedObject;
+      let configApp: StandaloneTokenConfig | undefined = undefined;
+      if (_standaloneConfigs.has(token)) {
+        configApp = _standaloneConfigs.get(token) as StandaloneTokenConfig;
+      } else {
+        configApp = new StandaloneTokenConfig(token);
+        const origClose = configApp.close.bind(configApp);
+        configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
+          _standaloneConfigs.delete(token);
+          return origClose(options);
+        }
+        _standaloneConfigs.set(token, configApp);
+      }
+      if (configApp)
+        await configApp.render({ force: true })
+    }
+  }, canModifyDocument(app.document)));
 });
 
 let lastVisibilityRefreshWarn = 0;

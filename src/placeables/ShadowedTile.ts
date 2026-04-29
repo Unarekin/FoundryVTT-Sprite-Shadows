@@ -1,4 +1,4 @@
-import { DeepPartial, IsometricFlags, ShadowConfiguration } from "types";
+import { DeepPartial, IsometricFlags, ShadowConfiguration, ShadowConfigSource } from "types";
 import { PlaceableMixin } from "./ShadowedPlaceable";
 
 export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base: t) {
@@ -11,7 +11,7 @@ export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base:
     protected getIsometricFlags(): IsometricFlags | undefined {
       if (!(game?.modules?.get("isometric-perspective")?.active)) return undefined;
 
-      return this.getShadowDocument().flags["isometric-perspective"] as DeepPartial<IsometricFlags>;
+      return this.getShadowDocument().flags["isometric-perspective"] as IsometricFlags;
     }
 
     protected getDocumentRotation() { return this.getShadowDocument().rotation; }
@@ -24,9 +24,14 @@ export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base:
       );
     }
 
+    protected getShadowConfigSource(): ShadowConfigSource {
+      const doc = this.getShadowDocument();
+      return doc.getFlag(__MODULE_ID__, "configSource") ?? "tile";
+    }
+
     protected getShadowFlags(): DeepPartial<ShadowConfiguration> {
       const doc = this.getShadowDocument();
-      const configSource = doc.getFlag(__MODULE_ID__, "configSource") ?? "tile";
+      const configSource = this.getShadowConfigSource();
 
       let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
 
@@ -43,6 +48,24 @@ export function TileMixin<t extends typeof foundry.canvas.placeables.Tile>(base:
 
       if (flags) return this.migrateShadowSettings(flags);
       else return {};
+    }
+
+    protected positionShadowContainer() {
+      const mesh = this.getMesh();
+      if (!mesh) return;
+
+      const { width, height } = this.getSize();
+
+      // TODO: Remove when dropping v13 support
+      if (game.release?.isNewer("14")) {
+        const pos = this.getMeshPosition();
+        this.shadowContainer.x = pos.x;
+        this.shadowContainer.y = pos.y - (height * mesh.anchor.y);
+      } else {
+        this.shadowContainer.x = this.x + (width * mesh.anchor.x);
+        this.shadowContainer.y = this.y + (height * mesh.anchor.y);
+      }
+
     }
 
     protected getSize() {

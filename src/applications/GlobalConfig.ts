@@ -66,13 +66,17 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
 
     if (parsed) {
       if (parsed.type === "stencil")
-        parsed.shadows = foundry.utils.deepClone((this.#overrideShadowFlags as StencilShadowConfiguration).shadows);
+        parsed.shadows = foundry.utils.deepClone((this.overrideShadowFlags as StencilShadowConfiguration).shadows);
 
-      await game.settings?.set(__MODULE_ID__, "globalConfig", parsed)
+      await this.setShadowFlags(parsed);
     }
   }
 
-  #overrideShadowFlags: ShadowConfiguration | undefined = undefined;
+  protected async setShadowFlags(config: ShadowConfiguration) {
+    await game.settings?.set(__MODULE_ID__, "globalConfig", config)
+  }
+
+  overrideShadowFlags: ShadowConfiguration | undefined = undefined;
 
   protected getShadowFlags(): ShadowConfiguration {
     const flags = foundry.utils.deepClone(DefaultShadowConfiguration);
@@ -82,7 +86,7 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
   }
 
   protected getShadowConfiguration(): ShadowConfiguration {
-    const flags = this.#overrideShadowFlags ?? this.getShadowFlags();
+    const flags = this.overrideShadowFlags ?? this.getShadowFlags();
     switch (flags?.type) {
       case "blob":
         return foundry.utils.mergeObject(
@@ -122,13 +126,13 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const context = await super._prepareContext(options as any) as unknown as ShadowConfigContext<foundry.applications.api.ApplicationV2.RenderContext>;
 
-    this.#overrideShadowFlags ??= this.getShadowConfiguration();
+    this.overrideShadowFlags ??= this.getShadowConfiguration();
 
     const newContext = {
       ...context,
       idPrefix: foundry.utils.randomID(),
       allowConfigSource: false,
-      config: foundry.utils.deepClone(this.#overrideShadowFlags),
+      config: foundry.utils.deepClone(this.overrideShadowFlags),
       spriteAnimations: game.modules?.get("sprite-animations")?.active ?? false,
       adjustPosTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustPosition.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGPOS")}</p></div>`,
       adjustSizeTooltip: `<div class='toolclip'><video width='512' autoplay loop muted><source src='modules/${__MODULE_ID__}/assets/tooltips/AdjustSize.webm'></video><p>${game.i18n?.localize("SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGSIZE")}</p></div>`,
@@ -203,11 +207,11 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
   protected async exportToClipboard() {
     try {
       if ((await navigator.permissions.query({ name: "clipboard-write" })).state === "granted") {
-        await navigator.clipboard.writeText(JSON.stringify(this.#overrideShadowFlags));
+        await navigator.clipboard.writeText(JSON.stringify(this.overrideShadowFlags));
         ui.notifications?.info("SPRITESHADOWS.SETTINGS.EXPORT.COPIED", { localize: true });
       } else {
         const content = await foundry.applications.handlebars.renderTemplate(`modules/${__MODULE_ID__}/templates/CopyJSON.hbs`, {
-          config: JSON.stringify(this.#overrideShadowFlags, null, 2)
+          config: JSON.stringify(this.overrideShadowFlags, null, 2)
         });
         await foundry.applications.api.DialogV2.input({
           window: { title: "SPRITESHADOWS.SETTINGS.EXPORT.LABEL" },
@@ -222,7 +226,7 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
   }
 
   protected async finishImport(data: ShadowConfiguration) {
-    this.#overrideShadowFlags = foundry.utils.deepClone(data);
+    this.overrideShadowFlags = foundry.utils.deepClone(data);
     await this.render();
   }
 
@@ -321,7 +325,7 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
         {
           name: "SPRITESHADOWS.SETTINGS.EXPORT.DOWNLOAD",
           icon: `<i class="fa-solid fa-download"></i>`,
-          callback: () => { downloadJSON(this.#overrideShadowFlags as object, "shadows.json"); }
+          callback: () => { downloadJSON(this.overrideShadowFlags as object, "shadows.json"); }
         }
       ],
       {
@@ -338,9 +342,9 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
       const shadowConfig = foundry.utils.deepClone(DefaultStencilShadow);
       const data = await StencilShadowConfig.Edit(shadowConfig);
 
-      if (data && this.#overrideShadowFlags?.type === "stencil") {
-        if (Array.isArray(this.#overrideShadowFlags.shadows)) this.#overrideShadowFlags.shadows.push(foundry.utils.deepClone(data));
-        else this.#overrideShadowFlags.shadows = [foundry.utils.deepClone(data)];
+      if (data && this.overrideShadowFlags?.type === "stencil") {
+        if (Array.isArray(this.overrideShadowFlags.shadows)) this.overrideShadowFlags.shadows.push(foundry.utils.deepClone(data));
+        else this.overrideShadowFlags.shadows = [foundry.utils.deepClone(data)];
       }
       await this.render();
     } catch (err) {
@@ -351,19 +355,19 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
 
   static async EditStencilShadow(this: GlobalConfig, e: Event, elem: HTMLElement) {
     try {
-      if (this.#overrideShadowFlags?.type !== "stencil") return console.warn("No shadow flags stored");
-      if (!Array.isArray(this.#overrideShadowFlags.shadows)) return console.warn("No shadows on flags");
+      if (this.overrideShadowFlags?.type !== "stencil") return console.warn("No shadow flags stored");
+      if (!Array.isArray(this.overrideShadowFlags.shadows)) return console.warn("No shadows on flags");
 
       if (!elem.dataset.shadow) return console.warn("No shadow ID");
       const shadowId = elem.dataset.shadow;
-      const shadowConfig = this.#overrideShadowFlags.shadows.find(item => item.id === shadowId);
+      const shadowConfig = this.overrideShadowFlags.shadows.find(item => item.id === shadowId);
       if (!shadowConfig) return console.warn("No shadow config found");
 
       const data = await StencilShadowConfig.Edit(shadowConfig);
       if (data) {
         // empty
-        const index = this.#overrideShadowFlags.shadows.findIndex(item => item.id === data.id);
-        if (index !== -1) this.#overrideShadowFlags.shadows[index] = foundry.utils.mergeObject(foundry.utils.deepClone(DefaultStencilShadowConfiguration), data)
+        const index = this.overrideShadowFlags.shadows.findIndex(item => item.id === data.id);
+        if (index !== -1) this.overrideShadowFlags.shadows[index] = foundry.utils.mergeObject(foundry.utils.deepClone(DefaultStencilShadowConfiguration), data)
       }
     } catch (err) {
       console.error(err);
@@ -374,13 +378,13 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
 
   static async RemoveStencilShadow(this: GlobalConfig, e: Event, elem: HTMLElement) {
     try {
-      if (this.#overrideShadowFlags?.type !== "stencil") return console.warn("overrideShadowFlags.type is not stencil");
-      if (!this.#overrideShadowFlags?.shadows) return console.warn("No shadows on overrideShadowFlags");
+      if (this.overrideShadowFlags?.type !== "stencil") return console.warn("overrideShadowFlags.type is not stencil");
+      if (!this.overrideShadowFlags?.shadows) return console.warn("No shadows on overrideShadowFlags");
 
       const shadowId = elem.dataset.shadow;
       if (!shadowId) return console.warn("No shadow ID on HTML element");
 
-      const config = this.#overrideShadowFlags.shadows.find(elem => elem.id === shadowId);
+      const config = this.overrideShadowFlags.shadows.find(elem => elem.id === shadowId);
       if (!config) return console.warn(`Could not find config with id ${shadowId}`);
 
       const confirmed = (await foundry.applications.api.DialogV2.confirm({
@@ -389,8 +393,8 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
       })) as boolean;
       if (!confirmed) return console.warn("Removal canceled");
 
-      const index = this.#overrideShadowFlags.shadows.findIndex(elem => elem.id === shadowId);
-      if (index !== -1) this.#overrideShadowFlags.shadows.splice(index, 1);
+      const index = this.overrideShadowFlags.shadows.findIndex(elem => elem.id === shadowId);
+      if (index !== -1) this.overrideShadowFlags.shadows.splice(index, 1);
       else console.warn("Config not found in overrideShadowFlags")
 
       await this.render();

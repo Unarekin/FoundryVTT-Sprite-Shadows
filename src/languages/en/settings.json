@@ -21,6 +21,10 @@
         "HINT": "Where to align the shadow relative to its token.",
         "LABEL": "Alignment"
       },
+      "INJECTCONFIGTAB": {
+        "LABEL": "Add tab to configuration applications",
+        "HINT": "When enabled, will add a tab for shadow settings to the tile, token, and scene configuration applications"
+      },
       "ALPHA": {
         "HINT": "Opoacity of the shadow",
         "LABEL": "Alpha"
@@ -70,6 +74,15 @@
         "HINT": "Global settings to be applied by default to all tokens and tiles.",
         "LABEL": "Global Settings"
       },
+      "SCENE": {
+        "TITLE": "Scene Settings"
+      },
+      "TOKEN": {
+        "TITLE": "Token Settings"
+      },
+      "TILE": {
+        "TITLE": "Tile Settings"
+      },
       "ID": "ID",
       "IGNORESAADJUSTMENTS": {
         "HINT": "If enabled, will ignore mesh adjustments configured by Sprite Animations.",
@@ -109,8 +122,8 @@
         "LABEL": "Rotation"
       },
       "ROTATEWITHTOKEN": {
-        "LABEL": "Rotate With Token",
-        "HINT": "Enable to automatically rotate this shadow when its token rotates."
+        "LABEL": "Rotate With Placeable",
+        "HINT": "Enable to automatically rotate this shadow when its placeable rotates."
       },
       "SKEW": {
         "HINT": "The amount by which to skew this shadow, to simulate projection angle.",

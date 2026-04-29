@@ -3,7 +3,7 @@ import { AlphaThresholdFilter, TintFilter } from "filters";
 import { cartesianToIso } from "functions";
 import { HandleEmptyObject } from "fvtt-types/utils";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
-import { BlobShadowConfiguration, DeepPartial, IsometricFlags, MeshAdjustments, OldStencilShadowType, ShadowAlignment, ShadowConfiguration, StencilShadow, StencilShadowConfiguration } from "types";
+import { BlobShadowConfiguration, DeepPartial, IsometricFlags, MeshAdjustments, OldStencilShadowType, ShadowAlignment, ShadowConfigSource, ShadowConfiguration, StencilShadow, StencilShadowConfiguration } from "types";
 
 interface PlaceableSize {
   width: number;
@@ -21,6 +21,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
     protected stencilSprites: PIXI.Sprite[] = [];
     protected shadowContainer = new PIXI.Container();
 
+    protected abstract getShadowConfigSource(): ShadowConfigSource;
     protected abstract getShadowFlags(): DeepPartial<ShadowConfiguration>;
     protected abstract getShadowDocument(): foundry.abstract.Document.Any;
     protected abstract getMesh(): foundry.canvas.primary.PrimarySpriteMesh | undefined;
@@ -248,7 +249,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       throw new LocalizedError("TEXTUREGEN");
     }
 
+
     protected abstract getIsometricFlags(): IsometricFlags | undefined;
+
+    protected abstract positionShadowContainer(): void;
 
     protected positionBlobShadowOrthographic() {
       const config = this.shadowConfiguration;
@@ -262,14 +266,10 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       // If no document, we're not in a scene, so no need to position.
       if (!doc) return;
 
-      const { width, height } = this.getSize();
-      this.shadowContainer.x = this.x + (width * mesh.anchor.x);
-      this.shadowContainer.y = this.y + (height * mesh.anchor.y);
 
-      // this.shadowContainer.x = mesh.x;
-      // this.shadowContainer.y = mesh.y;
+      this.positionShadowContainer();
 
-      this.blobSprite.x = (doc.width * (mesh?.anchor?.x ?? .5));
+      // this.blobSprite.x = (doc.width * (mesh?.anchor?.x ?? .5));
 
       if (config.alignment === "bottom" && !this.shouldUseIsometric) {
         // Empty
@@ -300,7 +300,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         else
           this.shadowContainer.y += elevationAdjustment;
       } else {
-        mesh.y = meshPos.y;
+        // mesh.y = meshPos.y;
         // mesh.y = this.y;
         // mesh.y = this.y + (doc.height * this.scene.dimensions.size * mesh.anchor.y) + this.scene.dimensions.sceneY;
       }
@@ -599,9 +599,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       const mesh = this.getMesh();
       if (!mesh?.texture) return;
 
-      const { width, height } = this.getSize();
-      this.shadowContainer.x = this.x + (width * mesh.anchor.x);
-      this.shadowContainer.y = this.y + (height * mesh.anchor.y);
+      this.positionShadowContainer();
 
       for (let i = 0; i < config.shadows.length; i++) {
         const shadowConfig = config.shadows[i];

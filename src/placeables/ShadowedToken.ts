@@ -1,21 +1,27 @@
-import { DeepPartial, IsometricFlags, ShadowConfiguration } from "types";
+import { DeepPartial, IsometricFlags, ShadowConfiguration, ShadowConfigSource, BlobShadowConfiguration } from "types";
 import { PlaceableMixin } from "./ShadowedPlaceable";
 
 
 export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(base: t) {
   return class ShadowedToken extends PlaceableMixin<t>(base) {
-    protected getShadowFlags(): DeepPartial<ShadowConfiguration> {
+
+    protected getShadowConfigSource(): ShadowConfigSource {
       const doc = this.document as TokenDocument;
-      let configSource = doc.getFlag(__MODULE_ID__, "configSource");
-
-
-
+      const configSource = doc.getFlag(__MODULE_ID__, "configSource");
       // <1.2.0 compatibility
       if (!configSource) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if ((doc.flags as any)[__MODULE_ID__]?.useTokenOverride) configSource = "token";
-        else configSource = "actor";
+        if ((doc.flags as any)[__MODULE_ID__]?.useTokenOverride) return "token"
+        else return "actor";
+      } else {
+        return configSource;
       }
+    }
+
+    protected getShadowFlags(): DeepPartial<ShadowConfiguration> {
+      const doc = this.document as TokenDocument;
+
+      const configSource = this.getShadowConfigSource();
 
       let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
 
@@ -75,10 +81,20 @@ export function TokenMixin<t extends typeof foundry.canvas.placeables.Token>(bas
       }
     }
 
+    protected positionShadowContainer() {
+      const mesh = this.getMesh();
+      if (!mesh) return;
+      const { width, height } = this.getSize();
+
+      this.shadowContainer.x = this.x + (width * mesh.anchor.x);
+      this.shadowContainer.y = this.y + (height * mesh.anchor.y);
+    }
+
     protected getBlobSpriteBounds(): { x: number, y: number, width: number, height: number } {
       const doc = this.document as TokenDocument;
       const mesh = this.getMesh();
-      const config = this.shadowConfiguration;
+      const config = this.shadowConfiguration as BlobShadowConfiguration;
+
       return {
         x: doc.x + ((doc.width * this.scene.dimensions.size) * (mesh?.anchor.x ?? 1)),
         y: doc.y + ((doc.height * this.scene.dimensions.size) * ((config.alignment === "bottom" && !this.shouldUseIsometric) ? 1 : mesh?.anchor.y ?? .5)),

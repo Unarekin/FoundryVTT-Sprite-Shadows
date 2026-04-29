@@ -102,11 +102,13 @@ export interface IsometricFlags {
   isoTokenDisabled: boolean;
 }
 
-export interface ShadowedObject {
+export interface ShadowedObject<t extends foundry.canvas.placeables.PlaceableObject = foundry.canvas.placeables.PlaceableObject> extends t {
   refreshShadow: (force?: boolean) => void;
   blobSprite: PIXI.Sprite;
   stencilSprites: PIXI.Sprite[];
   createStencilShadowSprite(config: StencilShadow): PIXI.Sprite | undefined;
   setStencilShadowConfig(sprite: PIXI.Sprite, config: StencilShadow, mesh: foundry.canvas.primary.PrimarySpriteMesh, mainConfig: ShadowConfiguration): void;
-  mesh?: foundry.canvas.primary.PrimarySpriteMesh
+  mesh?: foundry.canvas.primary.PrimarySpriteMesh;
+  getShadowFlags(): DeepPartial<ShadowConfiguration>;
+  getShadowConfigSource(): ShadowConfigSource;
 }

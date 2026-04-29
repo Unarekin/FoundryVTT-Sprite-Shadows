@@ -154,7 +154,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           const index = (obj.stencilSprites ?? []).findIndex(sprite => sprite.name === `StencilShadow.${shadowId}`);
           if (index !== -1) {
             const sprite = obj.stencilSprites[index];
-            console.log("Removing", sprite);
             obj.stencilSprites.splice(index, 1);
             sprite.destroy();
           }
