@@ -1,5 +1,7 @@
 import { BlobShape, ShadowAlignment, ShadowConfigSource, ShadowConfiguration, ShadowType, StencilShadow } from "types";
 
+export type Constructor<t> = new (...args: any[]) => t;
+
 export interface ContextShadowConfiguration {
   idPrefix: string;
   allowConfigSource: boolean;

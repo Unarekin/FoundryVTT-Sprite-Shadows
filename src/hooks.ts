@@ -1,5 +1,5 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin, StandaloneTokenConfig, StandaloneTileConfig, StandaloneSceneConfig } from "./applications";
+import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin, StandaloneTokenConfig, StandaloneTileConfig, StandaloneSceneConfig, PrototypeTokenConfigMixin, StandalonePrototypeTokenConfig } from "./applications";
 import { TintFilter, AlphaThresholdFilter } from "./filters";
 import { DeepPartial, ShadowedObject } from "types";
 
@@ -51,7 +51,7 @@ Hooks.on("canvasConfig", () => {
   if (game?.settings?.get(__MODULE_ID__, "injectConfigTab")) {
     applyMixin(CONFIG.Token.sheetClasses.base, TokenConfigMixin);
     applyMixin(CONFIG.Tile.sheetClasses.base, TileConfigMixin);
-    CONFIG.Token.prototypeSheetClass = TokenConfigMixin(CONFIG.Token.prototypeSheetClass as unknown as foundry.applications.sheets.TokenConfig);
+    CONFIG.Token.prototypeSheetClass = PrototypeTokenConfigMixin(CONFIG.Token.prototypeSheetClass as unknown as typeof foundry.applications.sheets.PrototypeTokenConfig);
 
     applyMixin(CONFIG.Scene.sheetClasses.base, SceneConfigMixin);
   }
@@ -102,7 +102,7 @@ Hooks.on("updateScene", (scene: Scene) => {
   }
 })
 
-const _standaloneConfigs = new WeakMap<ShadowedObject | Scene, StandaloneTokenConfig | StandaloneTileConfig | StandaloneSceneConfig>();
+const _standaloneConfigs = new WeakMap<ShadowedObject | Scene | Actor, StandaloneTokenConfig | StandaloneTileConfig | StandaloneSceneConfig | StandalonePrototypeTokenConfig>();
 
 function createHeaderControl(callback: (() => Promise<void> | void), visible?: boolean | (() => boolean)): foundry.applications.api.ApplicationV2.HeaderControlsEntry {
   return {
@@ -110,7 +110,8 @@ function createHeaderControl(callback: (() => Promise<void> | void), visible?: b
     label: "SPRITESHADOWS.TITLE",
     class: "sprite-shadows",
     visible,
-    onClick: callback
+    onClick: callback,
+    onclick: callback
   }
 }
 
@@ -160,27 +161,57 @@ Hooks.on("getHeaderControlsSceneConfig", (app: foundry.applications.sheets.Scene
   }, canModifyDocument(app.document)));
 });
 
-Hooks.on("getHeaderControlsActorSheetV2", (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
-  controls.unshift(createHeaderControl(async () => {
-    if (app.actor.token?.object) {
-      const token = app.actor.token.object as unknown as ShadowedObject;
-      let configApp: StandaloneTokenConfig | undefined = undefined;
-      if (_standaloneConfigs.has(token)) {
-        configApp = _standaloneConfigs.get(token) as StandaloneTokenConfig;
-      } else {
-        configApp = new StandaloneTokenConfig(token);
-        const origClose = configApp.close.bind(configApp);
-        configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
-          _standaloneConfigs.delete(token);
-          return origClose(options);
+Hooks.on("ready", () => {
+  const actorSheetHooks = ["getHeaderControlsActorSheetV2"];
+
+  if (!game.settings?.get(__MODULE_ID__, "injectConfigTab"))
+    actorSheetHooks.push("getActorSheetHeaderButtons")
+
+  actorSheetHooks.forEach(hook => {
+    Hooks.on(hook as Hooks.HookName, (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
+      controls.unshift(createHeaderControl(async () => {
+        let configApp: StandaloneTokenConfig | StandalonePrototypeTokenConfig | undefined = undefined;
+        if (app.actor.token?.object) {
+          const token = app.actor.token.object as unknown as ShadowedObject;
+
+          if (_standaloneConfigs.has(token)) {
+            configApp = _standaloneConfigs.get(token) as StandaloneTokenConfig;
+          } else {
+            configApp = new StandaloneTokenConfig(token);
+            const origClose = configApp.close.bind(configApp);
+            configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
+              _standaloneConfigs.delete(token);
+              return origClose(options);
+            }
+            _standaloneConfigs.set(token, configApp);
+          }
+        } else {
+          if (_standaloneConfigs.has(app.actor)) {
+            configApp = _standaloneConfigs.get(app.actor) as StandalonePrototypeTokenConfig;
+          } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            configApp = new StandalonePrototypeTokenConfig(app.actor.prototypeToken as any);
+            const origClose = configApp.close.bind(configApp);
+            configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
+              _standaloneConfigs.delete(app.actor);
+              return origClose(options);
+            }
+            _standaloneConfigs.set(app.actor, configApp);
+          }
         }
-        _standaloneConfigs.set(token, configApp);
-      }
-      if (configApp)
-        await configApp.render({ force: true })
-    }
-  }, canModifyDocument(app.document)));
-});
+
+        if (configApp)
+          await configApp.render({ force: true })
+      }, canModifyDocument(app.document)));
+    });
+  });
+})
+
+
+
+
+
+
 
 let lastVisibilityRefreshWarn = 0;
 Hooks.on("visibilityRefresh", () => {

@@ -56,8 +56,17 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       const configSource = flagData.configSource;
       delete flagData.configSource;
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const isPrototype = !!((this as any).isPrototype);
+
+
       if (this.document)
         await this.document.setFlag(__MODULE_ID__, "configSource", configSource ?? "actor");
+
+      if (isPrototype)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        await (this as any).token.setFlag(__MODULE_ID__, "configSource", configSource ?? 'actor');
+
       switch (configSource) {
         case "actor": {
           const actor = this.getActor();
@@ -80,9 +89,15 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
     protected async loadShadowConfigSettings(source: ShadowConfigSource) {
       let flags: DeepPartial<ShadowConfiguration> | undefined = undefined;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const isPrototype = !!((this as any).isPrototype);
       switch (source) {
         case "token": {
-          flags = foundry.utils.deepClone(this.document.getFlag(__MODULE_ID__, "config") ?? DefaultShadowConfiguration);
+          if (isPrototype)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+            flags = foundry.utils.deepClone((this as any).token.getFlag(__MODULE_ID__, "config") ?? DefaultShadowConfiguration);
+          else
+            flags = foundry.utils.deepClone(this.document.getFlag(__MODULE_ID__, "config") ?? DefaultShadowConfiguration);
           break;
         }
         case "actor": {
@@ -112,9 +127,14 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
     protected getShadowFlags(): DeepPartial<ShadowConfiguration> | undefined {
 
-      let configSource = this.document.getFlag(__MODULE_ID__, "configSource") ?? "actor";
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const isPrototype = (this as any).isPrototype as boolean;
 
-      const flags = this.document.flags[__MODULE_ID__] ?? {};
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      let configSource = isPrototype ? (this as any).token.getFlag(__MODULE_ID__, "configSource") : this.document.getFlag(__MODULE_ID__, "configSource") ?? "actor";
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const flags: { config: ShadowConfiguration, configSource: ShadowConfigSource } = (isPrototype ? (this as any).token.flags[__MODULE_ID__] : this.document.flags[__MODULE_ID__]) ?? {};
       // <1.2.0 compatibility check
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (typeof (flags as any).useTokenOverride !== "undefined") {
@@ -122,7 +142,7 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
         configSource = (flags as any).useTokenOverride ? "token" : "actor";
       }
 
-      if (!this.isPrototype && configSource === "token") {
+      if (!isPrototype && configSource === "token") {
         return this.document.getFlag(__MODULE_ID__, "config");
       } else if (configSource === "global") {
         if (game.settings?.settings.get(`${__MODULE_ID__}.globalConfig`))
@@ -143,7 +163,20 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       if (this.isPrototype) {
         const actor = this.getActor();
         const flagData = this.parseShadowFormData() as ShadowConfiguration;
-        if (actor) await actor.update({ flags: { [__MODULE_ID__]: flagData } });
+        console.log("Saving:", actor, flagData);
+        if (actor) {
+          await actor.update({
+            prototypeToken: {
+              flags: {
+                [__MODULE_ID__]: {
+                  configSource: this.overrideShadowConfigSource ?? "actor",
+                  config: flagData
+                }
+              }
+            }
+          })
+        }
+        // if (actor) await actor.update({ flags: { [__MODULE_ID__]: flagData } });
       }
     }
 
@@ -156,8 +189,16 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
 
     protected async _prepareContext(options: DeepPartial<TokenConfig.RenderOptions>): Promise<ShadowConfigContext<TokenConfig.RenderContext>> {
       const context = await super._prepareContext(options);
-      context.shadows.allowConfigSource = !this.isPrototype;
-      context.shadows.configSource = this.overrideShadowConfigSource ?? this.document.getFlag(__MODULE_ID__, "configSource") ?? "actor";
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const isPrototype = (this as any).isPrototype as boolean;
+
+      context.shadows.allowConfigSource = true;
+      if (!isPrototype) {
+        context.shadows.configSource = this.overrideShadowConfigSource ?? this.document.getFlag(__MODULE_ID__, "configSource") ?? "actor";
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        context.shadows.configSource = this.overrideShadowConfigSource ?? (this as any).token.getFlag(__MODULE_ID__, "configSource") ?? "'actor";
+      }
       return context;
     }
   }
