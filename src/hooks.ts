@@ -161,46 +161,57 @@ Hooks.on("getHeaderControlsSceneConfig", (app: foundry.applications.sheets.Scene
   }, canModifyDocument(app.document)));
 });
 
-// Hooks.on("getActorSheetHeaderButtons", (app, buttons) => {
+Hooks.on("ready", () => {
+  const actorSheetHooks = ["getHeaderControlsActorSheetV2"];
 
-// })
+  if (!game.settings?.get(__MODULE_ID__, "injectConfigTab"))
+    actorSheetHooks.push("getActorSheetHeaderButtons")
 
-Hooks.on("getHeaderControlsActorSheetV2", (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
-  controls.unshift(createHeaderControl(async () => {
-    let configApp: StandaloneTokenConfig | StandalonePrototypeTokenConfig | undefined = undefined;
-    if (app.actor.token?.object) {
-      const token = app.actor.token.object as unknown as ShadowedObject;
+  actorSheetHooks.forEach(hook => {
+    Hooks.on(hook as Hooks.HookName, (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
+      controls.unshift(createHeaderControl(async () => {
+        let configApp: StandaloneTokenConfig | StandalonePrototypeTokenConfig | undefined = undefined;
+        if (app.actor.token?.object) {
+          const token = app.actor.token.object as unknown as ShadowedObject;
 
-      if (_standaloneConfigs.has(token)) {
-        configApp = _standaloneConfigs.get(token) as StandaloneTokenConfig;
-      } else {
-        configApp = new StandaloneTokenConfig(token);
-        const origClose = configApp.close.bind(configApp);
-        configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
-          _standaloneConfigs.delete(token);
-          return origClose(options);
+          if (_standaloneConfigs.has(token)) {
+            configApp = _standaloneConfigs.get(token) as StandaloneTokenConfig;
+          } else {
+            configApp = new StandaloneTokenConfig(token);
+            const origClose = configApp.close.bind(configApp);
+            configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
+              _standaloneConfigs.delete(token);
+              return origClose(options);
+            }
+            _standaloneConfigs.set(token, configApp);
+          }
+        } else {
+          if (_standaloneConfigs.has(app.actor)) {
+            configApp = _standaloneConfigs.get(app.actor) as StandalonePrototypeTokenConfig;
+          } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            configApp = new StandalonePrototypeTokenConfig(app.actor.prototypeToken as any);
+            const origClose = configApp.close.bind(configApp);
+            configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
+              _standaloneConfigs.delete(app.actor);
+              return origClose(options);
+            }
+            _standaloneConfigs.set(app.actor, configApp);
+          }
         }
-        _standaloneConfigs.set(token, configApp);
-      }
-    } else {
-      if (_standaloneConfigs.has(app.actor)) {
-        configApp = _standaloneConfigs.get(app.actor) as StandalonePrototypeTokenConfig;
-      } else {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        configApp = new StandalonePrototypeTokenConfig(app.actor.prototypeToken as any);
-        const origClose = configApp.close.bind(configApp);
-        configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
-          _standaloneConfigs.delete(app.actor);
-          return origClose(options);
-        }
-        _standaloneConfigs.set(app.actor, configApp);
-      }
-    }
 
-    if (configApp)
-      await configApp.render({ force: true })
-  }, canModifyDocument(app.document)));
-});
+        if (configApp)
+          await configApp.render({ force: true })
+      }, canModifyDocument(app.document)));
+    });
+  });
+})
+
+
+
+
+
+
 
 let lastVisibilityRefreshWarn = 0;
 Hooks.on("visibilityRefresh", () => {
