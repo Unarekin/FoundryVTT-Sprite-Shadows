@@ -2,6 +2,7 @@ export * from './ConfigMixin';
 export * from './GlobalConfig';
 export * from './PrototypeTokenConfig';
 export * from './SceneConfig';
+export * from './StandalonePrototypeTokenConfig';
 export * from './StandaloneSceneConfig';
 export * from './StandaloneTileConfig';
 export * from './StandaloneTokenConfig';
