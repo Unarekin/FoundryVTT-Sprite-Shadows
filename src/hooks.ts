@@ -1,5 +1,5 @@
 import { TokenMixin, TileMixin } from "./placeables";
-import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin, StandaloneTokenConfig, StandaloneTileConfig, StandaloneSceneConfig, PrototypeTokenConfigMixin, StandalonePrototypeTokenConfig } from "./applications";
+import { TokenConfigMixin, TileConfigMixin, SceneConfigMixin, StandaloneTokenConfig, StandaloneTileConfig, StandaloneSceneConfig, PrototypeTokenConfigMixin, StandalonePrototypeTokenConfig, GlobalConfig } from "./applications";
 import { TintFilter, AlphaThresholdFilter } from "./filters";
 import { DeepPartial, ShadowedObject } from "types";
 
@@ -102,7 +102,7 @@ Hooks.on("updateScene", (scene: Scene) => {
   }
 })
 
-const _standaloneConfigs = new WeakMap<ShadowedObject | Scene | Actor, StandaloneTokenConfig | StandaloneTileConfig | StandaloneSceneConfig | StandalonePrototypeTokenConfig>();
+const _standaloneConfigs = new WeakMap<ShadowedObject | Scene | Actor | GlobalConfig>();
 
 function createHeaderControl(callback: (() => Promise<void> | void), visible?: boolean | (() => boolean)): foundry.applications.api.ApplicationV2.HeaderControlsEntry {
   return {
@@ -119,47 +119,45 @@ function canModifyDocument(doc: foundry.abstract.Document.Any): boolean {
   return !!(game.user && doc.canUserModify(game.user, "update"));
 }
 
+function getStandaloneApplication<t extends GlobalConfig>(key: any, configClass: typeof t): t {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  if (_standaloneConfigs.has(key))
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    return _standaloneConfigs.get(key) as unknown as t;
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  const app = new configClass(key) as t;
+  const origClose = app.close.bind(app);
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  _standaloneConfigs.set(key, app);
+  app.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    _standaloneConfigs.delete(key);
+    return origClose(options);
+  }
+
+  return app;
+}
+
 Hooks.on("getHeaderControlsTileConfig", (app: foundry.applications.sheets.TileConfig, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
   controls.unshift(createHeaderControl(async () => {
     const tile = app.document.object as unknown as ShadowedObject;
-    if (tile) {
-      let configApp: StandaloneTileConfig | undefined = undefined;
-      if (_standaloneConfigs.has(tile) && _standaloneConfigs.get(tile)) {
-        configApp = _standaloneConfigs.get(tile) as StandaloneTileConfig;
-      } else {
-        configApp = new StandaloneTileConfig(tile);
-        _standaloneConfigs.set(tile, configApp);
-        const origClose = configApp.close.bind(configApp);
-        configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
-          _standaloneConfigs.delete(tile);
-          return origClose(options);
-        }
-      }
-      if (configApp)
-        await configApp.render({ force: true })
-    }
-  }, canModifyDocument(app.document)));
+    const configApp = getStandaloneApplication<StandaloneTileConfig>(tile, StandaloneTileConfig);
+    if (configApp)
+      await configApp.render({ force: true })
+  }, () => canModifyDocument(app.document)));
 })
 
 Hooks.on("getHeaderControlsSceneConfig", (app: foundry.applications.sheets.SceneConfig, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
   controls.unshift(createHeaderControl(async () => {
-    let configApp: StandaloneSceneConfig | undefined = undefined;
-    if (_standaloneConfigs.has(app.document)) {
-      configApp = _standaloneConfigs.get(app.document) as StandaloneSceneConfig;
-    } else {
-      configApp = new StandaloneSceneConfig(app.document);
-      _standaloneConfigs.set(app.document, configApp);
-      const origClose = configApp.close.bind(configApp);
-      configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
-        _standaloneConfigs.delete(app.document);
-        return origClose(options);
-      }
-    }
+    const configApp = getStandaloneApplication<StandaloneSceneConfig>(app.document, StandaloneSceneConfig);
 
     if (configApp)
       await configApp.render({ force: true });
-  }, canModifyDocument(app.document)));
+  }, () => canModifyDocument(app.document)));
 });
+
 
 Hooks.on("ready", () => {
   const actorSheetHooks = ["getHeaderControlsActorSheetV2"];
@@ -170,41 +168,33 @@ Hooks.on("ready", () => {
   actorSheetHooks.forEach(hook => {
     Hooks.on(hook as Hooks.HookName, (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
       controls.unshift(createHeaderControl(async () => {
-        let configApp: StandaloneTokenConfig | StandalonePrototypeTokenConfig | undefined = undefined;
-        if (app.actor.token?.object) {
-          const token = app.actor.token.object as unknown as ShadowedObject;
-
-          if (_standaloneConfigs.has(token)) {
-            configApp = _standaloneConfigs.get(token) as StandaloneTokenConfig;
-          } else {
-            configApp = new StandaloneTokenConfig(token);
-            const origClose = configApp.close.bind(configApp);
-            configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
-              _standaloneConfigs.delete(token);
-              return origClose(options);
-            }
-            _standaloneConfigs.set(token, configApp);
-          }
-        } else {
-          if (_standaloneConfigs.has(app.actor)) {
-            configApp = _standaloneConfigs.get(app.actor) as StandalonePrototypeTokenConfig;
-          } else {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            configApp = new StandalonePrototypeTokenConfig(app.actor.prototypeToken as any);
-            const origClose = configApp.close.bind(configApp);
-            configApp.close = async function (options: DeepPartial<foundry.applications.api.ApplicationV2.ClosingOptions>) {
-              _standaloneConfigs.delete(app.actor);
-              return origClose(options);
-            }
-            _standaloneConfigs.set(app.actor, configApp);
-          }
-        }
-
+        const configApp = app.actor.token?.object ? getStandaloneApplication<StandaloneTokenConfig>(app.actor.token.object as unknown as ShadowedObject, StandaloneTokenConfig) : getStandaloneApplication<StandalonePrototypeTokenConfig>(app.actor, StandalonePrototypeTokenConfig);
         if (configApp)
-          await configApp.render({ force: true })
-      }, canModifyDocument(app.document)));
+          await configApp.render({ force: true });
+      }, () => canModifyDocument(app.document)));
     });
   });
+
+  if (!game.settings?.get(__MODULE_ID__, "injectConfigTab")) {
+    Hooks.on("getHeaderControlsTokenConfig", (app: foundry.applications.sheets.TokenConfig, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
+      controls.unshift(createHeaderControl(async () => {
+        const configApp = getStandaloneApplication<StandaloneTokenConfig>(app.document.object, StandaloneTokenConfig);
+        if (configApp)
+          await configApp.render({ force: true });
+      }, () => canModifyDocument(app.document)));
+    });
+
+    Hooks.on("getHeaderControlsPrototypeTokenConfig", (app: foundry.applications.sheets.PrototypeTokenConfig, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const token = (app as any).token as foundry.data.PrototypeToken;
+      controls.unshift(createHeaderControl(async () => {
+        const configApp = getStandaloneApplication<StandalonePrototypeTokenConfig>(token, StandalonePrototypeTokenConfig);
+        if (configApp)
+          await configApp.render({ force: true });
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      }, () => canModifyDocument((app as any).actor as Actor)));
+    });
+  }
 })
 
 
