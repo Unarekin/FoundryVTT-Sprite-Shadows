@@ -333,10 +333,10 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const ctx = await super._preparePartContext(partId, context, options) as any;
 
-      // // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      // if (ctx.tabs && partId in (context.tabs ?? []))
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      ctx.tab = ctx.tabs[partId];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (ctx.tabs && partId in (context.tabs ?? []))
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        ctx.tab = ctx.tabs?.[partId];
 
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
