@@ -56,7 +56,6 @@ Hooks.on("canvasConfig", () => {
     applyMixin(CONFIG.Scene.sheetClasses.base, SceneConfigMixin);
   }
 
-
   if (game?.modules?.get("isometric-perspective")?.active) {
     // Check if it needs to be positioned according to isometric projection
     Hooks.on("refreshToken", (token: Token) => {
@@ -110,8 +109,12 @@ function createHeaderControl(callback: (() => Promise<void> | void), visible?: b
     label: "SPRITESHADOWS.TITLE",
     class: "sprite-shadows",
     visible,
-    onClick: callback,
-    onclick: callback
+    action: "editSpriteShadows",
+    onClick(e: PointerEvent) {
+      e.stopPropagation();
+      const res = callback();
+      if (res instanceof Promise) res.catch(console.error);
+    }
   }
 }
 
@@ -168,7 +171,7 @@ Hooks.on("ready", () => {
   actorSheetHooks.forEach(hook => {
     Hooks.on(hook as Hooks.HookName, (app: foundry.applications.sheets.ActorSheetV2, controls: foundry.applications.api.ApplicationV2.HeaderControlsEntry[]) => {
       controls.unshift(createHeaderControl(async () => {
-        const configApp = app.actor.token?.object ? getStandaloneApplication<StandaloneTokenConfig>(app.actor.token.object as unknown as ShadowedObject, StandaloneTokenConfig) : getStandaloneApplication<StandalonePrototypeTokenConfig>(app.actor, StandalonePrototypeTokenConfig);
+        const configApp = app.actor.token?.object ? getStandaloneApplication<StandaloneTokenConfig>(app.actor.token.object as unknown as ShadowedObject, StandaloneTokenConfig) : getStandaloneApplication<StandalonePrototypeTokenConfig>(app.actor.prototypeToken, StandalonePrototypeTokenConfig);
         if (configApp)
           await configApp.render({ force: true });
       }, () => canModifyDocument(app.document)));
