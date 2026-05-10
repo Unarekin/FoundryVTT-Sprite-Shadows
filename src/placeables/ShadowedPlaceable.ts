@@ -284,7 +284,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       // Apply adjustments
       const adjustments = this.getShadowAdjustments(config);
       if (adjustments) {
-        if (typeof adjustments.x === "number") this.blobSprite.x += adjustments.x;
+        if (typeof adjustments.x === "number") this.blobSprite.x = adjustments.x;
         if (typeof adjustments.y === "number") this.blobSprite.y += adjustments.y;
         if (typeof adjustments.width === "number") this.blobSprite.width += adjustments.width;
         if (typeof adjustments.height === "number") this.blobSprite.height += adjustments.height;
