@@ -3,6 +3,7 @@ import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
 import { contrastColor, downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
 import { StencilShadowConfig } from "./StencilShadowConfig";
+import { TintFilter } from "filters";
 
 
 
@@ -599,10 +600,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (tabs instanceof HTMLElement)
         tabs.classList.remove("top-tabs");
 
-      // const config = this.parseFlagData(context.shadows?.config ?? {});
-
-      const obj = this.getShadowedObject();
-
 
       const configSourceElem = this.element.querySelector(`[name="sprite-shadows.configSource"]`);
 
@@ -731,61 +728,78 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         }
       )
 
+      const obj = this.getShadowedObject();
+      if (obj)
+        this._addHighlightHandlers(obj);
+    }
 
-      // Set up hover outline
-      const stencilEntries = this.element.querySelectorAll(`.stencil-shadow-list .stencil-shadow-list__col`);
-      if (obj) {
-        for (const elem of stencilEntries) {
-          let outlineFilter: PIXI.Filter | undefined = undefined;
-          elem.addEventListener("mouseover", () => {
-            if (outlineFilter) return;
-            const shadowId = (elem as HTMLElement).dataset.shadow;
-            if (!shadowId) return;
 
-            const sprite = obj.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`)
-            if (!sprite) return;
+    protected _spriteHighlightElements = new WeakMap<PIXI.Sprite, PIXI.Sprite>();
 
-            const config = this.overrideShadowFlags?.type === "stencil" ? this.overrideShadowFlags.shadows?.find(config => config.id === shadowId) : undefined;
-            if (!config) return;
+    protected _unhighlightSprite(sprite: PIXI.Sprite) {
+      const oldSprite = this._spriteHighlightElements.get(sprite);
+      if (oldSprite) {
 
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-            outlineFilter = new (PIXI.filters as any).OutlineFilter(2, contrastColor(new PIXI.Color(config.color))) as PIXI.Filter;
-            this.outlineFilters.push(outlineFilter);
+        const filters = [...(oldSprite.filters ?? [])];
+        oldSprite.filters = [];
+        filters.forEach(filter => { filter.destroy(); });
 
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (outlineFilter as any).id = `${shadowId}.outline`;
-            if (Array.isArray(sprite.filters)) sprite.filters.push(outlineFilter);
-            else sprite.filters = [outlineFilter];
-          });
+        this._spriteHighlightElements.delete(sprite);
 
-          elem.addEventListener("mouseleave", () => {
-            const shadowId = (elem as HTMLElement).dataset.shadow;
-            if (!shadowId) return;
-
-            const sprite = obj.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`)
-            if (!sprite) return;
-
-            if (Array.isArray(sprite.filters)) {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              const index = sprite.filters.findIndex(filter => (filter as any).id === `${shadowId}.outline`);
-              if (index !== -1) {
-                const filter = sprite.filters[index];
-                sprite.filters.splice(index, 1);
-                filter.destroy();
-
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                const newIndex = this.outlineFilters.findIndex(filter => (filter as any).id === `${shadowId}.outline`);
-                if (newIndex) this.outlineFilters.splice(newIndex, 1);
-
-                outlineFilter = undefined;
-              }
-            }
-          });
-        }
+        oldSprite.removeFromParent();
+        oldSprite.destroy();
       }
+    }
 
+    protected _highlightSprite(sprite: PIXI.Sprite): PIXI.Sprite {
+      this._unhighlightSprite(sprite);
+
+      const newSprite = new PIXI.Sprite(sprite.texture);
+      newSprite.scale.copyFrom(sprite.scale);
+      newSprite.position.copyFrom(sprite.position);
+      newSprite.anchor.copyFrom(sprite.anchor);
+      newSprite.rotation = sprite.rotation;
+      newSprite.skew.copyFrom(sprite.skew);
+
+      const tintFilter = (sprite.filters ?? []).find(filter => filter instanceof TintFilter);
+
+      const outlineColor = tintFilter ? contrastColor(new PIXI.Color(tintFilter.tint)) : new PIXI.Color("white");
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      const outlineFilter = new (PIXI.filters as any).OutlineFilter(1, outlineColor) as PIXI.Filter;
+      (outlineFilter as unknown as { knockout: boolean }).knockout = true;
+      newSprite.filters = [outlineFilter];
+
+      sprite.parent.addChild(newSprite);
+
+      this._spriteHighlightElements.set(sprite, newSprite);
+      return newSprite;
+    }
+
+    protected _addHighlightHandlers(placeable: ShadowedObject) {
+      const stencilEntries: HTMLElement[] = Array.from(this.element.querySelectorAll(`.stencil-shadow-list .stencil-shadow-list__col`));
+
+      for (const elem of stencilEntries) {
+        elem.addEventListener("mouseover", () => {
+          const shadowId = elem.dataset.shadow;
+          const sprite = placeable.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
+          if (!sprite) return;
+          this._highlightSprite(sprite);
+        });
+
+        elem.addEventListener("mouseleave", () => {
+          const shadowId = elem.dataset.shadow;
+          if (!shadowId) return;
+
+          const sprite = placeable.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
+          if (!sprite) return;
+
+          this._unhighlightSprite(sprite);
+        })
+      }
     }
   }
+
 
 
   // This is a little weird, but it forces footer to be after our own PARTs
