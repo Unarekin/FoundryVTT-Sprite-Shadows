@@ -1,9 +1,9 @@
-import { DeepPartial, ShadowConfiguration, ShadowedObject, ShadowType, StencilShadowConfiguration } from "types"
-import { ContextShadowConfiguration, ShadowConfigContext } from "./types"
+import { DeepPartial, ShadowConfiguration, ShadowedObject, ShadowType, StencilShadowConfiguration } from "types";
+import { ContextShadowConfiguration, ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
-import { contrastColor, downloadJSON, uploadJSON } from "functions";
+import { downloadJSON, uploadJSON } from "functions";
 import { StencilShadowConfig } from "./StencilShadowConfig";
-import { TintFilter } from "filters";
+import { highlightSprite, unhighlightSprite } from "./functions";
 
 export class GlobalConfig extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
   static DEFAULT_OPTIONS: DeepPartial<foundry.applications.api.ApplicationV2.Configuration> = {
@@ -122,47 +122,6 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     return ctx;
   }
 
-  protected _spriteHighlightElements = new WeakMap<PIXI.Sprite, PIXI.Sprite>();
-
-  protected _unhighlightSprite(sprite: PIXI.Sprite) {
-    const oldSprite = this._spriteHighlightElements.get(sprite);
-    if (oldSprite) {
-
-      const filters = [...(oldSprite.filters ?? [])];
-      oldSprite.filters = [];
-      filters.forEach(filter => { filter.destroy(); });
-
-      this._spriteHighlightElements.delete(sprite);
-
-      oldSprite.removeFromParent();
-      oldSprite.destroy();
-    }
-  }
-
-  protected _highlightSprite(sprite: PIXI.Sprite): PIXI.Sprite {
-    this._unhighlightSprite(sprite);
-
-    const newSprite = new PIXI.Sprite(sprite.texture);
-    newSprite.scale.copyFrom(sprite.scale);
-    newSprite.position.copyFrom(sprite.position);
-    newSprite.anchor.copyFrom(sprite.anchor);
-    newSprite.rotation = sprite.rotation;
-    newSprite.skew.copyFrom(sprite.skew);
-
-    const tintFilter = (sprite.filters ?? []).find(filter => filter instanceof TintFilter);
-
-    const outlineColor = tintFilter ? contrastColor(new PIXI.Color(tintFilter.tint)) : new PIXI.Color("white");
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const outlineFilter = new (PIXI.filters as any).OutlineFilter(1, outlineColor) as PIXI.Filter;
-    (outlineFilter as unknown as { knockout: boolean }).knockout = true;
-    newSprite.filters = [outlineFilter];
-
-    sprite.parent.addChild(newSprite);
-
-    this._spriteHighlightElements.set(sprite, newSprite);
-    return newSprite;
-  }
 
   protected _addHighlightHandlers(placeable: ShadowedObject) {
     const stencilEntries: HTMLElement[] = Array.from(this.element.querySelectorAll(`.stencil-shadow-list .stencil-shadow-list__col`));
@@ -172,7 +131,7 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
         const shadowId = elem.dataset.shadow;
         const sprite = placeable.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
         if (!sprite) return;
-        this._highlightSprite(sprite);
+        highlightSprite(sprite);
       });
 
       elem.addEventListener("mouseleave", () => {
@@ -182,7 +141,7 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
         const sprite = placeable.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
         if (!sprite) return;
 
-        this._unhighlightSprite(sprite);
+        unhighlightSprite(sprite);
       })
     }
   }

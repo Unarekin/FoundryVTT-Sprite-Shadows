@@ -2,6 +2,7 @@ import { StencilShadow } from "types";
 import { StencilShadowContext } from "./types"
 import { TintFilter } from "filters";
 import { findBottomAnchorPoint, findCentralAnchorPoint } from "functions";
+import { controlSprite, releaseSprite } from "./functions";
 
 export class StencilShadowConfig extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2<StencilShadowContext>) {
   #editPromise: Promise<StencilShadow | undefined> | undefined = undefined;
@@ -124,34 +125,6 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
     this.applyDragAdjustmentPreviews();
   }
 
-  protected shadowDragAdjustments = {
-    x: "",
-    y: "",
-    width: "",
-    height: ""
-  };
-
-  protected _shadowDragAdjustMouseUp = (() => {
-    this.shadowDragAdjustments.x = this.shadowDragAdjustments.y = this.shadowDragAdjustments.width = this.shadowDragAdjustments.height = "";
-  }).bind(this);
-
-  protected _shadowDragAdjustMouseMove = ((e: MouseEvent) => {
-    if (this.shadowDragAdjustments.x) this.applyShadowDragAdjustment(this.shadowDragAdjustments.x, e.movementX);
-    if (this.shadowDragAdjustments.y) this.applyShadowDragAdjustment(this.shadowDragAdjustments.y, e.movementY);
-    if (this.shadowDragAdjustments.width) this.applyShadowDragAdjustment(this.shadowDragAdjustments.width, e.movementX);
-    if (this.shadowDragAdjustments.height) this.applyShadowDragAdjustment(this.shadowDragAdjustments.height, e.movementY);
-
-  }).bind(this);
-
-  protected applyShadowDragAdjustment(selector: string, delta: number, clamp = false) {
-    const elem = this.element.querySelector(selector);
-    if (elem instanceof HTMLInputElement) {
-      const val = Math.floor(parseFloat(elem.value) + delta)
-      this.setElementValue(selector, (clamp ? Math.max(0, val) : val).toString(), true);
-    }
-    this.applyDragAdjustmentPreviews();
-  }
-
   protected applyDragAdjustmentPreviews() {
     if (!this.previewSprite) return;
 
@@ -205,8 +178,40 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
 
   }
 
+  protected _setDragListeners() {
+    if (!canvas?.primary) return;
+
+    if (canvas?.tokens)
+      canvas.tokens.eventMode = "passive";
+
+    canvas.primary.eventMode = "passive";
+
+
+    if (this.previewSprite) {
+      const sprite = this.previewSprite
+      sprite.addEventListener("pointerdown", e => { this._beginDragSprite(e, sprite); });
+      sprite.addEventListener("pointermove", this._onDragSprite);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      window.addEventListener("mouseup", this._endDragSprite as any);
+    }
+  }
+
+
+  protected _setDraggable() {
+    if (!this.previewSprite) return;
+    this.previewSprite.cursor = "grab";
+    this.previewSprite.interactive = true;
+  }
+
   protected _onClose(options: foundry.applications.api.ApplicationV2.RenderOptions) {
     super._onClose(options);
+    if (this.previewSprite) {
+      releaseSprite(this.previewSprite);
+      this.previewSprite.removeAllListeners("pointerdown");
+      this.previewSprite.removeAllListeners("pointermove");
+
+      this.previewSprite.cursor = "inherit";
+    }
 
     if (this.#editResolve) {
       this.#editResolve();
@@ -221,9 +226,63 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
     this.#editPromise = undefined;
     this.#editResolve = undefined;
 
-    window.removeEventListener("mousemove", this._shadowDragAdjustMouseMove);
-    window.removeEventListener("mouseup", this._shadowDragAdjustMouseUp);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    window.removeEventListener("mouseup", this._endDragSprite as any);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    window.removeEventListener("mousemove", this._onDragSprite as any);
   }
+
+
+  #highlightBorderDisplayed = false;
+  #dragTarget: PIXI.Sprite | undefined = undefined;
+  protected _beginDragSprite(e: PIXI.FederatedPointerEvent, sprite: PIXI.Sprite) {
+    e.stopPropagation();
+    sprite.cursor = "grabbing";
+    this.#dragTarget = sprite;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const placeable = (sprite as any).placeable;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (placeable._preview?.border) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      this.#highlightBorderDisplayed = placeable._preview.border.visible as boolean;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      placeable._preview.border.visible = false;
+    }
+
+  }
+
+  protected _endDragSprite = ((e: PIXI.FederatedPointerEvent) => {
+    if (!this.#dragTarget) return;
+
+    e.stopPropagation();
+    this.#dragTarget.cursor = "grab";
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const placeable = (this.#dragTarget as any).placeable;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (placeable._preview?.border) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      placeable._preview.border.visible = !!this.#highlightBorderDisplayed;
+    }
+
+    if (this.previewSprite) controlSprite(this.previewSprite, true);
+    this.#dragTarget = undefined;
+  }).bind(this);
+
+  protected _onDragSprite = ((e: MouseEvent) => {
+    if (!this.#dragTarget) return;
+    e.stopPropagation();
+
+    const global = this.#dragTarget.getGlobalPosition().clone();
+    global.x += e.movementX;
+    global.y += e.movementY;
+
+    this.setElementValue(`[name="adjustments.x"]`, this.shadowConfig.adjustments.x, false);
+    this.setElementValue(`[name="adjustments.y"]`, this.shadowConfig.adjustments.y, false);
+    // if (this.previewSprite) controlSprite(this.previewSprite, true);
+    if (this.previewSprite) releaseSprite(this.previewSprite);
+
+  }).bind(this);
 
   protected setRangePickerListener(name: string, radians = false) {
     const elem = this.element.querySelector(`[name="${name}"]`);
@@ -242,8 +301,10 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
   async _onFirstRender(context: StencilShadowContext, options: foundry.applications.api.ApplicationV2.RenderOptions) {
     await super._onFirstRender(context, options);
 
-    window.addEventListener("mouseup", this._shadowDragAdjustMouseUp);
-    window.addEventListener("mousemove", this._shadowDragAdjustMouseMove);
+    if (this.previewSprite)
+      controlSprite(this.previewSprite, true);
+    this._setDragListeners();
+    this._setDraggable();
   }
 
   async _onRender(context: StencilShadowContext, options: foundry.applications.api.ApplicationV2.RenderOptions) {
@@ -258,19 +319,6 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
     if (color instanceof HTMLElement) {
       color.addEventListener("change", () => { this.updatePreviewSprite(); });
     }
-
-
-    this.addElementListener(`[data-role="shadow-drag-pos"]`, "mousedown", () => {
-      this.shadowDragAdjustments.x = `[name="adjustments.x"]`;
-      this.shadowDragAdjustments.y = `[name="adjustments.y"]`;
-      this.shadowDragAdjustments.width = this.shadowDragAdjustments.height = "";
-    });
-
-    this.addElementListener(`[data-role="shadow-drag-size"]`, "mousedown", () => {
-      this.shadowDragAdjustments.x = this.shadowDragAdjustments.y = "";
-      this.shadowDragAdjustments.width = `[name="adjustments.width"]`;
-      this.shadowDragAdjustments.height = `[name="adjustments.height"]`;
-    })
   }
 
   async _prepareContext(options: foundry.applications.api.ApplicationV2.RenderOptions) {

@@ -1,17 +1,14 @@
-import { BlobShadowConfiguration, DeepPartial, ShadowConfigSource, ShadowConfiguration, ShadowType, StencilShadowConfiguration, ShadowedObject, MeshAdjustments } from "types";
+import { BlobShadowConfiguration, DeepPartial, ShadowConfigSource, ShadowConfiguration, ShadowType, StencilShadowConfiguration, ShadowedObject } from "types";
 import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
-import { contrastColor, downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
+import { downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
 import { StencilShadowConfig } from "./StencilShadowConfig";
-import { TintFilter } from "filters";
-
+import { highlightSprite, unhighlightSprite } from "./functions";
 
 
 
 export function ConfigMixin<Document extends foundry.abstract.Document.Any = foundry.abstract.Document.Any, Context extends foundry.applications.api.ApplicationV2.RenderContext = foundry.applications.api.ApplicationV2.RenderContext, Config extends foundry.applications.api.DocumentSheetV2.Configuration<Document> = foundry.applications.api.DocumentSheetV2.Configuration<Document>, Options extends foundry.applications.api.DocumentSheetV2.RenderOptions = foundry.applications.api.DocumentSheetV2.RenderOptions>(base: typeof foundry.applications.api.DocumentSheetV2<Document, Context, Config, Options>) {
   abstract class ShadowedConfig extends base {
-
-    #previousBlobDragAdjustments: { x: number, y: number, width: number, height: number } | undefined = undefined;
 
     public static DEFAULT_OPTIONS = {
       ...base.DEFAULT_OPTIONS,
@@ -57,15 +54,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         ]
       }
     }
-
-    protected shadowDragAdjustments = {
-      x: "",
-      y: "",
-      width: "",
-      height: ""
-    };
-
-    protected outlineFilters: PIXI.Filter[] = [];
 
     protected overrideShadowFlags: DeepPartial<ShadowConfiguration> | undefined = undefined;
     protected overrideShadowConfigSource: ShadowConfigSource | undefined = undefined;
@@ -116,7 +104,9 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
         const obj = this.getShadowedObject();
         const sprite: PIXI.Sprite | undefined = obj?.stencilSprites?.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
+
         const data = await StencilShadowConfig.Edit(shadowConfig, sprite);
+
         if (data) {
           // empty
           const index = this.overrideShadowFlags.shadows.findIndex(item => item.id === data.id);
@@ -261,60 +251,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     }
 
 
-
-    protected _shadowDragAdjustMouseUp = (() => {
-      this.shadowDragAdjustments.x = this.shadowDragAdjustments.y = this.shadowDragAdjustments.width = this.shadowDragAdjustments.height = "";
-    }).bind(this);
-
-
-    protected applyShadowDragAdjustment(selector: string, delta: number) {
-      const elem = this.element.querySelector(selector);
-      if (elem instanceof HTMLInputElement)
-        this.setFormElementValue(selector, Math.floor((parseFloat(elem.value) + delta)).toString());
-      this.applyShadowDragAdjustmentPreview();
-    }
-
-    protected applyShadowDragAdjustmentPreview() {
-      const data = this.parseShadowFormData();
-      if (!data) return;
-
-      if (data.type === "blob") {
-        const sprite = this.getShadowedObject()?.blobSprite;
-        if (sprite) {
-          const adjustments = {
-            x: data.adjustments?.x ?? 0,
-            y: data.adjustments?.y ?? 0,
-            width: data.adjustments?.width ?? 0,
-            height: data.adjustments?.height ?? 0
-          }
-          const delta = {
-            x: adjustments.x - (this.#previousBlobDragAdjustments?.x ?? 0),
-            y: adjustments.y - (this.#previousBlobDragAdjustments?.y ?? 0),
-            width: adjustments.width - (this.#previousBlobDragAdjustments?.width ?? 0),
-            height: adjustments.height - (this.#previousBlobDragAdjustments?.height ?? 0)
-          };
-          sprite.x += delta.x;
-          sprite.y += delta.y;
-          sprite.width += delta.width;
-          sprite.height += delta.height;
-          this.#previousBlobDragAdjustments = adjustments;
-        }
-      }
-    }
-
-    protected _shadowDragAdjustMouseMove = ((e: MouseEvent) => {
-      if (this.shadowDragAdjustments.x)
-        this.applyShadowDragAdjustment(this.shadowDragAdjustments.x, e.movementX);
-      if (this.shadowDragAdjustments.y)
-        this.applyShadowDragAdjustment(this.shadowDragAdjustments.y, e.movementY);
-      if (this.shadowDragAdjustments.width)
-        this.applyShadowDragAdjustment(this.shadowDragAdjustments.width, e.movementX);
-      if (this.shadowDragAdjustments.height)
-        this.applyShadowDragAdjustment(this.shadowDragAdjustments.height, -e.movementY);
-    }).bind(this);
-
-    protected getDragAdjustmentMultiplier() { return { x: 1, y: 1, width: 1, height: 1 }; }
-
     protected parseShadowFormData(): DeepPartial<ShadowConfiguration> {
       if (!this.form) return {};
       const data = foundry.utils.expandObject(new foundry.applications.ux.FormDataExtended(this.form).object) as Record<string, unknown>;
@@ -342,6 +278,36 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return ctx;
+    }
+
+
+    _onClickTab(e: PointerEvent) {
+      super._onClickTab(e);
+      this._setDraggable();
+    }
+
+    _setDraggable() {
+      const obj = this.getShadowedObject() as ShadowedObject<Token>;
+      if (!obj) return;
+      if (obj.blobSprite && this.tabGroups.sheet === "shadows") {
+        obj.blobSprite.cursor = "grab";
+        obj.blobSprite.interactive = true;
+      } else if (obj.blobSprite) {
+        obj.blobSprite.cursor = "inherit";
+        obj.blobSprite.interactive = false;
+      }
+
+      // if (Array.isArray(obj.stencilSprites)) {
+      //   obj.stencilSprites.forEach(sprite => {
+      //     if (this.tabGroups.sheet === "shadows") {
+      //       sprite.cursor = "grab";
+      //       sprite.interactive = true;
+      //     } else {
+      //       sprite.cursor = "inherit";
+      //       sprite.interactive = false;
+      //     }
+      //   })
+      // }
     }
 
 
@@ -450,19 +416,34 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     }
 
     _onClose(options: any) {
-      window.removeEventListener("mousemove", this._shadowDragAdjustMouseMove);
-      window.removeEventListener("mouseup", this._shadowDragAdjustMouseUp)
+      if (canvas?.tokens)
+        canvas.tokens.eventMode = "static";
+      if (canvas?.primary) {
+        canvas.primary.eventMode = "none";
+      }
+
+
       this.overrideShadowFlags = undefined;
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       const obj = (this.document as any)?.object as ShadowedObject | undefined;
-      if (obj) obj.refreshShadow();
+      if (obj) {
+        obj.refreshShadow();
+        if (obj.blobSprite) {
+          unhighlightSprite(obj.blobSprite);
+        }
+
+        if (Array.isArray(obj.stencilSprites)) {
+          obj.stencilSprites.forEach(sprite => {
+            unhighlightSprite(sprite);
+          });
+        }
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       super._onClose(options);
 
-      this.outlineFilters.forEach(filter => filter.destroy());
-      this.outlineFilters = [];
+
     }
 
     protected previousFormData: DeepPartial<ShadowConfiguration> = this.getShadowFlags() ?? {};
@@ -556,23 +537,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       }
     }
 
-    async _onFirstRender(context: DeepPartial<ShadowConfigContext<Context>>, options: Options) {
-      await super._onFirstRender(context, options);
-      window.addEventListener("mousemove", this._shadowDragAdjustMouseMove);
-      window.addEventListener("mouseup", this._shadowDragAdjustMouseUp);
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const adjustments = (context.shadows?.config as any).adjustments as MeshAdjustments | undefined;
-      if (adjustments) {
-        this.#previousBlobDragAdjustments = {
-          x: adjustments.x ?? 0,
-          y: adjustments.y ?? 0,
-          width: adjustments.width ?? 0,
-          height: adjustments.height ?? 0
-        }
-      }
-    }
-
     protected toggleSceneSource(enabled: boolean) {
       const tab = this.element.querySelector(`div.tab.sprite-shadows-config`);
       if (!(tab instanceof HTMLElement)) return;
@@ -584,6 +548,82 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           if (enabled) elem.removeAttribute("disabled")
           else elem.setAttribute("disabled", "disabled");
         }
+      }
+    }
+
+    #dragTarget: PIXI.Sprite | undefined = undefined;
+    protected _beginDragSprite(e: PIXI.FederatedPointerEvent, sprite: PIXI.Sprite) {
+      e.stopPropagation();
+      sprite.cursor = "grabbing";
+      this.#dragTarget = sprite;
+    }
+
+    protected _endDragSprite = ((e: PIXI.FederatedPointerEvent) => {
+      if (!this.#dragTarget) return;
+
+      e.stopPropagation();
+      this.#dragTarget.cursor = "grab";
+      this.#dragTarget = undefined;
+    }).bind(this);
+
+    protected _onDragSprite = ((e: MouseEvent) => {
+      if (!this.#dragTarget) return;
+      e.stopPropagation();
+
+      const global = this.#dragTarget.getGlobalPosition().clone();
+      global.x += e.movementX;
+      global.y += e.movementY;
+      const start = this.#dragTarget.position.clone();
+      this.#dragTarget.parent.toLocal(global, undefined, this.#dragTarget.position);
+      const delta = new PIXI.Point(this.#dragTarget.x - start.x, this.#dragTarget.y - start.y);
+
+      if (this.overrideShadowFlags?.type === "stencil" && this.overrideShadowFlags.shadows) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        const index = (((this.getShadowedObject() as any)?.stencilSprites ?? []).indexOf(this.#dragTarget) ?? -1) as number;
+        if (index !== -1) {
+          const shadowConfig = this.overrideShadowFlags.shadows[index]
+          if (shadowConfig) {
+            shadowConfig.adjustments.x += delta.x;
+            shadowConfig.adjustments.y += delta.y;
+          }
+        }
+
+      }
+
+
+    }).bind(this);
+
+
+    protected _setDragListeners() {
+      const obj = this.getShadowedObject() as ShadowedObject<Token> | undefined;
+      if (!obj) return;
+      if (!canvas?.primary) return;
+
+      if (canvas?.tokens)
+        canvas.tokens.eventMode = "passive";
+
+      canvas.primary.eventMode = "passive";
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      window.addEventListener("mousemove", this._onDragSprite as any);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      window.addEventListener("mouseup", this._endDragSprite as any);
+
+      if (obj.blobSprite) {
+
+        obj.blobSprite.addEventListener("pointerdown", e => {
+          if (this.tabGroups.sheet === 'shadows')
+            this._beginDragSprite(e, obj.blobSprite);
+        });
+      }
+
+      if (Array.isArray(obj.stencilSprites)) {
+        obj.stencilSprites.forEach(sprite => {
+          sprite.addEventListener("pointerdown", e => {
+            if (this.tabGroups.sheet === 'shadows')
+              this._beginDragSprite(e, sprite);
+          });
+        });
       }
     }
 
@@ -600,7 +640,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (tabs instanceof HTMLElement)
         tabs.classList.remove("top-tabs");
 
-
+      this._setDraggable();
       const configSourceElem = this.element.querySelector(`[name="sprite-shadows.configSource"]`);
 
       if (configSourceElem instanceof HTMLSelectElement) {
@@ -609,24 +649,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           this.loadShadowConfigSettings(configSourceElem.value as ShadowConfigSource)
             .then(() => { this.toggleSceneSource(configSourceElem.value !== "scene" && configSourceElem.value !== "global") })
             .catch(console.error);
-        })
-      }
-
-      const dragPos = this.element.querySelector(`[data-role="shadow-drag-pos"]`);
-      if (dragPos instanceof HTMLButtonElement) {
-        dragPos.addEventListener("mousedown", () => {
-          this.shadowDragAdjustments.x = `[name="${__MODULE_ID__}.adjustments.x"]`
-          this.shadowDragAdjustments.y = `[name="${__MODULE_ID__}.adjustments.y"]`
-          this.shadowDragAdjustments.width = this.shadowDragAdjustments.height = "";
-        });
-      }
-
-      const dragSize = this.element.querySelector(`[data-role="shadow-drag-size"]`);
-      if (dragSize instanceof HTMLButtonElement) {
-        dragSize.addEventListener("mousedown", () => {
-          this.shadowDragAdjustments.x = this.shadowDragAdjustments.y = "";
-          this.shadowDragAdjustments.width = `[name="${__MODULE_ID__}.adjustments.width"]`;
-          this.shadowDragAdjustments.height = `[name="${__MODULE_ID__}.adjustments.height"]`;
         })
       }
 
@@ -734,47 +756,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     }
 
 
-    protected _spriteHighlightElements = new WeakMap<PIXI.Sprite, PIXI.Sprite>();
-
-    protected _unhighlightSprite(sprite: PIXI.Sprite) {
-      const oldSprite = this._spriteHighlightElements.get(sprite);
-      if (oldSprite) {
-
-        const filters = [...(oldSprite.filters ?? [])];
-        oldSprite.filters = [];
-        filters.forEach(filter => { filter.destroy(); });
-
-        this._spriteHighlightElements.delete(sprite);
-
-        oldSprite.removeFromParent();
-        oldSprite.destroy();
-      }
-    }
-
-    protected _highlightSprite(sprite: PIXI.Sprite): PIXI.Sprite {
-      this._unhighlightSprite(sprite);
-
-      const newSprite = new PIXI.Sprite(sprite.texture);
-      newSprite.scale.copyFrom(sprite.scale);
-      newSprite.position.copyFrom(sprite.position);
-      newSprite.anchor.copyFrom(sprite.anchor);
-      newSprite.rotation = sprite.rotation;
-      newSprite.skew.copyFrom(sprite.skew);
-
-      const tintFilter = (sprite.filters ?? []).find(filter => filter instanceof TintFilter);
-
-      const outlineColor = tintFilter ? contrastColor(new PIXI.Color(tintFilter.tint)) : new PIXI.Color("white");
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      const outlineFilter = new (PIXI.filters as any).OutlineFilter(1, outlineColor) as PIXI.Filter;
-      (outlineFilter as unknown as { knockout: boolean }).knockout = true;
-      newSprite.filters = [outlineFilter];
-
-      sprite.parent.addChild(newSprite);
-
-      this._spriteHighlightElements.set(sprite, newSprite);
-      return newSprite;
-    }
 
     protected _addHighlightHandlers(placeable: ShadowedObject) {
       const stencilEntries: HTMLElement[] = Array.from(this.element.querySelectorAll(`.stencil-shadow-list .stencil-shadow-list__col`));
@@ -784,7 +765,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           const shadowId = elem.dataset.shadow;
           const sprite = placeable.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
           if (!sprite) return;
-          this._highlightSprite(sprite);
+          highlightSprite(sprite);
         });
 
         elem.addEventListener("mouseleave", () => {
@@ -794,7 +775,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           const sprite = placeable.stencilSprites.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
           if (!sprite) return;
 
-          this._unhighlightSprite(sprite);
+          unhighlightSprite(sprite);
         })
       }
     }

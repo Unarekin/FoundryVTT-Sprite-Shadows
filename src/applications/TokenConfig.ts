@@ -22,10 +22,12 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       });
     }
 
+
     async _initializePreview() {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await super._initializePreview();
       this.hidePreviewShadows();
+      this._setDragListeners();
     }
 
     // TODO: Remove when dropping v13 support
@@ -33,6 +35,7 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await super._initializeTokenPreview();
       this.hidePreviewShadows();
+      this._setDragListeners();
     }
 
     protected getDragAdjustmentMultiplier() {
@@ -163,7 +166,6 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       if (this.isPrototype) {
         const actor = this.getActor();
         const flagData = this.parseShadowFormData() as ShadowConfiguration;
-        console.log("Saving:", actor, flagData);
         if (actor) {
           await actor.update({
             prototypeToken: {
@@ -179,12 +181,6 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
         // if (actor) await actor.update({ flags: { [__MODULE_ID__]: flagData } });
       }
     }
-
-    // async _onRender(context: DeepPartial<ShadowConfigContext<TokenConfig.RenderContext>>, options: TokenConfig.RenderOptions) {
-    //   await super._onRender(context, options);
-
-
-    // }
 
 
     protected async _prepareContext(options: DeepPartial<TokenConfig.RenderOptions>): Promise<ShadowConfigContext<TokenConfig.RenderContext>> {
