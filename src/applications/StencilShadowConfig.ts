@@ -189,10 +189,19 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
 
     if (this.previewSprite) {
       const sprite = this.previewSprite
-      sprite.addEventListener("pointerdown", e => { this._beginDragSprite(e, sprite); });
-      sprite.addEventListener("pointermove", this._onDragSprite);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      window.addEventListener("mouseup", this._endDragSprite as any);
+      sprite.addEventListener("mousedown", e => {
+        if (e.button === 0)
+          this._beginDragSprite(e, sprite);
+      });
+      sprite.addEventListener("pointermove", e => {
+        if (e.button === 0)
+          this._onDragSprite(e);
+      });
+      window.addEventListener("mouseup", e => {
+        if (e.button === 0)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          this._endDragSprite(e as any);
+      });
     }
   }
 
@@ -248,7 +257,7 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       placeable._preview.border.visible = false;
     }
-
+    releaseSprite(sprite);
   }
 
   protected _endDragSprite = ((e: PIXI.FederatedPointerEvent) => {
@@ -301,8 +310,17 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
   async _onFirstRender(context: StencilShadowContext, options: foundry.applications.api.ApplicationV2.RenderOptions) {
     await super._onFirstRender(context, options);
 
-    if (this.previewSprite)
-      controlSprite(this.previewSprite, true);
+    if (this.previewSprite) {
+      controlSprite(this.previewSprite, true, e => {
+        const widthElem = this.element.querySelector(`[name="adjustments.width"]`);
+        if (widthElem instanceof HTMLInputElement)
+          widthElem.value = (parseFloat(widthElem.value) + e.x).toString();
+        const heightElem = this.element.querySelector(`[name="adjustments.height"]`);
+        if (heightElem instanceof HTMLInputElement)
+          heightElem.value = (parseFloat(heightElem.value) + e.y).toString();
+
+      });
+    }
     this._setDragListeners();
     this._setDraggable();
   }

@@ -604,15 +604,17 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       canvas.primary.eventMode = "passive";
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      window.addEventListener("mousemove", this._onDragSprite as any);
+      window.addEventListener("mousemove", e => {
+        if (e.button === 0)
+          this._onDragSprite(e);
+      });
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       window.addEventListener("mouseup", this._endDragSprite as any);
 
       if (obj.blobSprite) {
 
         obj.blobSprite.addEventListener("pointerdown", e => {
-          if (this.tabGroups.sheet === 'shadows')
+          if (this.tabGroups.sheet === 'shadows' && e.button === 0)
             this._beginDragSprite(e, obj.blobSprite);
         });
       }
@@ -620,7 +622,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (Array.isArray(obj.stencilSprites)) {
         obj.stencilSprites.forEach(sprite => {
           sprite.addEventListener("pointerdown", e => {
-            if (this.tabGroups.sheet === 'shadows')
+            if (this.tabGroups.sheet === 'shadows' && e.button === 0)
               this._beginDragSprite(e, sprite);
           });
         });
