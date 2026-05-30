@@ -296,18 +296,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         obj.blobSprite.cursor = "inherit";
         obj.blobSprite.interactive = false;
       }
-
-      // if (Array.isArray(obj.stencilSprites)) {
-      //   obj.stencilSprites.forEach(sprite => {
-      //     if (this.tabGroups.sheet === "shadows") {
-      //       sprite.cursor = "grab";
-      //       sprite.interactive = true;
-      //     } else {
-      //       sprite.cursor = "inherit";
-      //       sprite.interactive = false;
-      //     }
-      //   })
-      // }
     }
 
 
@@ -605,7 +593,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       canvas.primary.eventMode = "passive";
 
       window.addEventListener("mousemove", e => {
-        if (e.button === 0)
+        if (e.buttons === 1)
           this._onDragSprite(e);
       });
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -614,7 +602,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (obj.blobSprite) {
 
         obj.blobSprite.addEventListener("pointerdown", e => {
-          if (this.tabGroups.sheet === 'shadows' && e.button === 0)
+          if (this.tabGroups.sheet === 'shadows' && e.buttons === 1)
             this._beginDragSprite(e, obj.blobSprite);
         });
       }
@@ -622,7 +610,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (Array.isArray(obj.stencilSprites)) {
         obj.stencilSprites.forEach(sprite => {
           sprite.addEventListener("pointerdown", e => {
-            if (this.tabGroups.sheet === 'shadows' && e.button === 0)
+            if (this.tabGroups.sheet === 'shadows' && e.buttons === 1)
               this._beginDragSprite(e, sprite);
           });
         });

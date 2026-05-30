@@ -107,6 +107,90 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     }
   }
 
+  protected _setDraggable(placeable: ShadowedObject) {
+    if (!placeable) return;
+    if (placeable.blobSprite) {
+      placeable.blobSprite.cursor = "grab";
+      placeable.blobSprite.interactive = true;
+    }
+  }
+
+  protected _dragTarget: PIXI.Sprite | undefined = undefined;
+  protected _beginDragSprite(e: PIXI.FederatedPointerEvent, sprite: PIXI.Sprite) {
+    e.stopPropagation();
+    sprite.cursor = "grabbing";
+    this._dragTarget = sprite;
+  }
+
+  protected _endDragSprite = ((e: PIXI.FederatedPointerEvent) => {
+    if (!this._dragTarget) return;
+
+    e.stopPropagation();
+    this._dragTarget.cursor = "grab";
+    this._dragTarget = undefined;
+  }).bind(this);
+
+  protected _onDragSprite = ((e: MouseEvent) => {
+    if (!this._dragTarget) return;
+    e.stopPropagation();
+
+    const global = this._dragTarget.getGlobalPosition().clone();
+    global.x += e.movementX;
+    global.y += e.movementY;
+    const start = this._dragTarget.position.clone();
+    this._dragTarget.parent.toLocal(global, undefined, this._dragTarget.position);
+    const delta = new PIXI.Point(this._dragTarget.x - start.x, this._dragTarget.y - start.y);
+
+    if (this.overrideShadowFlags?.type === "stencil" && this.overrideShadowFlags.shadows) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      const index = (((this.getShadowedObject() as any)?.stencilSprites ?? []).indexOf(this._dragTarget) ?? -1) as number;
+      if (index !== -1) {
+        const shadowConfig = this.overrideShadowFlags.shadows[index]
+        if (shadowConfig) {
+          shadowConfig.adjustments.x += delta.x;
+          shadowConfig.adjustments.y += delta.y;
+        }
+      }
+
+    }
+
+
+  }).bind(this);
+
+  protected _setDragListeners() {
+    const obj = this.getShadowedObject() as ShadowedObject<Token> | undefined;
+    if (!obj) return;
+    if (!canvas?.primary) return;
+
+    if (canvas?.tokens)
+      canvas.tokens.eventMode = "passive";
+
+    canvas.primary.eventMode = "passive";
+
+    window.addEventListener("mousemove", e => {
+      if (e.buttons === 1)
+        this._onDragSprite(e);
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    window.addEventListener("mouseup", this._endDragSprite as any);
+
+    if (obj.blobSprite) {
+
+      obj.blobSprite.addEventListener("pointerdown", e => {
+        if (e.buttons === 1)
+          this._beginDragSprite(e, obj.blobSprite);
+      });
+    }
+
+    if (Array.isArray(obj.stencilSprites)) {
+      obj.stencilSprites.forEach(sprite => {
+        sprite.addEventListener("pointerdown", e => {
+          if (e.buttons === 1)
+            this._beginDragSprite(e, sprite);
+        });
+      });
+    }
+  }
 
   protected async _preparePartContext(partId: string, context: ContextShadowConfiguration, options: DeepPartial<foundry.applications.api.ApplicationV2.RenderOptions>) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -379,6 +463,8 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     }
   }
 
+  protected getShadowedObject(): ShadowedObject | undefined { return undefined; }
+
   static async EditStencilShadow(this: GlobalConfig, e: Event, elem: HTMLElement) {
     try {
       if (this.overrideShadowFlags?.type !== "stencil") return console.warn("No shadow flags stored");
@@ -388,8 +474,10 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
       const shadowId = elem.dataset.shadow;
       const shadowConfig = this.overrideShadowFlags.shadows.find(item => item.id === shadowId);
       if (!shadowConfig) return console.warn("No shadow config found");
+      const shadowedObject = this.getShadowedObject();
+      const sprite: PIXI.Sprite | undefined = shadowedObject?.stencilSprites?.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
 
-      const data = await StencilShadowConfig.Edit(shadowConfig);
+      const data = await StencilShadowConfig.Edit(shadowConfig, sprite);
       if (data) {
         // empty
         const index = this.overrideShadowFlags.shadows.findIndex(item => item.id === data.id);

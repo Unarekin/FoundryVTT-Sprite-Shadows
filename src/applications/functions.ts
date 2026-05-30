@@ -133,7 +133,7 @@ export function controlSprite(sprite: PIXI.Sprite, resize = true, resizeCallback
       handle.addEventListener("pointerenter", () => { handle.scale.set(1.5, 1.5); });
       handle.addEventListener("pointerout", () => { handle.scale.set(1, 1); });
       handle.addEventListener("pointerdown", (e: PIXI.FederatedPointerEvent) => {
-        if (e.button === 0) {
+        if (e.buttons === 1) {
           e.stopPropagation();
           window.addEventListener("mousemove", mouseMove);
         }

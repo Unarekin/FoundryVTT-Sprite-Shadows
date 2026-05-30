@@ -190,15 +190,15 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
     if (this.previewSprite) {
       const sprite = this.previewSprite
       sprite.addEventListener("mousedown", e => {
-        if (e.button === 0)
+        if (e.buttons === 1)
           this._beginDragSprite(e, sprite);
       });
       sprite.addEventListener("pointermove", e => {
-        if (e.button === 0)
+        if (e.buttons === 1)
           this._onDragSprite(e);
       });
       window.addEventListener("mouseup", e => {
-        if (e.button === 0)
+        if (e.buttons === 1)
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           this._endDragSprite(e as any);
       });
