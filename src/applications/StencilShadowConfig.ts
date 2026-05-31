@@ -189,19 +189,19 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
 
     if (this.previewSprite) {
       const sprite = this.previewSprite
-      sprite.addEventListener("mousedown", e => {
+
+      sprite.addEventListener("pointerdown", e => {
         if (e.buttons === 1)
           this._beginDragSprite(e, sprite);
       });
-      sprite.addEventListener("pointermove", e => {
+
+      window.addEventListener("mousemove", e => {
         if (e.buttons === 1)
           this._onDragSprite(e);
       });
-      window.addEventListener("mouseup", e => {
-        if (e.buttons === 1)
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          this._endDragSprite(e as any);
-      });
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      window.addEventListener("mouseup", this._endDragSprite as any);
     }
   }
 
@@ -285,9 +285,16 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
     const global = this.#dragTarget.getGlobalPosition().clone();
     global.x += e.movementX;
     global.y += e.movementY;
+    const start = this.#dragTarget.position.clone();
+    this.#dragTarget.parent.toLocal(global, undefined, this.#dragTarget.position);
+    const delta = new PIXI.Point(this.#dragTarget.x - start.x, this.#dragTarget.y - start.y);
+    this.shadowConfig.adjustments.x += delta.x;
+    this.shadowConfig.adjustments.y += delta.y;
 
-    this.setElementValue(`[name="adjustments.x"]`, this.shadowConfig.adjustments.x, false);
-    this.setElementValue(`[name="adjustments.y"]`, this.shadowConfig.adjustments.y, false);
+    this.setElementValue(`[name="adjustments.x"]`, this.shadowConfig.adjustments.x);
+    this.setElementValue(`[name="adjustments.y"]`, this.shadowConfig.adjustments.y);
+
+
     // if (this.previewSprite) controlSprite(this.previewSprite, true);
     if (this.previewSprite) releaseSprite(this.previewSprite);
 

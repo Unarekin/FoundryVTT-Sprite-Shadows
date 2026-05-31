@@ -564,19 +564,18 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       const start = this.#dragTarget.position.clone();
       this.#dragTarget.parent.toLocal(global, undefined, this.#dragTarget.position);
       const delta = new PIXI.Point(this.#dragTarget.x - start.x, this.#dragTarget.y - start.y);
-
-      if (this.overrideShadowFlags?.type === "stencil" && this.overrideShadowFlags.shadows) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-        const index = (((this.getShadowedObject() as any)?.stencilSprites ?? []).indexOf(this.#dragTarget) ?? -1) as number;
-        if (index !== -1) {
-          const shadowConfig = this.overrideShadowFlags.shadows[index]
-          if (shadowConfig) {
-            shadowConfig.adjustments.x += delta.x;
-            shadowConfig.adjustments.y += delta.y;
-          }
-        }
-
-      }
+      console.log("Dragging:", delta);
+      // if (this.overrideShadowFlags?.type === "stencil" && this.overrideShadowFlags.shadows) {
+      //   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      //   const index = (((this.getShadowedObject() as any)?.stencilSprites ?? []).indexOf(this.#dragTarget) ?? -1) as number;
+      //   if (index !== -1) {
+      //     const shadowConfig = this.overrideShadowFlags.shadows[index]
+      //     if (shadowConfig) {
+      //       shadowConfig.adjustments.x += delta.x;
+      //       shadowConfig.adjustments.y += delta.y;
+      //     }
+      //   }
+      // }
 
 
     }).bind(this);
@@ -600,19 +599,9 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       window.addEventListener("mouseup", this._endDragSprite as any);
 
       if (obj.blobSprite) {
-
         obj.blobSprite.addEventListener("pointerdown", e => {
           if (this.tabGroups.sheet === 'shadows' && e.buttons === 1)
             this._beginDragSprite(e, obj.blobSprite);
-        });
-      }
-
-      if (Array.isArray(obj.stencilSprites)) {
-        obj.stencilSprites.forEach(sprite => {
-          sprite.addEventListener("pointerdown", e => {
-            if (this.tabGroups.sheet === 'shadows' && e.buttons === 1)
-              this._beginDragSprite(e, sprite);
-          });
         });
       }
     }
