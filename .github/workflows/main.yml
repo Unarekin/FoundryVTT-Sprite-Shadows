@@ -64,3 +64,12 @@ jobs:
           artifacts: "./module.json, ./module.zip"
           tag: ${{ github.event.release.tag_name }}
           body: ${{ github.event.release.body }}
+
+      - name: Publish to FoundryVTT
+        run: node tools/publish-release.mjs
+        env:
+          PACKAGE_TOKEN: ${{ secrets.FVTT_RELEASE_TOKEN }}
+          VERSION: ${{ steps.get_version.outputs.version-without-v }}
+          MANIFEST_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/module.json"
+          RELEASE_NOTES: "https://github.com/${{ github.repository }}/releases/tag/${{ github.event.release.tag_name }}"
+          PRERELEASE: ${{ github.event.release.prerelease }}
