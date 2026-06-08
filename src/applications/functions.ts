@@ -22,7 +22,6 @@ function destroyDisplayObject(displayObject: PIXI.DisplayObject) {
 
 export function unhighlightSprite(sprite: PIXI.Sprite) {
   const oldSprite = highlightRegistry.get(sprite);
-  console.log("unhighlighting:", oldSprite);
   if (oldSprite) {
     destroyDisplayObject(oldSprite);
     highlightRegistry.delete(sprite);

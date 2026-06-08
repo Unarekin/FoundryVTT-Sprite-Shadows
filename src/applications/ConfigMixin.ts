@@ -303,7 +303,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     _setDraggable() {
       const obj = this.getShadowedObject() as ShadowedObject<Token>;
       if (!obj) return;
-      if (obj.blobSprite && this.tabGroups.sheet === "shadows") {
+      if (obj.blobSprite && this.tabGroups.sheet === "shadows" && this.overrideShadowFlags?.type === "blob") {
         obj.blobSprite.cursor = "grab";
         obj.blobSprite.interactive = true;
         controlSprite(obj.blobSprite, true, this._onSizeDrag.bind(this));
@@ -430,7 +430,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       this.overrideShadowFlags = undefined;
 
       const shadowedObj = this.getShadowedObject();
-      console.log("_onClose:", shadowedObj);
 
       if (shadowedObj) {
         if (shadowedObj.blobSprite) {
@@ -468,6 +467,10 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       if (shadowedObj.blobSprite) {
         shadowedObj.blobSprite.visible = formData.type === "blob";
+        if (formData.type === "blob")
+          controlSprite(shadowedObj.blobSprite);
+        else
+          releaseSprite(shadowedObj.blobSprite);
       }
 
       this.previousFormData = foundry.utils.deepClone(formData);
