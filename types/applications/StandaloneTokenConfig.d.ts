@@ -9,6 +9,8 @@ export declare class StandaloneTokenConfig extends GlobalConfig {
     protected setShadowFlags(config: ShadowConfiguration): Promise<void>;
     protected toggleSceneSource(enabled: boolean): void;
     protected loadShadowConfigSettings(source: ShadowConfigSource): Promise<void>;
+    protected getShadowedObject(): ShadowedObject | undefined;
+    _onFirstRender(context: ContextShadowConfiguration, options: foundry.applications.api.ApplicationV2.RenderOptions): Promise<void>;
     _onRender(context: ContextShadowConfiguration, options: foundry.applications.api.ApplicationV2.RenderOptions): Promise<void>;
     _prepareContext(options: foundry.applications.api.ApplicationV2.RenderOptions): Promise<ContextShadowConfiguration>;
     constructor(placeable: ShadowedObject<foundry.canvas.placeables.Token>, options?: foundry.applications.api.ApplicationV2.Configuration);

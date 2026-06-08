@@ -6,6 +6,7 @@
         "ANCHORTOOLTIP": "Auto-set anchor",
         "DRAGPOS": "Click and drag to fine-tune position",
         "DRAGSIZE": "Click and drag to fine-tune size",
+        "DRAGHINT": "To move and resize the shadow, click and drag it or its control handle directly on the canvas.",
         "HEIGHT": "Height",
         "HINT": "Fine tune the position and size of the shadow.",
         "LABEL": "Adjustments",

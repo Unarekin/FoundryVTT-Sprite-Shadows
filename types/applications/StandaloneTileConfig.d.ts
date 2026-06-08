@@ -9,7 +9,9 @@ export declare class StandaloneTileConfig extends GlobalConfig {
     protected setShadowFlags(config: ShadowConfiguration): Promise<void>;
     protected toggleSceneSource(enabled: boolean): void;
     protected loadShadowConfigSettings(source: ShadowConfigSource): Promise<void>;
+    _onFirstRender(context: ContextShadowConfiguration, options: foundry.applications.api.ApplicationV2.RenderOptions): Promise<void>;
     _onRender(context: ContextShadowConfiguration, options: foundry.applications.api.ApplicationV2.RenderOptions): Promise<void>;
+    protected getShadowedObject(): ShadowedObject | undefined;
     _prepareContext(options: foundry.applications.api.ApplicationV2.RenderOptions): Promise<ContextShadowConfiguration>;
     constructor(placeable: ShadowedObject<foundry.canvas.placeables.Tile>, options?: foundry.applications.api.ApplicationV2.Configuration);
 }
