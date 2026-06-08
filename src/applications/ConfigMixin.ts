@@ -3,7 +3,7 @@ import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
 import { downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
 import { StencilShadowConfig } from "./StencilShadowConfig";
-import { highlightSprite, unhighlightSprite } from "./functions";
+import { controlSprite, highlightSprite, releaseSprite, unhighlightSprite } from "./functions";
 
 
 
@@ -286,15 +286,31 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       this._setDraggable();
     }
 
+    protected _onSizeDrag(e: { x: number, y: number }) {
+
+      const obj = this.getShadowedObject();
+      const adjustmentMultipliers = obj?.getShadowAdjustmentMultipliers() ?? { x: 1, y: 1, width: 1, height: 1 };
+
+      const widthElem = this.element.querySelector(`[name="sprite-shadows.adjustments.width"]`);
+      if (widthElem instanceof HTMLInputElement)
+        widthElem.value = (parseFloat(widthElem.value) + (e.x / adjustmentMultipliers.width / 2)).toString();
+      const heightElem = this.element.querySelector(`[name="sprite-shadows.adjustments.height"]`);
+      if (heightElem instanceof HTMLInputElement)
+        heightElem.value = (parseFloat(heightElem.value) + (e.y / adjustmentMultipliers.height / 2)).toString();
+    }
+
+
     _setDraggable() {
       const obj = this.getShadowedObject() as ShadowedObject<Token>;
       if (!obj) return;
       if (obj.blobSprite && this.tabGroups.sheet === "shadows") {
         obj.blobSprite.cursor = "grab";
         obj.blobSprite.interactive = true;
+        controlSprite(obj.blobSprite, true, this._onSizeDrag.bind(this));
       } else if (obj.blobSprite) {
         obj.blobSprite.cursor = "inherit";
         obj.blobSprite.interactive = false;
+        releaseSprite(obj.blobSprite);
       }
     }
 
@@ -413,25 +429,26 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       this.overrideShadowFlags = undefined;
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const obj = (this.document as any)?.object as ShadowedObject | undefined;
-      if (obj) {
-        obj.refreshShadow();
-        if (obj.blobSprite) {
-          unhighlightSprite(obj.blobSprite);
+      const shadowedObj = this.getShadowedObject();
+      console.log("_onClose:", shadowedObj);
+
+      if (shadowedObj) {
+        if (shadowedObj.blobSprite) {
+          unhighlightSprite(shadowedObj.blobSprite);
+          releaseSprite(shadowedObj.blobSprite);
         }
 
-        if (Array.isArray(obj.stencilSprites)) {
-          obj.stencilSprites.forEach(sprite => {
+        if (Array.isArray(shadowedObj.stencilSprites)) {
+          shadowedObj.stencilSprites.forEach(sprite => {
             unhighlightSprite(sprite);
+            releaseSprite(sprite);
           });
         }
       }
 
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       super._onClose(options);
-
-
     }
 
     protected previousFormData: DeepPartial<ShadowConfiguration> = this.getShadowFlags() ?? {};
@@ -456,6 +473,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       this.previousFormData = foundry.utils.deepClone(formData);
       if (this.overrideShadowFlags)
         foundry.utils.mergeObject(this.overrideShadowFlags, formData);
+
+      shadowedObj.refreshShadow(true);
 
       // this.overrideShadowFlags = foundry.utils.deepClone(formData);
     }
@@ -540,22 +559,50 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     }
 
     #dragTarget: PIXI.Sprite | undefined = undefined;
+    #highlightBorderDisplayed = false;
+
     protected _beginDragSprite(e: PIXI.FederatedPointerEvent, sprite: PIXI.Sprite) {
+      if (e.buttons !== 1) return;
+
       e.stopPropagation();
       sprite.cursor = "grabbing";
       this.#dragTarget = sprite;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const placeable = (sprite as any).placeable;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (placeable._preview?.border) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        this.#highlightBorderDisplayed = placeable._preview.border.visible as boolean;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        placeable._preview.border.visible = false;
+      }
+      releaseSprite(sprite);
     }
 
     protected _endDragSprite = ((e: PIXI.FederatedPointerEvent) => {
       if (!this.#dragTarget) return;
 
       e.stopPropagation();
+
+      controlSprite(this.#dragTarget, true, this._onSizeDrag.bind(this));
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const placeable = (this.#dragTarget as any).placeable;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (placeable._preview?.border) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        placeable._preview.border.visible = !!this.#highlightBorderDisplayed;
+      }
+
       this.#dragTarget.cursor = "grab";
       this.#dragTarget = undefined;
+
+
     }).bind(this);
 
     protected _onDragSprite = ((e: MouseEvent) => {
       if (!this.#dragTarget) return;
+      if (e.buttons !== 1) return;
       e.stopPropagation();
 
       const global = this.#dragTarget.getGlobalPosition().clone();
@@ -564,19 +611,18 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       const start = this.#dragTarget.position.clone();
       this.#dragTarget.parent.toLocal(global, undefined, this.#dragTarget.position);
       const delta = new PIXI.Point(this.#dragTarget.x - start.x, this.#dragTarget.y - start.y);
-      console.log("Dragging:", delta);
-      // if (this.overrideShadowFlags?.type === "stencil" && this.overrideShadowFlags.shadows) {
-      //   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      //   const index = (((this.getShadowedObject() as any)?.stencilSprites ?? []).indexOf(this.#dragTarget) ?? -1) as number;
-      //   if (index !== -1) {
-      //     const shadowConfig = this.overrideShadowFlags.shadows[index]
-      //     if (shadowConfig) {
-      //       shadowConfig.adjustments.x += delta.x;
-      //       shadowConfig.adjustments.y += delta.y;
-      //     }
-      //   }
-      // }
 
+      if (this.overrideShadowFlags?.type === "blob") {
+        this.overrideShadowFlags.adjustments ??= { x: 0, y: 0 };
+
+        this.overrideShadowFlags.adjustments.x = (this.overrideShadowFlags.adjustments.x ?? 0) + delta.x;
+        this.overrideShadowFlags.adjustments.y = (this.overrideShadowFlags.adjustments.y ?? 0) + delta.y;
+
+        this.setFormElementValue(`[name="sprite-shadows.adjustments.x"]`, this.overrideShadowFlags.adjustments.x.toString(), false);
+        this.setFormElementValue(`[name="sprite-shadows.adjustments.y"]`, this.overrideShadowFlags.adjustments.y.toString(), false);
+
+        releaseSprite(this.#dragTarget);
+      }
 
     }).bind(this);
 
@@ -591,10 +637,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       canvas.primary.eventMode = "passive";
 
-      window.addEventListener("mousemove", e => {
-        if (e.buttons === 1)
-          this._onDragSprite(e);
-      });
+      window.addEventListener("mousemove", this._onDragSprite);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       window.addEventListener("mouseup", this._endDragSprite as any);
 

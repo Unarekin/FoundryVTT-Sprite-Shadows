@@ -274,7 +274,7 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
       placeable._preview.border.visible = !!this.#highlightBorderDisplayed;
     }
 
-    if (this.previewSprite) controlSprite(this.previewSprite, true);
+    if (this.previewSprite) controlSprite(this.previewSprite, true, this._onSizeDrag.bind(this));
     this.#dragTarget = undefined;
   }).bind(this);
 
@@ -314,19 +314,20 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
     })
   }
 
+  protected _onSizeDrag(e: { x: number, y: number }) {
+    const widthElem = this.element.querySelector(`[name="adjustments.width"]`);
+    if (widthElem instanceof HTMLInputElement)
+      widthElem.value = (parseFloat(widthElem.value) + e.x).toString();
+    const heightElem = this.element.querySelector(`[name="adjustments.height"]`);
+    if (heightElem instanceof HTMLInputElement)
+      heightElem.value = (parseFloat(heightElem.value) + e.y).toString();
+  }
+
   async _onFirstRender(context: StencilShadowContext, options: foundry.applications.api.ApplicationV2.RenderOptions) {
     await super._onFirstRender(context, options);
 
     if (this.previewSprite) {
-      controlSprite(this.previewSprite, true, e => {
-        const widthElem = this.element.querySelector(`[name="adjustments.width"]`);
-        if (widthElem instanceof HTMLInputElement)
-          widthElem.value = (parseFloat(widthElem.value) + e.x).toString();
-        const heightElem = this.element.querySelector(`[name="adjustments.height"]`);
-        if (heightElem instanceof HTMLInputElement)
-          heightElem.value = (parseFloat(heightElem.value) + e.y).toString();
-
-      });
+      controlSprite(this.previewSprite, true, this._onSizeDrag.bind(this));
     }
     this._setDragListeners();
     this._setDraggable();

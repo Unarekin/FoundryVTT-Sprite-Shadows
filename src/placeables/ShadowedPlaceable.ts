@@ -1,3 +1,4 @@
+import { releaseSprite, unhighlightSprite } from "applications/functions";
 import { LocalizedError } from "errors";
 import { AlphaThresholdFilter, TintFilter } from "filters";
 import { cartesianToIso } from "functions";
@@ -184,6 +185,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         sprite.filters = [];
         filters.forEach(filter => { filter.destroy(); });
       }
+      unhighlightSprite(sprite);
+      releaseSprite(sprite);
       sprite.destroy();
     }
 

@@ -62,7 +62,6 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       const isPrototype = !!((this as any).isPrototype);
 
-
       if (this.document)
         await this.document.setFlag(__MODULE_ID__, "configSource", configSource ?? "actor");
 
