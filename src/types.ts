@@ -111,4 +111,5 @@ export interface ShadowedObject<t extends foundry.canvas.placeables.PlaceableObj
   mesh?: foundry.canvas.primary.PrimarySpriteMesh;
   getShadowFlags(): DeepPartial<ShadowConfiguration>;
   getShadowConfigSource(): ShadowConfigSource;
+  getShadowAdjustmentMultipliers(): { x: number, y: number, width: number, height: number };
 }

@@ -1,3 +1,4 @@
+import { releaseSprite, unhighlightSprite } from "applications/functions";
 import { LocalizedError } from "errors";
 import { AlphaThresholdFilter, TintFilter } from "filters";
 import { cartesianToIso } from "functions";
@@ -184,6 +185,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         sprite.filters = [];
         filters.forEach(filter => { filter.destroy(); });
       }
+      unhighlightSprite(sprite);
+      releaseSprite(sprite);
       sprite.destroy();
     }
 
@@ -387,6 +390,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         if (!texture) throw new LocalizedError("TEXTUREGEN");
         this.blobSprite = new PIXI.Sprite(texture);
         this.blobSprite.name = `BlobShadow.${this.id}`;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (this.blobSprite as any).placeable = this;
       }
 
       if (!this.isShadowVisible()) {
@@ -494,6 +499,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       if (!mesh) return;
       const texture = !(config.useImage && config.image) ? mesh.texture?.clone() : PIXI.Texture.from(config.image);
       const sprite = new PIXI.Sprite(texture);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (sprite as any).placeable = this;
       sprite.name = `StencilShadow.${config.id}`;
       return sprite;
     }

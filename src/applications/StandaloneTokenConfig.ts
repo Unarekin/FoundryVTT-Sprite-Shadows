@@ -82,12 +82,19 @@ export class StandaloneTokenConfig extends GlobalConfig {
     await this.render();
   }
 
+  protected getShadowedObject(): ShadowedObject | undefined { return this.placeable; }
+
+  async _onFirstRender(context: ContextShadowConfiguration, options: foundry.applications.api.ApplicationV2.RenderOptions) {
+    await super._onFirstRender(context, options);
+    this._setDragListeners();
+  }
 
   async _onRender(context: ContextShadowConfiguration, options: foundry.applications.api.ApplicationV2.RenderOptions) {
     await super._onRender(context, options);
 
     const configSourceElem = this.element.querySelector(`[name="sprite-shadows.configSource"]`);
     this._addHighlightHandlers(this.placeable);
+    this._setDraggable(this.placeable);
 
     if (configSourceElem instanceof HTMLSelectElement) {
       this.toggleSceneSource(context.configSource !== "scene" && context.configSource !== "global");

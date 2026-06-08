@@ -47,7 +47,6 @@ export class StandalonePrototypeTokenConfig extends GlobalConfig {
     await this.render();
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
   protected async setShadowFlags(config: ShadowConfiguration) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const source = (config as any).configSource as ShadowConfigSource;

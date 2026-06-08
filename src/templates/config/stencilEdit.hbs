@@ -1,4 +1,4 @@
-<section>
+<div class="scrollable">
   {{#with shadow}}
     <input type="hidden" name="id" value="{{id}}">
     <div class="form-group">
@@ -151,8 +151,6 @@
 
           <label for="{{idPrefix}}-adjustmentsY">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.Y"}}</label>
           <input type="number" step="any" value="{{adjustments.y}}" name="adjustments.y" data-role="shadow-adjustment">
-          
-          <button type="button" data-role="shadow-drag-pos" data-tooltip="{{{../adjustPosTooltip}}}"><i class="fa-solid fa-up-down-left-right"></i></button>
         </div>
       </div>
 
@@ -164,8 +162,6 @@
 
           <label for="{{idPrefix}}-adjustmentsHeight">{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.HEIGHT"}}</label>
           <input type="number" step="any" value="{{adjustments.height}}" name="adjustments.height" id="{{idPrefix}}-adjustmentsHeight">
-
-          <button type="button" data-role="shadow-drag-size" data-tooltip="{{{../adjustSizeTooltip}}}"><i class="fa-solid fa-up-down-left-right"></i></button>
         </div>
       </div>
 
@@ -183,6 +179,7 @@
           </button>
         </div>
       </div>
+      <p>{{localize "SPRITESHADOWS.SETTINGS.ADJUSTMENTS.DRAGHINT"}}</p>
     </fieldset>
   {{/with}}
-</section>
+</div>

@@ -1,7 +1,8 @@
-import { DeepPartial, ShadowConfigSource, ShadowConfiguration } from "types";
+import { DeepPartial, ShadowConfigSource, ShadowConfiguration, ShadowedObject } from "types";
 import { ConfigMixin } from "./ConfigMixin";
 import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadowConfiguration } from "settings";
+import { releaseSprite, unhighlightSprite } from "./functions";
 
 export function TileConfigMixin<t extends typeof foundry.applications.sheets.TileConfig>(base: t) {
   class ShadowedTileConfig extends ConfigMixin(base) {
@@ -73,6 +74,18 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
       const flags = this.parseShadowFormData() as ShadowConfiguration & { configSource?: ShadowConfigSource };
       const configSource = flags.configSource ?? "tile";
       delete flags.configSource;
+
+      const obj = this.getShadowedObject() as ShadowedObject<Token> | undefined;
+      if (obj?.blobSprite) {
+        releaseSprite(obj.blobSprite);
+        unhighlightSprite(obj.blobSprite);
+      }
+      if (Array.isArray(obj?.stencilSprites)) {
+        obj.stencilSprites.forEach(sprite => {
+          releaseSprite(sprite);
+          unhighlightSprite(sprite);
+        });
+      }
 
       foundry.utils.setProperty(submitData, `flags.${__MODULE_ID__}.configSource`, configSource);
       if (configSource === "tile") {

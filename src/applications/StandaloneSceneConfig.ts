@@ -13,12 +13,10 @@ export class StandaloneSceneConfig extends GlobalConfig {
 
   protected getShadowFlags(): ShadowConfiguration {
     const flags = (this.scene.flags[__MODULE_ID__] as ShadowConfiguration) ?? DefaultShadowConfiguration;
-    console.log("Flags:", flags);
     return flags;
   }
 
   protected async setShadowFlags(config: ShadowConfiguration) {
-    console.log("Setting:", config);
     await this.scene.update({
       flags: {
         [__MODULE_ID__]: config
