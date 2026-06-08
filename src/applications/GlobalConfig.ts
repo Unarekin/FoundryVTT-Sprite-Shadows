@@ -3,7 +3,7 @@ import { ContextShadowConfiguration, ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
 import { downloadJSON, uploadJSON } from "functions";
 import { StencilShadowConfig } from "./StencilShadowConfig";
-import { highlightSprite, unhighlightSprite } from "./functions";
+import { controlSprite, highlightSprite, releaseSprite, setFormElementValue, unhighlightSprite } from "./functions";
 
 export class GlobalConfig extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
   static DEFAULT_OPTIONS: DeepPartial<foundry.applications.api.ApplicationV2.Configuration> = {
@@ -86,6 +86,37 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     return flags;
   }
 
+  _onClose(options: any) {
+    if (canvas?.tokens)
+      canvas.tokens.eventMode = "static";
+    if (canvas?.primary) {
+      canvas.primary.eventMode = "none";
+    }
+
+
+    this.overrideShadowFlags = undefined;
+
+    const shadowedObj = this.getShadowedObject();
+
+    if (shadowedObj) {
+      if (shadowedObj.blobSprite) {
+        unhighlightSprite(shadowedObj.blobSprite);
+        releaseSprite(shadowedObj.blobSprite);
+      }
+
+      if (Array.isArray(shadowedObj.stencilSprites)) {
+        shadowedObj.stencilSprites.forEach(sprite => {
+          unhighlightSprite(sprite);
+          releaseSprite(sprite);
+        });
+      }
+    }
+
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    super._onClose(options);
+  }
+
   protected getShadowConfiguration(): ShadowConfiguration {
     const flags = this.overrideShadowFlags ?? this.getShadowFlags();
     switch (flags?.type) {
@@ -107,25 +138,65 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     }
   }
 
+
+  protected _onSizeDrag(e: { x: number, y: number }) {
+
+    const obj = this.getShadowedObject();
+    const adjustmentMultipliers = obj?.getShadowAdjustmentMultipliers() ?? { x: 1, y: 1, width: 1, height: 1 };
+
+    const widthElem = this.element.querySelector(`[name="sprite-shadows.adjustments.width"]`);
+    if (widthElem instanceof HTMLInputElement)
+      widthElem.value = (parseFloat(widthElem.value) + (e.x / adjustmentMultipliers.width / 2)).toString();
+    const heightElem = this.element.querySelector(`[name="sprite-shadows.adjustments.height"]`);
+    if (heightElem instanceof HTMLInputElement)
+      heightElem.value = (parseFloat(heightElem.value) + (e.y / adjustmentMultipliers.height / 2)).toString();
+  }
+
   protected _setDraggable(placeable: ShadowedObject) {
     if (!placeable) return;
-    if (placeable.blobSprite) {
+    if (placeable.blobSprite && this.overrideShadowFlags?.type === "blob") {
       placeable.blobSprite.cursor = "grab";
       placeable.blobSprite.interactive = true;
+      controlSprite(placeable.blobSprite, true, this._onSizeDrag.bind(this));
+    } else if (placeable.blobSprite) {
+      unhighlightSprite(placeable.blobSprite);
+      releaseSprite(placeable.blobSprite);
     }
   }
 
+  _highlightBorderDisplayed = false;
   protected _dragTarget: PIXI.Sprite | undefined = undefined;
   protected _beginDragSprite(e: PIXI.FederatedPointerEvent, sprite: PIXI.Sprite) {
     e.stopPropagation();
     sprite.cursor = "grabbing";
     this._dragTarget = sprite;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const placeable = (sprite as any).placeable;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (placeable._preview?.border) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      this._highlightBorderDisplayed = placeable._preview.border.visible as boolean;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      placeable._preview.border.visible = false;
+    }
+    releaseSprite(sprite);
   }
 
   protected _endDragSprite = ((e: PIXI.FederatedPointerEvent) => {
     if (!this._dragTarget) return;
 
     e.stopPropagation();
+
+    controlSprite(this._dragTarget, true, this._onSizeDrag.bind(this));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const placeable = (this._dragTarget as any).placeable;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (placeable._preview?.border) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      placeable._preview.border.visible = !!this._highlightBorderDisplayed;
+    }
+
     this._dragTarget.cursor = "grab";
     this._dragTarget = undefined;
   }).bind(this);
@@ -141,20 +212,17 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     this._dragTarget.parent.toLocal(global, undefined, this._dragTarget.position);
     const delta = new PIXI.Point(this._dragTarget.x - start.x, this._dragTarget.y - start.y);
 
-    if (this.overrideShadowFlags?.type === "stencil" && this.overrideShadowFlags.shadows) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      const index = (((this.getShadowedObject() as any)?.stencilSprites ?? []).indexOf(this._dragTarget) ?? -1) as number;
-      if (index !== -1) {
-        const shadowConfig = this.overrideShadowFlags.shadows[index]
-        if (shadowConfig) {
-          shadowConfig.adjustments.x += delta.x;
-          shadowConfig.adjustments.y += delta.y;
-        }
-      }
+    if (this.overrideShadowFlags?.type === "blob") {
+      this.overrideShadowFlags.adjustments ??= { x: 0, y: 0, width: 0, height: 0, enabled: false, anchor: { x: 0.5, y: 0.5 } };
 
+      this.overrideShadowFlags.adjustments.x = (this.overrideShadowFlags.adjustments.x ?? 0) + delta.x;
+      this.overrideShadowFlags.adjustments.y = (this.overrideShadowFlags.adjustments.y ?? 0) + delta.y;
+
+      setFormElementValue(this.element, `[name="sprite-shadows.adjustments.x"]`, this.overrideShadowFlags.adjustments.x.toString(), false);
+      setFormElementValue(this.element, `[name="sprite-shadows.adjustments.y"]`, this.overrideShadowFlags.adjustments.y.toString(), false);
+
+      releaseSprite(this._dragTarget);
     }
-
-
   }).bind(this);
 
   protected _setDragListeners() {
@@ -179,15 +247,6 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
       obj.blobSprite.addEventListener("pointerdown", e => {
         if (e.buttons === 1)
           this._beginDragSprite(e, obj.blobSprite);
-      });
-    }
-
-    if (Array.isArray(obj.stencilSprites)) {
-      obj.stencilSprites.forEach(sprite => {
-        sprite.addEventListener("pointerdown", e => {
-          if (e.buttons === 1)
-            this._beginDragSprite(e, sprite);
-        });
       });
     }
   }

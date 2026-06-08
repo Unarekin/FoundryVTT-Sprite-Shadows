@@ -3,7 +3,7 @@ import { ShadowConfigContext } from "./types";
 import { DefaultBlobShadowConfiguration, DefaultShadowConfiguration, DefaultStencilShadow, DefaultStencilShadowConfiguration } from "settings";
 import { downloadJSON, findBottomAnchorPoint, findCentralAnchorPoint, uploadJSON } from "functions";
 import { StencilShadowConfig } from "./StencilShadowConfig";
-import { controlSprite, highlightSprite, releaseSprite, unhighlightSprite } from "./functions";
+import { controlSprite, highlightSprite, releaseSprite, setFormElementValue, unhighlightSprite } from "./functions";
 
 
 
@@ -179,8 +179,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
           // this.overrideShadowFlags.adjustments.anchor.x = anchor?.x;
           // this.overrideShadowFlags.adjustments.anchor.y = anchor?.y;
 
-          this.setFormElementValue(`[name="sprite-shadows.adjustments.anchor.x"]`, anchor.x.toString(), false);
-          this.setFormElementValue(`[name="sprite-shadows.adjustments.anchor.y"]`, anchor.y.toString());
+          setFormElementValue(this.element, `[name="sprite-shadows.adjustments.anchor.x"]`, anchor.x.toString(), false);
+          setFormElementValue(this.element, `[name="sprite-shadows.adjustments.anchor.y"]`, anchor.y.toString());
         } else if (flags.type === "stencil") {
           if (flags.shadows) {
             for (let i = 0; i < flags.shadows?.length; i++) {
@@ -200,14 +200,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         console.error(err);
         if (err instanceof Error) ui.notifications?.error(err.message, { console: false });
       }
-    }
-
-    protected setFormElementValue(selector: string, value: string, dispatchEvent = true) {
-      const elem = this.element.querySelector(selector);
-      if (!(elem instanceof HTMLInputElement)) return;
-      elem.value = value;
-      if (dispatchEvent)
-        elem.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
     protected getConfiguration(): ShadowConfiguration {
@@ -599,8 +591,6 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       this.#dragTarget.cursor = "grab";
       this.#dragTarget = undefined;
-
-
     }).bind(this);
 
     protected _onDragSprite = ((e: MouseEvent) => {
@@ -621,8 +611,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         this.overrideShadowFlags.adjustments.x = (this.overrideShadowFlags.adjustments.x ?? 0) + delta.x;
         this.overrideShadowFlags.adjustments.y = (this.overrideShadowFlags.adjustments.y ?? 0) + delta.y;
 
-        this.setFormElementValue(`[name="sprite-shadows.adjustments.x"]`, this.overrideShadowFlags.adjustments.x.toString(), false);
-        this.setFormElementValue(`[name="sprite-shadows.adjustments.y"]`, this.overrideShadowFlags.adjustments.y.toString(), false);
+        setFormElementValue(this.element, `[name="sprite-shadows.adjustments.x"]`, this.overrideShadowFlags.adjustments.x.toString(), false);
+        setFormElementValue(this.element, `[name="sprite-shadows.adjustments.y"]`, this.overrideShadowFlags.adjustments.y.toString(), false);
 
         releaseSprite(this.#dragTarget);
       }

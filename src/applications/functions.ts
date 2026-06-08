@@ -197,3 +197,12 @@ function createHighlightBorder(sprite: PIXI.Sprite, resize = false, color: PIXI.
   // TODO: Add handle events
   return frame;
 }
+
+
+export function setFormElementValue(element: HTMLElement, selector: string, value: string, dispatchEvent = true) {
+  const elem = element.querySelector(selector);
+  if (!(elem instanceof HTMLInputElement)) return;
+  elem.value = value;
+  if (dispatchEvent)
+    elem.dispatchEvent(new Event("change", { bubbles: true }));
+}
