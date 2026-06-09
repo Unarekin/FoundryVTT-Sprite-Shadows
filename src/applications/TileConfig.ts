@@ -72,25 +72,29 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
 
     async _processSubmitData(event: SubmitEvent, form: HTMLFormElement, submitData: foundry.applications.ux.FormDataExtended, options?: any): Promise<void> {
       const flags = this.parseShadowFormData() as ShadowConfiguration & { configSource?: ShadowConfigSource };
-      const configSource = flags.configSource ?? "tile";
-      delete flags.configSource;
+      if (flags) {
 
-      const obj = this.getShadowedObject() as ShadowedObject<Token> | undefined;
-      if (obj?.blobSprite) {
-        releaseSprite(obj.blobSprite);
-        unhighlightSprite(obj.blobSprite);
-      }
-      if (Array.isArray(obj?.stencilSprites)) {
-        obj.stencilSprites.forEach(sprite => {
-          releaseSprite(sprite);
-          unhighlightSprite(sprite);
-        });
+        const configSource = flags.configSource ?? "tile";
+        delete flags.configSource;
+
+        const obj = this.getShadowedObject() as ShadowedObject<Token> | undefined;
+        if (obj?.blobSprite) {
+          releaseSprite(obj.blobSprite);
+          unhighlightSprite(obj.blobSprite);
+        }
+        if (Array.isArray(obj?.stencilSprites)) {
+          obj.stencilSprites.forEach(sprite => {
+            releaseSprite(sprite);
+            unhighlightSprite(sprite);
+          });
+        }
+
+        foundry.utils.setProperty(submitData, `flags.${__MODULE_ID__}.configSource`, configSource);
+        if (configSource === "tile") {
+          foundry.utils.setProperty(submitData, `flags.${__MODULE_ID__}.config`, flags);
+        }
       }
 
-      foundry.utils.setProperty(submitData, `flags.${__MODULE_ID__}.configSource`, configSource);
-      if (configSource === "tile") {
-        foundry.utils.setProperty(submitData, `flags.${__MODULE_ID__}.config`, flags);
-      }
       await super._processSubmitData(event, form, submitData, options);
     }
   }
