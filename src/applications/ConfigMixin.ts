@@ -249,7 +249,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       const formData = data["sprite-shadows"] as DeepPartial<ShadowConfiguration>;
 
-      if (!formData) return formData;
+      if (!formData) return foundry.utils.deepClone(DefaultShadowConfiguration);
 
       const actualData = foundry.utils.deepClone(formData.type === "stencil" ? DefaultStencilShadowConfiguration : formData.type === "blob" ? DefaultBlobShadowConfiguration : DefaultShadowConfiguration);
       foundry.utils.mergeObject(actualData, formData);
