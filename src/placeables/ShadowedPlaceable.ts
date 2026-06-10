@@ -643,8 +643,20 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         this.stencilSprites.forEach(sprite => sprite.visible = false)
 
       const mesh = this.getMesh();
-      if (mesh) mesh.parent.addChild(this.shadowContainer);
+      if (mesh) {
+        mesh.parent.addChild(this.shadowContainer);
+        this.shadowContainer.zIndex = mesh.zIndex;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (this.shadowContainer as any).sortLayer = mesh.sortLayer;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (this.shadowContainer as any).sort = mesh.sort;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (this.shadowContainer as any).elevation = mesh.elevation;
+      }
       this.shadowContainer.name = `ShadowContainer.${this.document.id}`
+
+
+
 
 
       switch (shadowConfig.type) {
