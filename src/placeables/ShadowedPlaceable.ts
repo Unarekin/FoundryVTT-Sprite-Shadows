@@ -649,7 +649,7 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         (this.shadowContainer as any).sortLayer = mesh.sortLayer;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        (this.shadowContainer as any).sort = mesh.sort;
+        (this.shadowContainer as any).sort = mesh.sort - .1;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         (this.shadowContainer as any).elevation = mesh.elevation;
       }
