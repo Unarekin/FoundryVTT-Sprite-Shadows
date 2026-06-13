@@ -13,5 +13,6 @@ export declare class StandaloneTileConfig extends GlobalConfig {
     _onRender(context: ContextShadowConfiguration, options: foundry.applications.api.ApplicationV2.RenderOptions): Promise<void>;
     protected getShadowedObject(): ShadowedObject | undefined;
     _prepareContext(options: foundry.applications.api.ApplicationV2.RenderOptions): Promise<ContextShadowConfiguration>;
+    protected get controlLayer(): foundry.canvas.layers.PlaceablesLayer.Any | undefined;
     constructor(placeable: ShadowedObject<foundry.canvas.placeables.Tile>, options?: foundry.applications.api.ApplicationV2.Configuration);
 }
