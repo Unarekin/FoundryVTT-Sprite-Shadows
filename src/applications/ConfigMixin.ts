@@ -105,7 +105,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         const obj = this.getShadowedObject();
         const sprite: PIXI.Sprite | undefined = obj?.stencilSprites?.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
 
-        const data = await StencilShadowConfig.Edit(shadowConfig, sprite);
+        const data = await StencilShadowConfig.Edit(shadowConfig, sprite, this._getHighlightLayer());
 
         if (data) {
           // empty
@@ -293,14 +293,16 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         heightElem.value = (parseFloat(heightElem.value) + (e.y / adjustmentMultipliers.height / 2)).toString();
     }
 
+    protected abstract _getHighlightLayer(): foundry.canvas.layers.PlaceablesLayer.Any | undefined;
 
     _setDraggable() {
       const obj = this.getShadowedObject() as ShadowedObject<Token>;
       if (!obj) return;
+
       if (obj.blobSprite && this.tabGroups.sheet === "shadows" && this.overrideShadowFlags?.type === "blob") {
         obj.blobSprite.cursor = "grab";
         obj.blobSprite.interactive = true;
-        controlSprite(obj.blobSprite, true, this._onSizeDrag.bind(this));
+        controlSprite(obj.blobSprite, true, this._onSizeDrag.bind(this), this._getHighlightLayer());
       } else if (obj.blobSprite) {
         obj.blobSprite.cursor = "inherit";
         obj.blobSprite.interactive = false;
@@ -414,8 +416,10 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
     }
 
     _onClose(options: any) {
-      if (canvas?.tokens)
-        canvas.tokens.eventMode = "static";
+      const layer = this._getHighlightLayer()
+      if (layer)
+        layer.eventMode = "static";
+
       if (canvas?.primary) {
         canvas.primary.eventMode = "none";
       }
@@ -462,7 +466,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
       if (shadowedObj.blobSprite) {
         shadowedObj.blobSprite.visible = formData.type === "blob";
         if (formData.type === "blob")
-          controlSprite(shadowedObj.blobSprite);
+          controlSprite(shadowedObj.blobSprite, true, this._onSizeDrag.bind(this), this._getHighlightLayer());
         else
           releaseSprite(shadowedObj.blobSprite);
       }
@@ -581,7 +585,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       e.stopPropagation();
 
-      controlSprite(this.#dragTarget, true, this._onSizeDrag.bind(this));
+      controlSprite(this.#dragTarget, true, this._onSizeDrag.bind(this), this._getHighlightLayer());
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const placeable = (this.#dragTarget as any).placeable;
@@ -629,6 +633,8 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
 
       if (canvas?.tokens)
         canvas.tokens.eventMode = "passive";
+      if (canvas?.tiles)
+        canvas.tiles.eventMode = "passive";
 
       canvas.primary.eventMode = "passive";
 

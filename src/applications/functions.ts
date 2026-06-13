@@ -49,13 +49,14 @@ function boundsRelativeTo(bounds: PIXI.Rectangle, parent: PIXI.DisplayObject): P
   return new PIXI.Rectangle(minX, minY, maxX - minX, maxY - minY);
 }
 
-export function highlightSprite(sprite: PIXI.Sprite): PIXI.DisplayObject | undefined {
+export function highlightSprite(sprite: PIXI.Sprite, layer?: foundry.canvas.layers.PlaceablesLayer<any>): PIXI.DisplayObject | undefined {
   unhighlightSprite(sprite);
   if (!canvas?.tokens) return;
 
   const highlightSprite = createHighlightBorder(sprite, false);
   if (highlightSprite) {
-    canvas.tokens.addChild(highlightSprite);
+    if (layer) layer.addChild(highlightSprite);
+    else canvas.tokens.addChild(highlightSprite);
     highlightRegistry.set(sprite, highlightSprite);
   }
   return highlightSprite;
@@ -71,7 +72,7 @@ export function releaseSprite(sprite: PIXI.Sprite) {
 
 type ResizeCallback = ((adjust: { x: number, y: number }) => void);
 
-export function controlSprite(sprite: PIXI.Sprite, resize = true, resizeCallback?: ResizeCallback) {
+export function controlSprite(sprite: PIXI.Sprite, resize = true, resizeCallback?: ResizeCallback, layer?: foundry.canvas.layers.PlaceablesLayer<any>) {
   releaseSprite(sprite);
   unhighlightSprite(sprite);
   if (!canvas?.tokens) return;
@@ -80,8 +81,6 @@ export function controlSprite(sprite: PIXI.Sprite, resize = true, resizeCallback
   if (frame) {
     const handle = ((frame.children ?? []) as PIXI.DisplayObject[]).find((child) => child.name === "handle");
     if (handle) {
-
-
       const mouseMove = (e: MouseEvent) => {
         e.stopPropagation();
         if (!canvas?.tokens) return;
@@ -142,7 +141,11 @@ export function controlSprite(sprite: PIXI.Sprite, resize = true, resizeCallback
       handle.addEventListener("pointercancel", () => { window.removeEventListener("mousemove", mouseMove); });
       handle.addEventListener("pointerupoutside", () => { window.removeEventListener("mousemove", mouseMove); });
     }
-    canvas.tokens.addChild(frame);
+    console.warn("Adding control frame:", layer);
+    if (layer)
+      layer.addChild(frame);
+    else
+      canvas.tokens.addChild(frame);
     controlRegistry.set(sprite, frame);
   }
   return frame;

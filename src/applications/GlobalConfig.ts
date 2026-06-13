@@ -157,7 +157,7 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     if (placeable.blobSprite && this.overrideShadowFlags?.type === "blob") {
       placeable.blobSprite.cursor = "grab";
       placeable.blobSprite.interactive = true;
-      controlSprite(placeable.blobSprite, true, this._onSizeDrag.bind(this));
+      controlSprite(placeable.blobSprite, true, this._onSizeDrag.bind(this), this.controlLayer);
     } else if (placeable.blobSprite) {
       unhighlightSprite(placeable.blobSprite);
       releaseSprite(placeable.blobSprite);
@@ -188,7 +188,7 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
 
     e.stopPropagation();
 
-    controlSprite(this._dragTarget, true, this._onSizeDrag.bind(this));
+    controlSprite(this._dragTarget, true, this._onSizeDrag.bind(this), this.controlLayer);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const placeable = (this._dragTarget as any).placeable;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -509,7 +509,7 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     try {
 
       const shadowConfig = foundry.utils.deepClone(DefaultStencilShadow);
-      const data = await StencilShadowConfig.Edit(shadowConfig);
+      const data = await StencilShadowConfig.Edit(shadowConfig, undefined, undefined);
 
       if (data && this.overrideShadowFlags?.type === "stencil") {
         if (Array.isArray(this.overrideShadowFlags.shadows)) this.overrideShadowFlags.shadows.push(foundry.utils.deepClone(data));
@@ -536,7 +536,7 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
       const shadowedObject = this.getShadowedObject();
       const sprite: PIXI.Sprite | undefined = shadowedObject?.stencilSprites?.find(sprite => sprite.name === `StencilShadow.${shadowId}`);
 
-      const data = await StencilShadowConfig.Edit(shadowConfig, sprite);
+      const data = await StencilShadowConfig.Edit(shadowConfig, sprite, this.controlLayer);
       if (data) {
         // empty
         const index = this.overrideShadowFlags.shadows.findIndex(item => item.id === data.id);
@@ -577,5 +577,6 @@ export class GlobalConfig extends foundry.applications.api.HandlebarsApplication
     }
   }
 
+  protected get controlLayer(): foundry.canvas.layers.PlaceablesLayer.Any | undefined { return undefined; }
 
 }

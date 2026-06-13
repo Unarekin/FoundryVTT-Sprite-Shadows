@@ -89,6 +89,8 @@ export class StandaloneTokenConfig extends GlobalConfig {
     this._setDragListeners();
   }
 
+  protected get controlLayer(): foundry.canvas.layers.PlaceablesLayer.Any | undefined { return canvas?.tokens; }
+
   async _onRender(context: ContextShadowConfiguration, options: foundry.applications.api.ApplicationV2.RenderOptions) {
     await super._onRender(context, options);
 
