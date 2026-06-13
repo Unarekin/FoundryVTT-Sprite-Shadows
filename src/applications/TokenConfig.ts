@@ -38,6 +38,10 @@ export function TokenConfigMixin<t extends typeof foundry.applications.sheets.To
       this._setDragListeners();
     }
 
+    protected _getHighlightLayer(): foundry.canvas.layers.TokenLayer | undefined {
+      return canvas?.tokens;
+    }
+
     protected getDragAdjustmentMultiplier() {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       const isPrototype = (this as any).isPrototype as boolean;

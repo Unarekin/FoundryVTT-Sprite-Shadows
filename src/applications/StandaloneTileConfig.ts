@@ -108,7 +108,9 @@ export class StandaloneTileConfig extends GlobalConfig {
     return context;
   }
 
+  protected get controlLayer(): foundry.canvas.layers.PlaceablesLayer.Any | undefined { return canvas?.tiles; }
+
   constructor(protected placeable: ShadowedObject<foundry.canvas.placeables.Tile>, options?: foundry.applications.api.ApplicationV2.Configuration) {
-    super(options);
+    super(options)
   }
 }

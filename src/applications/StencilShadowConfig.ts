@@ -66,8 +66,8 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
     await this.close();
   }
 
-  static async Edit(shadow: StencilShadow, previewSprite?: PIXI.Sprite): Promise<StencilShadow | undefined> {
-    return (new StencilShadowConfig(shadow, previewSprite)).Edit();
+  static async Edit(shadow: StencilShadow, previewSprite?: PIXI.Sprite, layer?: foundry.canvas.layers.PlaceablesLayer.Any): Promise<StencilShadow | undefined> {
+    return (new StencilShadowConfig(shadow, previewSprite, layer)).Edit();
   }
 
   public async Edit(shadow?: StencilShadow, previewSprite?: PIXI.Sprite): Promise<StencilShadow | undefined> {
@@ -181,8 +181,8 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
   protected _setDragListeners() {
     if (!canvas?.primary) return;
 
-    if (canvas?.tokens)
-      canvas.tokens.eventMode = "passive";
+    if (this.controlLayer)
+      this.controlLayer.eventMode = "passive";
 
     canvas.primary.eventMode = "passive";
 
@@ -274,7 +274,7 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
       placeable._preview.border.visible = !!this.#highlightBorderDisplayed;
     }
 
-    if (this.previewSprite) controlSprite(this.previewSprite, true, this._onSizeDrag.bind(this));
+    if (this.previewSprite) controlSprite(this.previewSprite, true, this._onSizeDrag.bind(this), this.controlLayer);
     this.#dragTarget = undefined;
   }).bind(this);
 
@@ -327,7 +327,7 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
     await super._onFirstRender(context, options);
 
     if (this.previewSprite) {
-      controlSprite(this.previewSprite, true, this._onSizeDrag.bind(this));
+      controlSprite(this.previewSprite, true, this._onSizeDrag.bind(this), this.controlLayer);
     }
     this._setDragListeners();
     this._setDraggable();
@@ -377,7 +377,7 @@ export class StencilShadowConfig extends foundry.applications.api.HandlebarsAppl
     return context;
   }
 
-  constructor(public shadowConfig: StencilShadow, protected previewSprite?: PIXI.Sprite, options?: foundry.applications.api.ApplicationV2.Configuration) {
+  constructor(public shadowConfig: StencilShadow, protected previewSprite?: PIXI.Sprite, protected controlLayer?: foundry.canvas.layers.PlaceablesLayer.Any, options?: foundry.applications.api.ApplicationV2.Configuration) {
     super(options);
 
     if (this.previewSprite) {

@@ -22,6 +22,10 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
       }
     }
 
+    protected _getHighlightLayer(): foundry.canvas.layers.TilesLayer | undefined {
+      return canvas?.tiles;
+    }
+
     protected async _prepareContext(options: DeepPartial<TokenConfig.RenderOptions>): Promise<ShadowConfigContext<TileConfig.RenderContext>> {
       const context = await super._prepareContext(options);
       context.shadows.allowConfigSource = true
@@ -68,6 +72,12 @@ export function TileConfigMixin<t extends typeof foundry.applications.sheets.Til
       this.overrideShadowConfigSource = source;
 
       await this.render();
+    }
+
+    async _onFirstRender(context: foundry.applications.api.ApplicationV2.RenderContext, options: foundry.applications.api.ApplicationV2.RenderOptions) {
+      await super._onFirstRender(context, options);
+      this._setDragListeners();
+      this._setDraggable();
     }
 
     async _processSubmitData(event: SubmitEvent, form: HTMLFormElement, submitData: foundry.applications.ux.FormDataExtended, options?: any): Promise<void> {
