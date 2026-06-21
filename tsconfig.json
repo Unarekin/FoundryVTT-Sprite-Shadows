@@ -3,8 +3,11 @@
   "exclude": ["./node_modules"],
   "files": ["./src/module.ts"],
   "compilerOptions": {
-    "baseUrl": "./src",
+    "rootDir": "./src",
     "outDir": "dist",
+    "paths": {
+      "*": ["./src/*"]
+    },
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "types": ["fvtt-types", "./@types/global.d.ts", "pixi.js", "pixi-filters"],

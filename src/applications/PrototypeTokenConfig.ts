@@ -44,6 +44,7 @@ export function PrototypeTokenConfigMixin<t extends typeof foundry.applications.
       await this.render();
     }
 
+    protected _getHighlightLayer(): foundry.canvas.layers.PlaceablesLayer.Any | undefined { return undefined; }
 
     async _onSubmitForm(formConfig: foundry.applications.api.ApplicationV2.FormConfiguration, e: Event | SubmitEvent) {
       if (!(e.target instanceof HTMLFormElement)) return console.warn("No form element to submit");
