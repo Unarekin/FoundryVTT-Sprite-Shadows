@@ -133,7 +133,7 @@ export function ConfigMixin<Document extends foundry.abstract.Document.Any = fou
         const confirmed = (await foundry.applications.api.DialogV2.confirm({
           window: { title: game.i18n?.localize("SPRITESHADOWS.SETTINGS.REMOVE.TITLE") ?? "" },
           content: game.i18n?.format("SPRITESHADOWS.SETTINGS.REMOVE.MESSAGE", { name: config.id })
-        })) as boolean;
+        }))!;
         if (!confirmed) return console.warn("Removal canceled");
 
         const index = this.overrideShadowFlags.shadows.findIndex(elem => elem.id === shadowId);
