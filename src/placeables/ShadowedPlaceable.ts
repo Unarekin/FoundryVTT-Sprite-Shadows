@@ -483,6 +483,8 @@ export function PlaceableMixin<t extends typeof foundry.canvas.placeables.Placea
       if (!canvas?.scene) return false;
 
 
+      if (!canvas.scene.tokenVision) return true;
+
       if (canvas.visibility.testVisibility({ x: this.x, y: this.y })) return true;
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
